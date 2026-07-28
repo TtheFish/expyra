@@ -3,7 +3,7 @@
 # Docker kullanıyorsan bunun yerine: docker compose up -d
 set -euo pipefail
 
-DB_NAME="${DB_NAME:-tajriba_dev}"
+DB_NAME="${DB_NAME:-expyra_dev}"
 DB_USER="${DB_USER:-postgres}"
 DB_PASSWORD="${DB_PASSWORD:-postgres}"
 

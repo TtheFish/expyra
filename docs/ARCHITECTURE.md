@@ -3,17 +3,17 @@
 ## Genel yerleşim
 
 ```
-tajriba/
+expyra/
 ├── apps/
 │   ├── api/                     ASP.NET Core 10 + PostgreSQL
 │   │   ├── src/
-│   │   │   ├── Tajriba.Domain/          entity'ler, iş kuralları (bağımlılık YOK)
-│   │   │   ├── Tajriba.Application/     feature'lar (CQRS handler + validator)
-│   │   │   ├── Tajriba.Infrastructure/  EF Core, dış servisler
-│   │   │   └── Tajriba.WebApi/          controller, middleware, DI kökü
+│   │   │   ├── Expyra.Domain/          entity'ler, iş kuralları (bağımlılık YOK)
+│   │   │   ├── Expyra.Application/     feature'lar (CQRS handler + validator)
+│   │   │   ├── Expyra.Infrastructure/  EF Core, dış servisler
+│   │   │   └── Expyra.WebApi/          controller, middleware, DI kökü
 │   │   └── tests/
-│   │       ├── Tajriba.Application.UnitTests/    handler testleri (DB'siz)
-│   │       └── Tajriba.IntegrationTests/         uçtan uca (gerçek Postgres)
+│   │       ├── Expyra.Application.UnitTests/    handler testleri (DB'siz)
+│   │       └── Expyra.IntegrationTests/         uçtan uca (gerçek Postgres)
 │   ├── web/                     Next.js 16 (App Router) + Tailwind 4
 │   └── mobile/                  Expo — Faz 5'te kurulacak
 ├── packages/

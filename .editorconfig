@@ -40,5 +40,5 @@ dotnet_diagnostic.CA1848.severity = none
 dotnet_diagnostic.CA1062.severity = none
 
 # Testlerde daha gevşek
-[tests/**/*.cs]
+[**/tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none

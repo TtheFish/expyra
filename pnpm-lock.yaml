@@ -10,7 +10,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@tajriba/shared-types':
+      '@expyra/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       next:

@@ -5,7 +5,7 @@ import { GlassButton } from './glass-button'
 
 type Theme = 'light' | 'dark'
 
-const THEME_EVENT = 'tajriba:themechange'
+const THEME_EVENT = 'expyra:themechange'
 
 /**
  * Tema geçişi.

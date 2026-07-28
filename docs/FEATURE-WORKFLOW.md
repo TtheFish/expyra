@@ -61,7 +61,7 @@ Backend'de feature'lar kendi klasörlerinde yaşar, bu yüzden çakışma nadird
 
 ## 3. Backend'de feature nasıl yazılır
 
-Klasör yapısı (`apps/api/src/Tajriba.Application/Features/<Feature>/`):
+Klasör yapısı (`apps/api/src/Expyra.Application/Features/<Feature>/`):
 
 ```
 Features/
@@ -75,7 +75,7 @@ Features/
             └── GetMyBookingsQuery.cs
 ```
 
-Controller ise `apps/api/src/Tajriba.WebApi/Features/Bookings/BookingsController.cs`.
+Controller ise `apps/api/src/Expyra.WebApi/Features/Bookings/BookingsController.cs`.
 
 Referans örnek: `Features/Health/Queries/GetHealth/GetHealthQuery.cs` — kopyala, uyarla.
 

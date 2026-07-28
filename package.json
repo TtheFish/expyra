@@ -1,5 +1,5 @@
 {
-  "name": "tajriba",
+  "name": "expyra",
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@10.33.0",
@@ -7,13 +7,13 @@
     "node": ">=20"
   },
   "scripts": {
-    "api": "dotnet run --project apps/api/src/Tajriba.WebApi",
+    "api": "dotnet run --project apps/api/src/Expyra.WebApi",
     "api:build": "dotnet build apps/api",
     "api:test": "dotnet test apps/api",
-    "api:migrate": "dotnet ef database update --project apps/api/src/Tajriba.Infrastructure --startup-project apps/api/src/Tajriba.WebApi",
-    "web": "pnpm --filter @tajriba/web dev",
-    "mobile": "pnpm --filter @tajriba/mobile start",
-    "types:generate": "pnpm --filter @tajriba/shared-types generate",
+    "api:migrate": "dotnet ef database update --project apps/api/src/Expyra.Infrastructure --startup-project apps/api/src/Expyra.WebApi",
+    "web": "pnpm --filter @expyra/web dev",
+    "mobile": "pnpm --filter @expyra/mobile start",
+    "types:generate": "pnpm --filter @expyra/shared-types generate",
     "db:up": "./scripts/db-up.sh",
     "lint": "pnpm -r lint",
     "build": "pnpm -r build",

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Projeyi yeniden adlandırır: Tajriba -> <YeniAd>
+# Projeyi yeniden adlandırır: Expyra -> <YeniAd>
 #
 # Kullanım:  ./scripts/rename.sh Wandr
 #
 # Neyi değiştirir:
 #   - .NET namespace'leri, proje ve klasör adları, solution dosyası
-#   - package.json isimleri (@tajriba/* -> @yeniad/*)
+#   - package.json isimleri (@expyra/* -> @yeniad/*)
 #   - workspace filtreleri, script'ler, docs içindeki referanslar
 #
 # Neyi DEĞİŞTİRMEZ: git geçmişi, veritabanı adı (onu elle yap).
@@ -17,7 +17,7 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
-OLD_PASCAL="Tajriba"
+OLD_PASCAL="Expyra"
 NEW_PASCAL="$1"
 OLD_LOWER="$(echo "$OLD_PASCAL" | tr '[:upper:]' '[:lower:]')"
 NEW_LOWER="$(echo "$NEW_PASCAL" | tr '[:upper:]' '[:lower:]')"

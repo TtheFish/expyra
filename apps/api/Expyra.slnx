@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Expyra.Application/Expyra.Application.csproj" />
+    <Project Path="src/Expyra.Domain/Expyra.Domain.csproj" />
+    <Project Path="src/Expyra.Infrastructure/Expyra.Infrastructure.csproj" />
+    <Project Path="src/Expyra.WebApi/Expyra.WebApi.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Expyra.Application.UnitTests/Expyra.Application.UnitTests.csproj" />
+    <Project Path="tests/Expyra.IntegrationTests/Expyra.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

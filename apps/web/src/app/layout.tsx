@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Tajriba',
+  title: 'Expyra',
   description: 'Yerel deneyimleri keşfet, rezervasyon yap.',
 }
 

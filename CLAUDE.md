@@ -1,4 +1,4 @@
-# Tajriba — Claude Code notları
+# Expyra — Claude Code notları
 
 Bu dosya, bu repoda çalışan her Claude oturumu için bağlam. Genel tercihler
 `~/.claude/CLAUDE.md`'de; burası projeye özel.
@@ -8,7 +8,7 @@ Bu dosya, bu repoda çalışan her Claude oturumu için bağlam. Genel tercihler
 Yerel deneyim rezervasyon platformu. Monorepo: .NET 10 API + Next.js 16 web +
 (ileride) Expo mobil. İki kişilik takım, feature bazlı geliştirme.
 
-`Tajriba` **çalışma adıdır**, değişecek. Yeni isim gelince `./scripts/rename.sh <Ad>`.
+İsim değişirse: `./scripts/rename.sh <YeniAd>` (tek komut, tüm repo).
 
 ## Komutlar
 
@@ -41,7 +41,7 @@ Kod yazarken bunları ihlal etme:
 ## Feature eklerken
 
 Kalıp: `docs/FEATURE-WORKFLOW.md`. Referans örnek:
-`apps/api/src/Tajriba.Application/Features/Health/Queries/GetHealth/`.
+`apps/api/src/Expyra.Application/Features/Health/Queries/GetHealth/`.
 
 Request + response + handler aynı dosyada; validator ayrı dosyada; controller
 `WebApi/Features/<Feature>/` altında.

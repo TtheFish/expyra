@@ -44,7 +44,7 @@ export default function Home() {
           tone="thick"
           className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-5"
         >
-          <span className="font-semibold tracking-tight">Tajriba</span>
+          <span className="font-semibold tracking-tight">Expyra</span>
 
           <nav className="hidden items-center gap-1 sm:flex" aria-label="Ana menü">
             <GlassButton variant="ghost" size="sm">Keşfet</GlassButton>
@@ -165,7 +165,7 @@ export default function Home() {
 
       <footer className="mx-auto w-full max-w-5xl px-4 pb-8">
         <GlassSurface className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-xs text-fg-muted">
-          <span>Tajriba — çalışma adı, değişecek</span>
+          <span>Expyra</span>
           <span className="font-mono">Faz 0 · iskelet</span>
         </GlassSurface>
       </footer>

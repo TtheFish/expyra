@@ -21,7 +21,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: tajriba_test
+          POSTGRES_DB: expyra_test
         ports:
           - 5432:5432
         options: >-
@@ -47,7 +47,7 @@ jobs:
       - name: Test
         run: dotnet test apps/api --no-build --configuration Release --logger "console;verbosity=normal"
         env:
-          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=tajriba_test;Username=postgres;Password=postgres"
+          ConnectionStrings__Default: "Host=localhost;Port=5432;Database=expyra_test;Username=postgres;Password=postgres"
 
   frontend:
     name: Web (Next.js)

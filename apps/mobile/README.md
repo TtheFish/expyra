@@ -1,4 +1,4 @@
-# @tajriba/mobile
+# @expyra/mobile
 
 **Durum: henüz kurulmadı.** Faz 5'te Expo ile kurulacak.
 
@@ -14,8 +14,8 @@ pnpm create expo-app@latest apps/mobile --template blank-typescript
 
 Sonrasında yapılacaklar:
 
-1. `package.json` içindeki adı `@tajriba/mobile` yap
-2. `@tajriba/shared-types` bağımlılığını `workspace:*` olarak ekle
+1. `package.json` içindeki adı `@expyra/mobile` yap
+2. `@expyra/shared-types` bağımlılığını `workspace:*` olarak ekle
 3. `metro.config.js` içinde monorepo desteğini aç (`watchFolders` + `nodeModulesPaths`)
 4. API taban adresini `app.config.ts` üzerinden ortam değişkeninden oku — sabit yazma
 
