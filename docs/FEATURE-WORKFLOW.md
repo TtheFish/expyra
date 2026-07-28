@@ -42,6 +42,10 @@ Türler: `feature/`, `fix/`, `chore/`, `refactor/`.
 
 `main` korumalıdır — doğrudan push yok, her şey PR ile girer.
 
+> ⚠️ Şu an bu kural **teknik olarak zorlanmıyor**: GitHub Free planında private
+> repo için branch koruması yok. Zorlamak istersek iki seçenek var — repoyu
+> public yapmak veya GitHub Pro (4 $/ay). O zamana kadar kural disipline bağlı.
+
 ### 2.3 Çakışmayı önleme
 
 Backend'de feature'lar kendi klasörlerinde yaşar, bu yüzden çakışma nadirdir.
