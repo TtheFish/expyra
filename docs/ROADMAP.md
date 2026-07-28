@@ -5,6 +5,13 @@ Sıfırdan yayına kadar tüm iş listesi. Her satır bir **dikey dilim**: API +
 
 **Takım:** 2 kişi. **Tahminler** ikisinin paralel çalıştığı varsayımıyla.
 
+> **Universal kapsam kararı ([VISION.md](VISION.md) §4):** platform ilk günden çok
+> dilli, çok para birimli, çok ülkeli. Bu yüzden i18n veri modeli, para birimi ve
+> konum hiyerarşisi **öne çekildi** — Faz 8'e bırakılamaz, çünkü ikisi de
+> `Experience` ve `Price` tablolarının şeklini değiştiriyor. Canlı sistemde
+> `decimal Price` alanını çok para birimine çevirmek acı verici bir migration olur;
+> baştan doğru kurmak neredeyse bedava.
+
 ---
 
 ## Özet takvim
@@ -13,17 +20,26 @@ Sıfırdan yayına kadar tüm iş listesi. Her satır bir **dikey dilim**: API +
 |---|---|---|---|
 | 0 | İskelet | ✅ bitti | — |
 | 1 | Kimlik & hesap | 2 hafta | — |
-| 2 | Deneyim yönetimi | 2,5 hafta | Faz 1 |
-| 3 | Müsaitlik & takvim | 1,5 hafta | Faz 2 |
-| 4 | Keşif & arama | 2 hafta | Faz 2 |
+| 2 | Deneyim yönetimi **+ çok dilli içerik + konum** | 3 hafta | Faz 1 |
+| 3 | Müsaitlik & **çok para birimli fiyat** | 2 hafta | Faz 2 |
+| 4 | Keşif & arama (global) | 2,5 hafta | Faz 2 |
 | 5 | Rezervasyon | 2 hafta | Faz 3, 4 |
-| 6 | Ödeme (Stripe Connect) | 2,5 hafta | Faz 5 + **şirket kaydı** |
-| 7 | Operasyon (QR, bildirim, yorum) | 1,5 hafta | Faz 5 |
-| 8 | Çokdillilik & SEO | 1,5 hafta | Faz 4 |
-| — | **Web MVP yayında** | **~13 hafta** | |
+| 6 | Ödeme akışı (**sahte sağlayıcı**) | 1,5 hafta | Faz 5 |
+| 7 | Operasyon (QR, cüzdan, bildirim, ban) | 2 hafta | Faz 5 |
+| 8 | Arayüz çevirisi & SEO | 1,5 hafta | Faz 4 |
+| — | **Demo sürüm çalışır** | **~14 hafta** | |
+| 6b | **Gerçek Stripe Connect** | 2 hafta | ⏸ şirket kaydı |
 | 9 | Mobil (Expo) | 3 hafta | Faz 6 |
-| 10 | Prod sertleştirme | 1,5 hafta | hepsi |
-| — | **Tam sürüm** | **~18 hafta (~4,5 ay)** | |
+| 10 | Prod sertleştirme | 2 hafta | hepsi |
+| — | **Yayına hazır** | **~21 hafta (~5 ay)** | |
+
+**İki not:**
+
+- **Universal olmanın maliyeti ~2 hafta.** Sonradan eklemenin maliyeti bunun birkaç
+  katı ve canlı veriyle uğraşmak zorunda kalırdın.
+- **Sahte ödeme sayesinde şirket kaydı artık kritik yolda değil.** 14. haftada
+  çalışan, gösterilebilir bir ürün oluyor. Ama Faz 6b bitmeden gerçek kullanıcıya
+  açılamaz — sahte ödemeyle para toplanmaz.
 
 **Kritik yol uyarısı:** Faz 6 Stripe hesabına, o da şirket kaydına bağlı.
 Kayıt işlemini **Faz 1 başlarken** başlat — yoksa Faz 5 bitince beklemede kalırız.
@@ -108,23 +124,45 @@ Kayıt işlemini **Faz 1 başlarken** başlat — yoksa Faz 5 bitince beklemede 
 
 ---
 
-## Faz 6 — Ödeme · Stripe Connect · 2,5 hafta
+## Faz 6 — Ödeme akışı (sahte sağlayıcı) · 1,5 hafta
 
-> **Ön koşul:** şirket kaydı + Stripe platform hesabı. Bu faz koda değil,
-> evrağa bağlı — erken başlat.
+> **Karar:** Stripe hesabı henüz yok. Ödeme akışı uçtan uca **varmış gibi** kurulacak;
+> arkasındaki sağlayıcı sahte. Bu, şirket kaydını kritik yoldan çıkarır —
+> MVP artık evrak beklemiyor.
 
 | # | İş | Not |
 |---|---|---|
-| 6.1 | Connect Express onboarding | Host banka/kimlik doğrulaması Stripe'ta |
-| 6.2 | Checkout / PaymentIntent | SCA + 3DS zorunlu (AB) |
-| 6.3 | Webhook işleme | **İdempotent** — Stripe aynı olayı tekrar gönderir |
-| 6.4 | Komisyon (application fee) | Platform payı |
-| 6.5 | İade / kısmi iade | İptal politikasına bağlı |
-| 6.6 | Host kazanç & payout ekranı | |
-| 6.7 | Makbuz / fatura | AB KDV kuralları |
-| 6.8 | Ödeme hata senaryoları | Başarısız kart, timeout, çifte tıklama |
+| 6.1 | `IPaymentProvider` soyutlaması | Tek arayüz: ödeme başlat, doğrula, iade et |
+| 6.2 | `FakePaymentProvider` | Gerçekçi davranır: gecikme, başarısız kart, timeout senaryoları |
+| 6.3 | Ödeme akışı (API + web) | Sepet → ödeme → sipariş durumu; **gerçek olan kısım bu** |
+| 6.4 | Sipariş durum makinesi | beklemede → ödendi → tamamlandı / iade edildi |
+| 6.5 | Komisyon hesabı | Platform payı kayıtta tutulur, henüz tahsil edilmez |
+| 6.6 | İade / kısmi iade | İptal politikasına bağlı |
+| 6.7 | Host kazanç ekranı | Sahte de olsa gerçek rakamlarla |
+| 6.8 | Ödeme hata senaryoları | Başarısız kart, timeout, çifte tıklama, idempotency |
 
-**Çıktı:** Para akıyor, host ödeme alıyor.
+**Çıktı:** Ödeme uçtan uca çalışıyor; sadece para gerçekten hareket etmiyor.
+
+**Kritik tasarım kuralı:** Sahte sağlayıcı **sadece** `IPaymentProvider`'ın arkasında
+yaşar. "Nasıl olsa sahte" diye kısayol alınmaz — idempotency, durum makinesi, hata
+yolları gerçekmiş gibi yazılır. Aksi halde Stripe geldiğinde bu fazın tamamı yeniden
+yazılır ve hiçbir şey kazanılmamış olur.
+
+---
+
+## Faz 6b — Gerçek Stripe Connect · 2 hafta · ⏸ şirket kaydı bekliyor
+
+Sadece `IPaymentProvider`'ın ikinci implementasyonu. Lansman öncesi **zorunlu** —
+sahte ödemeyle gerçek kullanıcıya açılamaz.
+
+| # | İş | Not |
+|---|---|---|
+| 6b.1 | Connect Express onboarding | Host banka/kimlik doğrulaması Stripe'ta |
+| 6b.2 | PaymentIntent + SCA/3DS | AB zorunluluğu |
+| 6b.3 | Webhook işleme | **İdempotent** — Stripe aynı olayı tekrar gönderir |
+| 6b.4 | Komisyon (`application_fee`) | Faz 6.5'te hesaplanan pay artık gerçekten kesilir |
+| 6b.5 | Çoklu ülke payout | Host'un ülkesine göre KYC ve ödeme kuralları |
+| 6b.6 | Makbuz / fatura | Ülke bazlı KDV |
 
 ---
 
@@ -132,13 +170,31 @@ Kayıt işlemini **Faz 1 başlarken** başlat — yoksa Faz 5 bitince beklemede 
 
 | # | İş | Not |
 |---|---|---|
-| 7.1 | QR bilet üretimi | İmzalı, tekrar kullanılamaz |
-| 7.2 | Host check-in | QR doğrulama + manuel liste |
-| 7.3 | E-posta bildirimleri | Onay, hatırlatma (24 sa), iptal, host bilgilendirme |
-| 7.4 | Host dashboard | Rezervasyon sayısı, doluluk, kazanç özeti |
-| 7.5 | Yorum & puan | Sadece katılım sonrası; host cevabı |
+| 7.1 | QR bilet üretimi | İmzalı token; **tek kullanımlık**; üzerinde geçerlilik tarihi |
+| 7.2 | Host check-in tarayıcısı | Host ekranında kamera; okutunca anında sonuç |
+| 7.3 | Apple Wallet / Google Wallet bileti | `.pkpass` üretimi; telefonu açmadan bilet |
+| 7.4 | E-posta bildirimleri | Onay, hatırlatma (24 sa), iptal, host bilgilendirme |
+| 7.5 | Host dashboard | Rezervasyon sayısı, doluluk, kazanç özeti |
+| 7.6 | Yorum & puan | Sadece katılım sonrası; host cevabı |
+| 7.7 | **Hesap durumu ve ban altyapısı** | Aktif/askıda/banlı; banlı host'un ilanları gizlenir |
+| 7.8 | Şikayet / bildirim akışı | Platform dışı ödeme ihbarının ana kaynağı |
 
-**Çıktı:** Deneyim günü akışı tamam.
+### QR bilet davranışı (7.1 + 7.2)
+
+Rezervasyon ödendiğinde bilet üretilir. Beklenen davranış:
+
+- Bilet **imzalı** — içeriği değiştirilirse doğrulama başarısız olur
+- **Tek okutmalık** — ikinci okutmada "bu bilet zaten kullanıldı" + ilk kullanım zamanı
+- **Geçerlilik tarihi var** — deneyim gününden başka bir günde okutulursa uyarır
+- Host tarayıcıda okutur → ekranda anında: geçerli / kullanılmış / yanlış tarih / geçersiz
+- Kişi sayısı biletin üzerinde görünür (host kaç kişiyi aldığını görsün)
+- İnternet yoksa da çalışmalı — host cihazı o günün biletlerini önden indirir
+  (mobil tarafı Faz 9.5)
+
+**Neden bu kadar detay:** Bilet doğrulaması yanlış çalışırsa host deneyim gününde
+kapıda kalır. Tekrar okutulabilen bilet ise doğrudan gelir kaybı.
+
+**Çıktı:** Deneyim günü akışı tamam; platform kuralları uygulanabilir durumda.
 
 ---
 
@@ -163,9 +219,9 @@ Kayıt işlemini **Faz 1 başlarken** başlat — yoksa Faz 5 bitince beklemede 
 | 9.1 | Expo kurulum + monorepo entegrasyonu | Metro config, paylaşılan tipler |
 | 9.2 | Auth ekranları | Apple ile giriş dahil (store şartı) |
 | 9.3 | Keşif + detay | |
-| 9.4 | Rezervasyon + ödeme | Stripe React Native SDK |
-| 9.5 | QR bilet | **Çevrimdışı erişim** — etkinlik alanında internet olmayabilir |
-| 9.6 | Host check-in kamerası | |
+| 9.4 | Rezervasyon + ödeme | Faz 6b bittiyse Stripe RN SDK, bitmediyse sahte sağlayıcı |
+| 9.5 | QR bilet + Apple/Google Wallet | **Çevrimdışı erişim** — etkinlik alanında internet olmayabilir |
+| 9.6 | Host check-in kamerası | Günün biletleri önden indirilir; çevrimdışı doğrulama |
 | 9.7 | Push bildirim | |
 | 9.8 | Store yayını | App Store + Play Store; gizlilik formları |
 
@@ -189,7 +245,7 @@ Kayıt işlemini **Faz 1 başlarken** başlat — yoksa Faz 5 bitince beklemede 
 Bilinçli olarak MVP dışında:
 
 - Host ↔ gezgin mesajlaşma
-- Admin / moderasyon paneli
+- Tam admin / moderasyon paneli (temel ban altyapısı Faz 7'de)
 - Kupon, indirim, hediye kartı
 - Harita üzerinden arama
 - Takvim senkronizasyonu (Google/iCal)
