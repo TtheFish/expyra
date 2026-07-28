@@ -1,0 +1,206 @@
+/* ===========================================================================
+   QR Bilet
+   ---------------------------------------------------------------------------
+   Fiziksel bilet metaforu + Liquid Glass. Üç şey bir arada olmalı:
+
+     1. Bilet gibi görünmeli   → perforasyon (koçan ayrımı), kesikli çizgi
+     2. Cam gibi hissettirmeli → holografik kenar, imleçle dönen yüzey
+     3. ÇALIŞMALI              → QR alanı opak beyaz kalır
+
+   3. madde tartışmaya kapalı: kamera düşük kontrastlı QR'ı okuyamaz. Cam bileti
+   sarar, QR'ın üstüne binmez. Kapıda okunmayan bilet ne kadar güzel olursa olsun
+   başarısızdır.
+   =========================================================================== */
+
+.ticket-scene {
+  perspective: 1400px;
+  /*
+    Kendi stacking context'ini kurar. İçerideki 3D transform zaten yeni bir
+    katman açıyor; bunu sabitlemezsek biletin yapışkan başlığın üstüne çıkması
+    tarayıcı/sıralama değişikliklerine açık kalır.
+  */
+  position: relative;
+  z-index: 0;
+}
+
+.ticket {
+  /* JS imleç konumuna göre yazar; hareket yoksa düz durur */
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  --pointer-x: 50%;
+  --pointer-y: 50%;
+
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transform-style: preserve-3d;
+  transition: transform 0.5s var(--ease-glass);
+  will-change: transform;
+}
+
+.ticket:hover {
+  transition-duration: 0.12s;
+}
+
+/* ---------------------------------------------------------------------------
+   Perforasyon: koçanı gövdeden ayıran kesik.
+   İki yarım daire (sol + sağ) maskeyle oyuluyor — böylece arkadaki renkli
+   zemin delikten görünür, boyanmış daire gibi durmaz.
+   --------------------------------------------------------------------------- */
+.ticket-perforation {
+  position: relative;
+  height: 0;
+}
+
+.ticket-notch {
+  position: absolute;
+  top: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  background: var(--bg);
+  transform: translateY(-50%);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.22);
+}
+
+.ticket-notch-left {
+  left: 0;
+  transform: translate(-50%, -50%);
+}
+
+.ticket-notch-right {
+  right: 0;
+  transform: translate(50%, -50%);
+}
+
+.ticket-dashes {
+  position: absolute;
+  top: 50%;
+  left: 1.5rem;
+  right: 1.5rem;
+  height: 2px;
+  transform: translateY(-50%);
+  background-image: linear-gradient(
+    to right,
+    var(--glass-border) 0 8px,
+    transparent 8px 16px
+  );
+  background-size: 16px 2px;
+  background-repeat: repeat-x;
+}
+
+/* ---------------------------------------------------------------------------
+   Holografik parlama. Gökkuşağı konik gradyan, imleci takip eden pencereyle
+   maskelenir — kâğıdın üstündeki folyo etkisi.
+   --------------------------------------------------------------------------- */
+.ticket-holo {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-glass);
+  background: conic-gradient(
+    from 210deg at var(--pointer-x) var(--pointer-y),
+    oklch(0.85 0.18 20  / 0.55),
+    oklch(0.88 0.16 90  / 0.55),
+    oklch(0.86 0.17 160 / 0.55),
+    oklch(0.84 0.18 250 / 0.55),
+    oklch(0.86 0.19 320 / 0.55),
+    oklch(0.85 0.18 20  / 0.55)
+  );
+  mix-blend-mode: overlay;
+  -webkit-mask-image: radial-gradient(
+    22rem 22rem at var(--pointer-x) var(--pointer-y),
+    #000 0%,
+    transparent 72%
+  );
+  mask-image: radial-gradient(
+    22rem 22rem at var(--pointer-x) var(--pointer-y),
+    #000 0%,
+    transparent 72%
+  );
+}
+
+.ticket:hover .ticket-holo {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   QR alanı — burası KASITLI OLARAK opak.
+   --------------------------------------------------------------------------- */
+.ticket-qr {
+  background: #fff;
+  border-radius: var(--radius-glass);
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.06),
+    0 2px 12px rgb(0 0 0 / 0.10);
+}
+
+.ticket-qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* QR modülleri saf siyah kalır; stilize edilirse okunurluk düşer */
+  shape-rendering: crispEdges;
+}
+
+/* Tarama çizgisi — biletin "canlı" olduğunu gösterir */
+.ticket-scanline {
+  position: absolute;
+  inset-inline: 8%;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    oklch(0.72 0.18 25 / 0.85),
+    transparent
+  );
+  animation: ticket-scan 3.2s var(--ease-glass) infinite;
+}
+
+@keyframes ticket-scan {
+  0%, 100% { top: 12%; opacity: 0; }
+  12%      { opacity: 1; }
+  50%      { top: 88%; opacity: 1; }
+  62%      { opacity: 0; }
+}
+
+/* ---------------------------------------------------------------------------
+   Kullanılmış bilet: rengi çekilir, damga vurulur.
+   --------------------------------------------------------------------------- */
+.ticket-used .ticket-qr {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+
+.ticket-used .ticket-scanline {
+  display: none;
+}
+
+.ticket-stamp {
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  left: 50%;
+  padding: 0.5rem 1.5rem;
+  border: 3px solid oklch(0.58 0.19 25 / 0.75);
+  border-radius: 0.75rem;
+  color: oklch(0.58 0.19 25 / 0.9);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-14deg);
+  animation: stamp-hit 0.5s var(--ease-bounce) both;
+}
+
+@keyframes stamp-hit {
+  from { transform: translate(-50%, -50%) rotate(-14deg) scale(2.4); opacity: 0; }
+  to   { transform: translate(-50%, -50%) rotate(-14deg) scale(1);   opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticket { transform: none !important; }
+  .ticket-scanline { animation: none; opacity: 0; }
+}

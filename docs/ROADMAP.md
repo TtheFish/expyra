@@ -124,7 +124,7 @@ sonuç yoksa bile eli boş dönmez.
 |---|---|---|
 | 5.1 | Uygunluk + fiyat hesaplama endpoint'i | Tek doğruluk kaynağı sunucu |
 | 5.2 | **Rezervasyon oluşturma** | Transaction + satır kilidi. Eski projenin en kritik hatası buradaydı |
-| 5.3 | Rezervasyonlarım (gezgin) | Yaklaşan / geçmiş |
+| 5.3 | **Deneyimlerim** (gezgin) | Yaklaşan biletler + geçmiş işlemler. Prototip: `/deneyimlerim` |
 | 5.4 | İptal + iptal politikası | Esnek / orta / katı |
 | 5.5 | Host: gelen rezervasyonlar | Onay gerektiren mod dahil |
 | 5.6 | Kapasite yarışı testi | Eşzamanlı istek altında integration test |
@@ -180,6 +180,7 @@ sahte ödemeyle gerçek kullanıcıya açılamaz.
 | # | İş | Not |
 |---|---|---|
 | 7.1 | QR bilet üretimi | İmzalı token; **tek kullanımlık**; üzerinde geçerlilik tarihi |
+| 7.1b | **Bilet PDF'i** | İndirilebilir, yazdırılabilir. **API'de üretilir** — web ve mobil aynı belgeyi alır |
 | 7.2 | Host check-in tarayıcısı | Host ekranında kamera; okutunca anında sonuç |
 | 7.3 | Apple Wallet / Google Wallet bileti | `.pkpass` üretimi; telefonu açmadan bilet |
 | 7.4 | E-posta bildirimleri | Onay, hatırlatma (24 sa), iptal, host bilgilendirme |
@@ -202,6 +203,20 @@ Rezervasyon ödendiğinde bilet üretilir. Beklenen davranış:
 
 **Neden bu kadar detay:** Bilet doğrulaması yanlış çalışırsa host deneyim gününde
 kapıda kalır. Tekrar okutulabilen bilet ise doğrudan gelir kaybı.
+
+### PDF üretimi hakkında (7.1b)
+
+Web'de çalışan bir prototip var (`/api/bilet/[code]/pdf`). Üretimde bu **API'ye
+taşınacak** — iki ayrı üretici iki farklı bilet demektir, mobil ve web aynı
+belgeyi indirmeli.
+
+Prototipten çıkan iki ders:
+
+1. **Font gömmek zorunlu.** PDF kütüphanelerinin varsayılan Helvetica'sı WinAnsi
+   kodlaması kullanıyor; içinde `ğ ı ş İ` ve Çekçe `ě š č ř ů` yok. Universal bir
+   platformda host adı bilet üzerinde bozuk çıkar.
+2. **Büyük harf çevirimi dile bağlı.** `toUpperCase()` "Türkiye"yi "TÜRKIYE" yapar.
+   Locale-duyarlı çevirim şart — her dilde ayrı ayrı patlayan sessiz bir hata.
 
 **Çıktı:** Deneyim günü akışı tamam; platform kuralları uygulanabilir durumda.
 
