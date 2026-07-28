@@ -1,0 +1,44 @@
+# Tüm repo için ortak format kuralları.
+# İki kişi çalışıyoruz: format tartışması PR'da değil, burada biter.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.{cs,csproj,props,targets}]
+indent_size = 4
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{ts,tsx,js,jsx,json,yml,yaml}]
+indent_size = 2
+
+# ---------------------------------------------------------------------------
+# C# analyzer kuralları
+# ---------------------------------------------------------------------------
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:error
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:error
+dotnet_sort_system_directives_first = true
+
+# CA1716: 'Set' gibi isimler VB.NET keyword'ü ile çakışıyormuş.
+# Bu bir iç API; başka dilden implement edilmeyecek. EF konvansiyonunu koruyoruz.
+dotnet_diagnostic.CA1716.severity = none
+
+# CA1848: LoggerMessage kaynak üreteci — performans kritik olmayan yerlerde zorlamıyoruz.
+dotnet_diagnostic.CA1848.severity = none
+
+# CA1062: public metotlarda null kontrolü — nullable reference types zaten açık.
+dotnet_diagnostic.CA1062.severity = none
+
+# Testlerde daha gevşek
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none

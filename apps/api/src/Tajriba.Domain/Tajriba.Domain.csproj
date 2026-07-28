@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Domain: saf iş kuralları. HİÇBİR dış bağımlılık almaz.
+    Buraya EF Core, MediatR, ASP.NET eklenmez — kural budur.
+  -->
+
+</Project>

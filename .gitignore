@@ -1,0 +1,50 @@
+# ---------------------------------------------------------------------------
+# SIRLAR — bunlar repoya ASLA girmez.
+# Eski projede appsettings.json içinde canlı DB şifresi vardı. Bir daha olmayacak.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+secrets.json
+appsettings.Local.json
+appsettings.Production.json
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+artifacts/
+
+# Node
+node_modules/
+.pnpm-store/
+*.tsbuildinfo
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Expo / React Native
+.expo/
+*.jks
+*.keystore
+
+# Test / coverage
+TestResults/
+coverage/
+*.coverage
+
+# Editör ve OS
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Üretilen tipler — kaynak backend'in OpenAPI şeması, elle düzenlenmez
+packages/shared-types/src/api.generated.ts

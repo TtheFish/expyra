@@ -1,0 +1,377 @@
+@import "tailwindcss";
+
+/* ===========================================================================
+   TAJRIBA — Liquid Glass tasarım sistemi
+   ---------------------------------------------------------------------------
+   iOS 26 "Liquid Glass" dilinin web'e uyarlaması.
+
+   Malzemenin dört bileşeni var; dördü birden olmazsa cam gibi durmuyor:
+     1. Bulanıklık + doygunluk artışı  → arkadaki renk malzemeye sızar
+     2. Kenar highlight (specular)     → ışığın cam kenarında kırılması
+     3. Katmanlı gölge                 → yüzeyin zeminden ayrılması
+     4. Renkli, hareketli zemin        → camın gösterecek bir şeyi olması
+
+   Renkler oklch: açık/koyu tema arasında algılanan parlaklık sabit kalıyor.
+   =========================================================================== */
+
+@theme {
+  /* --- Marka renkleri ---------------------------------------------------- */
+  --color-brand-50:  oklch(0.97 0.02 25);
+  --color-brand-100: oklch(0.94 0.05 25);
+  --color-brand-200: oklch(0.88 0.09 25);
+  --color-brand-300: oklch(0.80 0.14 25);
+  --color-brand-400: oklch(0.72 0.18 25);
+  --color-brand-500: oklch(0.64 0.21 25);
+  --color-brand-600: oklch(0.56 0.20 25);
+  --color-brand-700: oklch(0.47 0.17 25);
+  --color-brand-800: oklch(0.38 0.13 25);
+  --color-brand-900: oklch(0.29 0.09 25);
+
+  /* İkincil: derin okyanus — deneyim/seyahat çağrışımı */
+  --color-accent-300: oklch(0.82 0.11 220);
+  --color-accent-500: oklch(0.65 0.16 220);
+  --color-accent-700: oklch(0.48 0.14 220);
+
+  /* --- Sürekli köşeler (squircle hissi) ---------------------------------- */
+  --radius-glass-sm: 0.875rem;
+  --radius-glass:    1.25rem;
+  --radius-glass-lg: 1.75rem;
+  --radius-glass-xl: 2.25rem;
+
+  /* --- Hareket: iOS'un yaylı eğrileri ------------------------------------ */
+  --ease-glass: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ---------------------------------------------------------------------------
+   Tema değişkenleri — açık tema varsayılan
+   --------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  --bg: oklch(0.97 0.01 250);
+  --fg: oklch(0.22 0.02 260);
+  --fg-muted: oklch(0.50 0.02 260);
+
+  /* Cam malzeme */
+  --glass-tint: 255 255 255;      /* camın kendi rengi (RGB kanalları) */
+  --glass-opacity: 0.55;
+  --glass-opacity-thick: 0.72;
+  --glass-blur: 20px;
+  --glass-saturate: 180%;
+
+  /* Kenar ışığı: üstte parlak, altta sönük — ışık yukarıdan gelir */
+  --glass-edge-top: rgb(255 255 255 / 0.75);
+  --glass-edge-bottom: rgb(255 255 255 / 0.12);
+  --glass-border: rgb(255 255 255 / 0.45);
+
+  /* Gölge: yakın + uzak, iki katman. Tek gölge "yapıştırılmış" duruyor. */
+  --glass-shadow:
+    0 1px 2px rgb(16 24 40 / 0.04),
+    0 8px 24px -4px rgb(16 24 40 / 0.10),
+    0 24px 48px -12px rgb(16 24 40 / 0.10);
+
+  --glass-shadow-lifted:
+    0 2px 4px rgb(16 24 40 / 0.05),
+    0 12px 32px -6px rgb(16 24 40 / 0.14),
+    0 40px 72px -16px rgb(16 24 40 / 0.16);
+
+  /* Zemindeki renk lekelerinin yoğunluğu. Cam ancak arkasında renk varsa görünür. */
+  --mesh-a1: 0.34;
+  --mesh-a2: 0.30;
+  --mesh-a3: 0.32;
+  --mesh-a4: 0.26;
+  --mesh-a5: 0.18;
+
+  /* Zemin örtüsünün yoğunluğu — metin kontrastını bu ayarlıyor */
+  --veil: 62%;
+
+  /* Vurgu metni: her temada AA kontrastı tutan uçlar */
+  --grad-from: oklch(0.56 0.20 25);
+  --grad-to: oklch(0.48 0.14 220);
+}
+
+/* Koyu tema: manuel toggle (data-theme) ve sistem tercihi için iki blok.
+   Değerler aynı — biri kullanıcının seçimi, diğeri işletim sisteminin. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: oklch(0.16 0.02 265);
+  --fg: oklch(0.96 0.01 260);
+  --fg-muted: oklch(0.72 0.02 260);
+
+  --glass-opacity: 0.10;
+  --glass-opacity-thick: 0.20;
+  --glass-blur: 26px;
+  --glass-saturate: 190%;
+
+  --mesh-a1: 0.62;
+  --mesh-a2: 0.55;
+  --mesh-a3: 0.58;
+  --mesh-a4: 0.46;
+  --mesh-a5: 0.38;
+  --veil: 58%;
+  --grad-from: oklch(0.80 0.14 25);
+  --grad-to: oklch(0.82 0.11 220);
+
+  --glass-edge-top: rgb(255 255 255 / 0.28);
+  --glass-edge-bottom: rgb(255 255 255 / 0.04);
+  --glass-border: rgb(255 255 255 / 0.14);
+
+  --glass-shadow:
+    0 1px 2px rgb(0 0 0 / 0.30),
+    0 8px 24px -4px rgb(0 0 0 / 0.40),
+    0 24px 48px -12px rgb(0 0 0 / 0.35);
+
+  --glass-shadow-lifted:
+    0 2px 4px rgb(0 0 0 / 0.35),
+    0 12px 32px -6px rgb(0 0 0 / 0.50),
+    0 40px 72px -16px rgb(0 0 0 / 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: oklch(0.16 0.02 265);
+    --fg: oklch(0.96 0.01 260);
+    --fg-muted: oklch(0.72 0.02 260);
+
+
+    --glass-opacity: 0.10;
+    --glass-opacity-thick: 0.20;
+    --glass-blur: 26px;
+    --glass-saturate: 190%;
+
+    /* Koyu zeminde renk daha çabuk kayboluyor — lekeleri güçlendiriyoruz */
+    --mesh-a1: 0.62;
+    --mesh-a2: 0.55;
+    --mesh-a3: 0.58;
+    --mesh-a4: 0.46;
+    --mesh-a5: 0.38;
+    --veil: 58%;
+    --grad-from: oklch(0.80 0.14 25);
+    --grad-to: oklch(0.82 0.11 220);
+
+    --glass-edge-top: rgb(255 255 255 / 0.28);
+    --glass-edge-bottom: rgb(255 255 255 / 0.04);
+    --glass-border: rgb(255 255 255 / 0.14);
+
+    --glass-shadow:
+      0 1px 2px rgb(0 0 0 / 0.30),
+      0 8px 24px -4px rgb(0 0 0 / 0.40),
+      0 24px 48px -12px rgb(0 0 0 / 0.35);
+
+    --glass-shadow-lifted:
+      0 2px 4px rgb(0 0 0 / 0.35),
+      0 12px 32px -6px rgb(0 0 0 / 0.50),
+      0 40px 72px -16px rgb(0 0 0 / 0.45);
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+}
+
+/* ---------------------------------------------------------------------------
+   Zemin: camın gösterecek bir şeye ihtiyacı var.
+   Düz beyaz zeminde cam efekti görünmez — bu yüzden hareketli mesh gradient.
+   --------------------------------------------------------------------------- */
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 55rem at 22% 24%, oklch(0.70 0.20 25  / var(--mesh-a1)), transparent 68%),
+    radial-gradient(55rem 50rem at 78% 18%, oklch(0.66 0.19 305 / var(--mesh-a2)), transparent 68%),
+    radial-gradient(65rem 58rem at 68% 78%, oklch(0.64 0.18 220 / var(--mesh-a3)), transparent 68%),
+    radial-gradient(50rem 46rem at 28% 80%, oklch(0.78 0.16 65  / var(--mesh-a4)), transparent 68%),
+    radial-gradient(70rem 60rem at 50% 50%, oklch(0.60 0.14 280 / var(--mesh-a5)), transparent 72%);
+  filter: blur(20px);
+  animation: mesh-drift 28s var(--ease-glass) infinite alternate;
+}
+
+/*
+  Yumuşatıcı örtü. Mesh tek başına metni okunmaz yapıyordu (WCAG AA'nın altına
+  düşüyordu). Bu katman rengi korur ama doygunluğu kırar; cam yüzeyler hâlâ
+  altındaki renkten besleniyor.
+*/
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: color-mix(in oklch, var(--bg) var(--veil), transparent);
+}
+
+@keyframes mesh-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(-2%, 1.5%, 0) scale(1.06); }
+  100% { transform: translate3d(1.5%, -2%, 0) scale(1.02); }
+}
+
+/* ===========================================================================
+   Glass utility'leri
+   =========================================================================== */
+
+/* Temel cam yüzey. Panel, kart, nav — hepsinin tabanı. */
+@utility glass {
+  position: relative;
+  isolation: isolate;
+  background-color: rgb(var(--glass-tint) / var(--glass-opacity));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--glass-shadow);
+}
+
+/*
+  Specular highlight: üst kenarda ince parlak çizgi, alt kenarda sönük.
+  Camı "düz yarı saydam dikdörtgen" olmaktan çıkaran şey bu.
+*/
+@utility glass-edge {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      to bottom,
+      var(--glass-edge-top),
+      transparent 35%,
+      transparent 65%,
+      var(--glass-edge-bottom)
+    );
+    /* Sadece kenarı boya: iki maskeyi çıkararak ince çerçeve elde ediyoruz */
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+/* İmleci takip eden parlama. --mx/--my JS tarafından güncellenir. */
+@utility glass-sheen {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(
+      18rem 18rem at var(--mx, 50%) var(--my, 0%),
+      rgb(255 255 255 / 0.22),
+      transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.45s var(--ease-glass);
+    pointer-events: none;
+  }
+
+  &:hover::after {
+    opacity: 1;
+  }
+}
+
+/* Basıldığında hafifçe çöken, bırakınca yaylanan yüzey */
+@utility glass-interactive {
+  transition:
+    transform 0.35s var(--ease-glass),
+    box-shadow 0.35s var(--ease-glass),
+    background-color 0.35s var(--ease-glass);
+
+  &:hover {
+    box-shadow: var(--glass-shadow-lifted);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.985);
+    transition-duration: 0.1s;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 3px;
+  }
+}
+
+/* Yoğun cam: modal, nav gibi içeriği net ayırması gereken yüzeyler */
+@utility glass-thick {
+  background-color: rgb(var(--glass-tint) / var(--glass-opacity-thick));
+  backdrop-filter: blur(32px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(32px) saturate(var(--glass-saturate));
+}
+
+/* Tema duyarlı vurgu metni. Doğrudan brand-500 kullanmak koyu zeminde
+   AA kontrastının altına düşüyordu. */
+@utility text-gradient-brand {
+  background-image: linear-gradient(to bottom right, var(--grad-from), var(--grad-to));
+  background-clip: text;
+  color: transparent;
+}
+
+/* Marka renginde dolu cam — birincil aksiyonlar */
+@utility glass-brand {
+  background:
+    linear-gradient(
+      to bottom,
+      oklch(0.72 0.18 25 / 0.92),
+      oklch(0.60 0.20 25 / 0.92)
+    );
+  border-color: oklch(0.80 0.14 25 / 0.55);
+  color: white;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 2px 8px oklch(0.56 0.20 25 / 0.30),
+    0 12px 28px -8px oklch(0.56 0.20 25 / 0.45);
+}
+
+/* ---------------------------------------------------------------------------
+   Erişilebilirlik: hareket azaltma tercihi mutlak kuraldır.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+  backdrop-filter desteklemeyen tarayıcı: camı opaklaştır.
+  Aksi halde metin okunmaz hale gelir.
+*/
+@supports not (backdrop-filter: blur(1px)) {
+  .glass {
+    background-color: rgb(var(--glass-tint) / 0.92);
+  }
+}
