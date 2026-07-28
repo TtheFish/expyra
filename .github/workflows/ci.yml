@@ -56,9 +56,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Sürüm burada verilmez — kök package.json'daki "packageManager"
+      # alanından okunur. İkisini birden vermek ERR_PNPM_BAD_PM_VERSION verir.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -85,7 +85,14 @@ jobs:
 
       # Eski projede canlı DB şifresi repoya girmişti. Bu iş bir daha
       # gözden kaçmasın diye CI'da otomatik taranıyor.
+      #
+      # gitleaks-action yerine ikiliyi doğrudan çalıştırıyoruz: action, push
+      # olayında "önceki commit..şimdiki commit" aralığı kuruyor ve ilk commit'te
+      # parent bulunmadığı için çöküyor. Biz her seferinde tüm geçmişi tarıyoruz.
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_VERSION: 8.24.3
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          /tmp/gitleaks git --redact --verbose --no-banner .
