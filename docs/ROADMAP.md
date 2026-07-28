@@ -41,9 +41,6 @@ Sıfırdan yayına kadar tüm iş listesi. Her satır bir **dikey dilim**: API +
   çalışan, gösterilebilir bir ürün oluyor. Ama Faz 6b bitmeden gerçek kullanıcıya
   açılamaz — sahte ödemeyle para toplanmaz.
 
-**Kritik yol uyarısı:** Faz 6 Stripe hesabına, o da şirket kaydına bağlı.
-Kayıt işlemini **Faz 1 başlarken** başlat — yoksa Faz 5 bitince beklemede kalırız.
-
 ---
 
 ## Faz 1 — Kimlik & hesap · 2 hafta
@@ -64,48 +61,60 @@ Kayıt işlemini **Faz 1 başlarken** başlat — yoksa Faz 5 bitince beklemede 
 
 ---
 
-## Faz 2 — Deneyim yönetimi (host) · 2,5 hafta
+## Faz 2 — Deneyim yönetimi (host) · 3 hafta
 
 | # | İş | Not |
 |---|---|---|
 | 2.1 | Object storage altyapısı (S3/R2) | Presigned URL. **Base64 DB'ye yazma yok** |
-| 2.2 | Deneyim oluştur (taslak) | Başlık, açıklama, süre, kapasite, dil |
-| 2.3 | Görsel yükleme | Çoklu, sıralama, kapak seçimi, boyut/format doğrulama |
-| 2.4 | Kategori & etiket | Sabit kategori listesi + serbest etiket |
-| 2.5 | Konum | Adres + koordinat; buluşma noktası açıklaması |
-| 2.6 | Yayınla / düzenle / arşivle | Taslak→yayın geçiş kuralları |
-| 2.7 | Host: deneyimlerim listesi | Durum filtreli |
+| 2.2 | Deneyim oluştur (taslak) | Başlık, açıklama, süre, kapasite |
+| 2.3 | **Çok dilli içerik veri modeli** | Başlık/açıklama dil bazlı saklanır; host birden fazla dilde girebilir |
+| 2.4 | Görsel yükleme | Çoklu, sıralama, kapak seçimi, boyut/format doğrulama |
+| 2.5 | Kategori & etiket | Sabit kategori listesi + serbest etiket |
+| 2.6 | **Konum hiyerarşisi** | Ülke → şehir → koordinat. Global aramanın temeli; şehir serbest metin OLAMAZ |
+| 2.7 | Yayınla / düzenle / arşivle | Taslak→yayın geçiş kuralları |
+| 2.8 | Host: deneyimlerim listesi | Durum filtreli |
 
-**Çıktı:** Host deneyim yayınlayabilir.
+**Çıktı:** Host, istediği ülkede ve dilde deneyim yayınlayabilir.
+
+**Neden 2.3 ve 2.6 burada:** İkisi de `Experience` tablosunun şeklini belirliyor.
+Faz 8'e bırakılırsa canlı veriyle migration yapmak gerekir.
 
 ---
 
-## Faz 3 — Müsaitlik & fiyat · 1,5 hafta
+## Faz 3 — Müsaitlik & çok para birimli fiyat · 2 hafta
 
 | # | İş | Not |
 |---|---|---|
 | 3.1 | Tekil müsaitlik (tarih + saat + kapasite) | |
 | 3.2 | Haftalık tekrar şablonu | "Her salı 14:00" |
 | 3.3 | Toplu kapatma / tatil günleri | |
-| 3.4 | Fiyat kuralları | Yetişkin/çocuk/bebek, tarihe göre fark |
-| 3.5 | Zaman dilimi yönetimi | Deneyim yerel saatinde; UTC saklanır |
+| 3.4 | **Para birimli fiyat modeli** | Fiyat `(tutar, para birimi)` çifti. Host satış para birimini kendi seçer |
+| 3.5 | Fiyat kuralları | Yetişkin/çocuk/bebek, tarihe göre fark |
+| 3.6 | **Kur çevirisi (görüntüleme)** | Gezgin kendi para biriminde görür; **tahsilat host'un para biriminde** |
+| 3.7 | Zaman dilimi yönetimi | Deneyim yerel saatinde; UTC saklanır |
 
-**Çıktı:** Host takvimini yönetir, fiyat belirler.
+**Çıktı:** Host takvimini ve fiyatını kendi para biriminde yönetir.
+
+**Kur kuralı:** Çeviri sadece gösterim içindir. Tahsilat her zaman host'un para
+biriminde yapılır — aksi halde kur farkı riskini platform üstlenir.
 
 ---
 
-## Faz 4 — Keşif & arama · 2 hafta
+## Faz 4 — Keşif & arama (global) · 2,5 hafta
 
 | # | İş | Not |
 |---|---|---|
 | 4.1 | Deneyim listeleme + sayfalama | Cursor tabanlı |
-| 4.2 | Metin arama | Postgres full-text; ayrı arama motoru gerekmiyor |
-| 4.3 | Filtreler | Şehir, tarih aralığı, fiyat, kategori, süre, dil |
-| 4.4 | Deneyim detay sayfası | Görseller, açıklama, takvim, host kartı |
-| 4.5 | Favoriler | |
-| 4.6 | Sıralama | Popülerlik, fiyat, puan |
+| 4.2 | **Ülke/şehir gezinme** | Global katalogda kaybolmadan daralma |
+| 4.3 | Metin arama | Postgres full-text, dil duyarlı |
+| 4.4 | Filtreler | Tarih, fiyat (kur duyarlı), kategori, süre, dil |
+| 4.5 | Deneyim detay sayfası | Görseller, açıklama, takvim, host kartı |
+| 4.6 | **Boş sonuç akışı** | "Burada henüz yok" → yakın şehirler + haber ver. Global olmanın en büyük ürün riski |
+| 4.7 | Favoriler | |
+| 4.8 | Sıralama | Popülerlik, fiyat, puan |
 
-**Çıktı:** Gezgin deneyim bulur ve inceler.
+**Çıktı:** Gezgin, dünyanın herhangi bir yerinde arama yapıp sonuç alır —
+sonuç yoksa bile eli boş dönmez.
 
 ---
 
@@ -166,7 +175,7 @@ sahte ödemeyle gerçek kullanıcıya açılamaz.
 
 ---
 
-## Faz 7 — Operasyon · 1,5 hafta
+## Faz 7 — Operasyon · 2 hafta
 
 | # | İş | Not |
 |---|---|---|
@@ -198,12 +207,12 @@ kapıda kalır. Tekrar okutulabilen bilet ise doğrudan gelir kaybı.
 
 ---
 
-## Faz 8 — Çokdillilik & SEO · 1,5 hafta
+## Faz 8 — Arayüz çevirisi & SEO · 1,5 hafta
 
 | # | İş | Not |
 |---|---|---|
-| 8.1 | i18n altyapısı | EN + CS + TR. **Hardcoded metin yok** |
-| 8.2 | Çok dilli deneyim içeriği | Host birden fazla dilde açıklama girebilir |
+| 8.1 | Arayüz çeviri altyapısı | **Hardcoded metin yok**. İçerik modeli Faz 2.3'te geldi, bu arayüz katmanı |
+| 8.2 | Dil seçimi ve algılama | Tarayıcı dili + kullanıcı tercihi; URL'de dil segmenti |
 | 8.3 | SEO | Metadata, sitemap, hreflang, structured data (Event/Offer) |
 | 8.4 | Çoklu para birimi | Görüntüleme + tahsilat kuru ayrımı |
 | 8.5 | Paylaşım kartları | OG görselleri |
@@ -227,7 +236,7 @@ kapıda kalır. Tekrar okutulabilen bilet ise doğrudan gelir kaybı.
 
 ---
 
-## Faz 10 — Prod sertleştirme · 1,5 hafta
+## Faz 10 — Prod sertleştirme · 2 hafta
 
 | # | İş | Not |
 |---|---|---|
