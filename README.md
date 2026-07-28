@@ -7,7 +7,8 @@ Yerel deneyim rezervasyon platformu. Host'lar deneyim yayınlar, gezginler rezer
 **Faz 0 — iskelet.** Çalışan: monorepo yapısı, API iskeleti, tasarım sistemi, CI.
 Henüz yok: kimlik doğrulama, deneyim/rezervasyon özellikleri, ödeme.
 
-Yol haritası için [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), tüm iş listesi için [docs/ROADMAP.md](docs/ROADMAP.md), çalışma düzeni için
+Projenin amacı, iş modeli ve hedefleri için [docs/VISION.md](docs/VISION.md).
+Mimari için [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), tüm iş listesi için [docs/ROADMAP.md](docs/ROADMAP.md), çalışma düzeni için
 [docs/FEATURE-WORKFLOW.md](docs/FEATURE-WORKFLOW.md).
 
 ## Yapı
