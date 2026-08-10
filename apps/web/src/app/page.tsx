@@ -1,3 +1,5 @@
+import { BrandLogo } from '@/components/brand/brand-logo'
+import { HeroWallpaper } from '@/components/brand/hero-wallpaper'
 import { GlassButton } from '@/components/ui/glass-button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
@@ -13,6 +15,7 @@ const experiences = [
     price: '€48',
     rating: '4.9',
     duration: '3 saat',
+    tone: 'oklch(0.62 0.14 40)',
   },
   {
     title: 'Vltava Kıyısında Fotoğraf Turu',
@@ -20,6 +23,7 @@ const experiences = [
     price: '€35',
     rating: '4.8',
     duration: '2 saat',
+    tone: 'oklch(0.55 0.10 230)',
   },
   {
     title: 'Ev Yapımı Pasta Atölyesi',
@@ -27,15 +31,18 @@ const experiences = [
     price: '€62',
     rating: '5.0',
     duration: '4 saat',
+    tone: 'oklch(0.58 0.12 20)',
   },
 ]
 
 export default function Home() {
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="relative flex min-h-dvh flex-col">
+      <HeroWallpaper />
+
       <header className="relative z-10 px-4 pt-4">
-        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-5">
-          <span className="font-semibold tracking-tight">Expyra</span>
+        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+          <BrandLogo />
 
           <nav className="hidden items-center gap-1 sm:flex" aria-label="Ana menü">
             <GlassButton variant="ghost" size="sm" href="/">Keşfet</GlassButton>
@@ -50,12 +57,12 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-16 sm:py-24">
+      <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 py-16 sm:py-24">
         <section className="mb-16 text-center">
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
             Yerel deneyimleri
             <br />
-            keşfetmenin yeni yolu
+            <span className="text-gradient-brand">keşfetmenin yeni yolu</span>
           </h1>
 
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base text-fg-muted sm:text-lg">
@@ -78,10 +85,13 @@ export default function Home() {
             {experiences.map((item) => (
               <article
                 key={item.title}
-                className="glass glass-edge overflow-hidden rounded-[var(--radius-glass-lg)]"
+                className="glass glass-edge glass-interactive overflow-hidden rounded-[var(--radius-glass-lg)]"
               >
                 <div
-                  className="h-40 w-full bg-[linear-gradient(160deg,oklch(0.55_0.02_260_/_0.35),oklch(0.35_0.02_260_/_0.45))]"
+                  className="h-40 w-full"
+                  style={{
+                    background: `linear-gradient(145deg, ${item.tone}, color-mix(in oklch, ${item.tone} 40%, black))`,
+                  }}
                   aria-hidden="true"
                 />
 
@@ -107,9 +117,9 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="mx-auto w-full max-w-5xl px-4 pb-8">
+      <footer className="relative z-10 mx-auto w-full max-w-5xl px-4 pb-8">
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--glass-border)] px-1 py-4 text-xs text-fg-muted">
-          <span>Expyra</span>
+          <span className="font-semibold tracking-tight text-fg">Expyra</span>
           <span className="font-mono">Faz 0 · iskelet</span>
         </div>
       </footer>

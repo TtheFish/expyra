@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { BrandLogo } from '@/components/brand/brand-logo'
 import { GlassButton } from '@/components/ui/glass-button'
 import { GlassTicket } from '@/components/ticket/glass-ticket'
 import { DEMO_TICKETS, qrSvg } from '@/lib/ticket'
@@ -26,8 +26,8 @@ export default async function MyExperiencesPage() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="relative z-10 px-4 pt-4">
-        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-5">
-          <Link href="/" className="font-semibold tracking-tight">Expyra</Link>
+        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+          <BrandLogo />
           <nav className="flex items-center gap-1" aria-label="Ana menü">
             <GlassButton variant="ghost" size="sm" href="/">Keşfet</GlassButton>
             <GlassButton variant="ghost" size="sm" href="/deneyimlerim" className="!text-fg">

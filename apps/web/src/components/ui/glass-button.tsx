@@ -33,7 +33,7 @@ function classesFor(variant: Variant, size: Size, className: string) {
   return [
     'glass glass-edge glass-interactive inline-flex items-center justify-center gap-2 font-medium',
     'disabled:opacity-50 disabled:pointer-events-none',
-    variant === 'primary' ? 'glass-brand' : '',
+    variant === 'primary' ? 'glass-brand' : 'hover:brightness-110',
     sizeClass[size],
     className,
   ]

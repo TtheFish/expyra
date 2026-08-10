@@ -1,3 +1,4 @@
+import { BrandLogo } from '@/components/brand/brand-logo'
 import { GlassButton } from '@/components/ui/glass-button'
 
 export const metadata = {
@@ -23,10 +24,8 @@ export default function HowItWorksPage() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="relative z-10 px-4 pt-4">
-        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-5">
-          <GlassButton variant="ghost" size="sm" href="/" className="!px-0 font-semibold !text-fg">
-            Expyra
-          </GlassButton>
+        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+          <BrandLogo />
           <GlassButton variant="ghost" size="sm" href="/">Geri</GlassButton>
         </div>
       </header>

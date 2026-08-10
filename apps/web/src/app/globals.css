@@ -15,17 +15,17 @@
    =========================================================================== */
 
 @theme {
-  /* --- Marka renkleri ---------------------------------------------------- */
+  /* --- Marka renkleri — canlı mercan kırmızı -------------------------------- */
   --color-brand-50:  oklch(0.97 0.02 25);
-  --color-brand-100: oklch(0.94 0.05 25);
-  --color-brand-200: oklch(0.88 0.09 25);
-  --color-brand-300: oklch(0.80 0.14 25);
-  --color-brand-400: oklch(0.72 0.18 25);
-  --color-brand-500: oklch(0.64 0.21 25);
-  --color-brand-600: oklch(0.56 0.20 25);
-  --color-brand-700: oklch(0.47 0.17 25);
-  --color-brand-800: oklch(0.38 0.13 25);
-  --color-brand-900: oklch(0.29 0.09 25);
+  --color-brand-100: oklch(0.93 0.05 25);
+  --color-brand-200: oklch(0.86 0.11 25);
+  --color-brand-300: oklch(0.76 0.17 25);
+  --color-brand-400: oklch(0.68 0.22 25);
+  --color-brand-500: oklch(0.60 0.24 25);
+  --color-brand-600: oklch(0.52 0.23 25);
+  --color-brand-700: oklch(0.44 0.20 25);
+  --color-brand-800: oklch(0.36 0.15 25);
+  --color-brand-900: oklch(0.28 0.10 25);
 
   /* İkincil: derin okyanus — deneyim/seyahat çağrışımı */
   --color-accent-300: oklch(0.82 0.11 220);
@@ -79,19 +79,19 @@
     0 12px 32px -6px rgb(16 24 40 / 0.14),
     0 40px 72px -16px rgb(16 24 40 / 0.16);
 
-  /* Zemindeki renk lekelerinin yoğunluğu. Daha sakin, profesyonel zemin. */
-  --mesh-a1: 0.08;
-  --mesh-a2: 0.05;
-  --mesh-a3: 0.06;
-  --mesh-a4: 0.04;
-  --mesh-a5: 0.03;
+  /* Zemindeki renk lekeleri — camın besleneceği hafif sıcaklık */
+  --mesh-a1: 0.18;
+  --mesh-a2: 0.12;
+  --mesh-a3: 0.14;
+  --mesh-a4: 0.10;
+  --mesh-a5: 0.08;
 
   /* Zemin örtüsünün yoğunluğu — metin kontrastını bu ayarlıyor */
-  --veil: 88%;
+  --veil: 72%;
 
   /* Vurgu metni: her temada AA kontrastı tutan uçlar */
-  --grad-from: oklch(0.56 0.20 25);
-  --grad-to: oklch(0.48 0.14 220);
+  --grad-from: oklch(0.58 0.24 25);
+  --grad-to: oklch(0.52 0.16 35);
 }
 
 /* Koyu tema: manuel toggle (data-theme) ve sistem tercihi için iki blok.
@@ -108,14 +108,14 @@
   --glass-blur: 26px;
   --glass-saturate: 160%;
 
-  --mesh-a1: 0.12;
-  --mesh-a2: 0.08;
-  --mesh-a3: 0.09;
-  --mesh-a4: 0.06;
-  --mesh-a5: 0.05;
-  --veil: 82%;
-  --grad-from: oklch(0.80 0.14 25);
-  --grad-to: oklch(0.82 0.11 220);
+  --mesh-a1: 0.28;
+  --mesh-a2: 0.18;
+  --mesh-a3: 0.22;
+  --mesh-a4: 0.14;
+  --mesh-a5: 0.12;
+  --veil: 55%;
+  --grad-from: oklch(0.78 0.18 25);
+  --grad-to: oklch(0.82 0.12 40);
 
   --glass-edge-top: rgb(255 255 255 / 0.28);
   --glass-edge-bottom: rgb(255 255 255 / 0.04);
@@ -146,14 +146,14 @@
     --glass-blur: 26px;
     --glass-saturate: 160%;
 
-    --mesh-a1: 0.12;
-    --mesh-a2: 0.08;
-    --mesh-a3: 0.09;
-    --mesh-a4: 0.06;
-    --mesh-a5: 0.05;
-    --veil: 82%;
-    --grad-from: oklch(0.80 0.14 25);
-    --grad-to: oklch(0.82 0.11 220);
+    --mesh-a1: 0.28;
+    --mesh-a2: 0.18;
+    --mesh-a3: 0.22;
+    --mesh-a4: 0.14;
+    --mesh-a5: 0.12;
+    --veil: 55%;
+    --grad-from: oklch(0.78 0.18 25);
+    --grad-to: oklch(0.82 0.12 40);
 
     --glass-edge-top: rgb(255 255 255 / 0.28);
     --glass-edge-bottom: rgb(255 255 255 / 0.04);
@@ -335,20 +335,111 @@ body::after {
   color: transparent;
 }
 
-/* Marka renginde dolu cam — birincil aksiyonlar */
+/* Marka renginde dolu cam — birincil aksiyonlar (canlı kırmızı + hover) */
 @utility glass-brand {
   background:
     linear-gradient(
       to bottom,
-      oklch(0.62 0.14 25 / 0.94),
-      oklch(0.52 0.15 25 / 0.94)
+      oklch(0.68 0.24 28 / 0.98),
+      oklch(0.55 0.24 25 / 0.98)
     );
-  border-color: oklch(0.70 0.10 25 / 0.35);
+  border-color: oklch(0.78 0.16 28 / 0.55);
   color: white;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
-    0 1px 2px oklch(0.40 0.08 25 / 0.18),
-    0 8px 20px -8px oklch(0.40 0.08 25 / 0.28);
+    inset 0 1px 0 rgb(255 255 255 / 0.38),
+    0 2px 8px oklch(0.55 0.24 25 / 0.35),
+    0 12px 28px -8px oklch(0.55 0.24 25 / 0.45);
+  transition:
+    transform 0.35s var(--ease-glass),
+    box-shadow 0.35s var(--ease-glass),
+    filter 0.35s var(--ease-glass),
+    background 0.35s var(--ease-glass);
+
+  &:hover {
+    background:
+      linear-gradient(
+        to bottom,
+        oklch(0.74 0.24 30 / 1),
+        oklch(0.60 0.24 25 / 1)
+      );
+    filter: brightness(1.08) saturate(1.08);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.48),
+      0 4px 14px oklch(0.58 0.24 25 / 0.45),
+      0 18px 36px -10px oklch(0.55 0.24 25 / 0.55);
+  }
+
+  &:active {
+    filter: brightness(0.96);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Ana sayfa: hareketli deneyim wallpaper (ken-burns)
+   --------------------------------------------------------------------------- */
+.hero-wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.hero-wallpaper-media {
+  position: absolute;
+  inset: -6%;
+  animation: hero-kenburns 42s var(--ease-glass) infinite alternate;
+}
+
+.hero-wallpaper-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  transform: scale(1.08);
+}
+
+.hero-wallpaper-veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in oklch, var(--bg) 55%, transparent) 0%,
+      color-mix(in oklch, var(--bg) 72%, transparent) 45%,
+      color-mix(in oklch, var(--bg) 88%, transparent) 100%
+    ),
+    radial-gradient(
+      70rem 40rem at 50% 0%,
+      oklch(0.55 0.18 25 / 0.28),
+      transparent 70%
+    );
+}
+
+.hero-wallpaper-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(36rem 28rem at 18% 78%, oklch(0.62 0.16 40 / 0.22), transparent 70%),
+    radial-gradient(40rem 30rem at 88% 30%, oklch(0.55 0.12 230 / 0.16), transparent 72%);
+  animation: hero-glow-drift 28s var(--ease-glass) infinite alternate;
+}
+
+@keyframes hero-kenburns {
+  0%   { transform: scale(1) translate3d(0, 0, 0); }
+  100% { transform: scale(1.12) translate3d(-2.5%, 1.5%, 0); }
+}
+
+@keyframes hero-glow-drift {
+  0%   { opacity: 0.7; transform: translate3d(0, 0, 0); }
+  100% { opacity: 1; transform: translate3d(1.5%, -1%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-wallpaper-media,
+  .hero-wallpaper-glow {
+    animation: none !important;
+  }
 }
 
 /* ---------------------------------------------------------------------------
