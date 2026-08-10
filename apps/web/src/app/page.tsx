@@ -1,11 +1,9 @@
 import { GlassButton } from '@/components/ui/glass-button'
-import { GlassSurface } from '@/components/ui/glass-surface'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 /**
  * GEÇİCİ ANA SAYFA — tasarım sisteminin canlı vitrini.
- * Faz 4'te gerçek ana sayfa ile değişecek. Şu anki işi: cam malzemesinin
- * açık/koyu temada, hover ve focus durumlarında nasıl davrandığını göstermek.
+ * Faz 4'te gerçek ana sayfa ile değişecek.
  */
 
 const experiences = [
@@ -15,7 +13,6 @@ const experiences = [
     price: '€48',
     rating: '4.9',
     duration: '3 saat',
-    hue: 25,
   },
   {
     title: 'Vltava Kıyısında Fotoğraf Turu',
@@ -23,7 +20,6 @@ const experiences = [
     price: '€35',
     rating: '4.8',
     duration: '2 saat',
-    hue: 220,
   },
   {
     title: 'Ev Yapımı Pasta Atölyesi',
@@ -31,48 +27,35 @@ const experiences = [
     price: '€62',
     rating: '5.0',
     duration: '4 saat',
-    hue: 300,
   },
 ]
 
 export default function Home() {
   return (
     <div className="flex min-h-dvh flex-col">
-      {/* --- Yüzen nav: iOS'taki gibi içerik altından akar ----------------- */}
-      <header className="sticky top-4 z-50 px-4">
-        <GlassSurface
-          tone="thick"
-          className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-5"
-        >
+      <header className="relative z-10 px-4 pt-4">
+        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-5">
           <span className="font-semibold tracking-tight">Expyra</span>
 
           <nav className="hidden items-center gap-1 sm:flex" aria-label="Ana menü">
-            <GlassButton variant="ghost" size="sm">Keşfet</GlassButton>
-            <GlassButton variant="ghost" size="sm">Deneyimlerim</GlassButton>
-            <GlassButton variant="ghost" size="sm">Host ol</GlassButton>
+            <GlassButton variant="ghost" size="sm" href="/">Keşfet</GlassButton>
+            <GlassButton variant="ghost" size="sm" href="/deneyimlerim">Deneyimlerim</GlassButton>
+            <GlassButton variant="ghost" size="sm" href="/host">Host ol</GlassButton>
           </nav>
 
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <GlassButton variant="primary" size="sm">Giriş yap</GlassButton>
+            <GlassButton variant="primary" size="sm" href="/giris">Giriş yap</GlassButton>
           </div>
-        </GlassSurface>
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-16 sm:py-24">
-        {/* --- Hero -------------------------------------------------------- */}
         <section className="mb-16 text-center">
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--glass-border)] px-3 py-1 text-xs font-medium text-fg-muted">
-            <span className="size-1.5 rounded-full bg-brand-500" />
-            Faz 0 — iskelet hazır
-          </p>
-
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
             Yerel deneyimleri
             <br />
-            <span className="text-gradient-brand">
-              keşfetmenin yeni yolu
-            </span>
+            keşfetmenin yeni yolu
           </h1>
 
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base text-fg-muted sm:text-lg">
@@ -81,33 +64,24 @@ export default function Home() {
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <GlassButton variant="primary" size="lg">Deneyimleri gör</GlassButton>
-            <GlassButton size="lg">Nasıl çalışır?</GlassButton>
+            <GlassButton variant="primary" size="lg" href="/#ornek-deneyimler">
+              Deneyimleri gör
+            </GlassButton>
+            <GlassButton size="lg" href="/nasil-calisir">Nasıl çalışır?</GlassButton>
           </div>
         </section>
 
-        {/* --- Deneyim kartları ---------------------------------------------- */}
-        <section aria-labelledby="ornek-deneyimler">
-          <h2 id="ornek-deneyimler" className="sr-only">Örnek deneyimler</h2>
+        <section id="ornek-deneyimler" aria-labelledby="ornek-deneyimler-baslik">
+          <h2 id="ornek-deneyimler-baslik" className="sr-only">Örnek deneyimler</h2>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {experiences.map((item) => (
-              <GlassSurface
+              <article
                 key={item.title}
-                as="article"
-                interactive
-                sheen
-                className="overflow-hidden rounded-[var(--radius-glass-lg)]"
+                className="glass glass-edge overflow-hidden rounded-[var(--radius-glass-lg)]"
               >
-                {/* Görsel yerine renkli alan: camın arkasında renk olmalı ki
-                    malzeme kendini göstersin. Faz 2'de gerçek görsel gelecek. */}
                 <div
-                  className="h-40 w-full"
-                  style={{
-                    background: `linear-gradient(135deg,
-                      oklch(0.74 0.17 ${item.hue} / 0.85),
-                      oklch(0.55 0.19 ${item.hue + 40} / 0.85))`,
-                  }}
+                  className="h-40 w-full bg-[linear-gradient(160deg,oklch(0.55_0.02_260_/_0.35),oklch(0.35_0.02_260_/_0.45))]"
                   aria-hidden="true"
                 />
 
@@ -127,47 +101,17 @@ export default function Home() {
                     <span className="text-xs text-fg-muted">{item.duration}</span>
                   </div>
                 </div>
-              </GlassSurface>
+              </article>
             ))}
-          </div>
-        </section>
-
-        {/* --- Malzeme referansı ---------------------------------------------- */}
-        <section className="mt-16" aria-labelledby="malzeme">
-          <h2 id="malzeme" className="mb-4 text-sm font-medium text-fg-muted">
-            Malzeme varyantları
-          </h2>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <GlassSurface className="p-5">
-              <p className="text-sm font-medium">glass</p>
-              <p className="mt-1 text-xs text-fg-muted">
-                Varsayılan yüzey. Kartlar, paneller, listeler.
-              </p>
-            </GlassSurface>
-
-            <GlassSurface tone="thick" className="p-5">
-              <p className="text-sm font-medium">glass-thick</p>
-              <p className="mt-1 text-xs text-fg-muted">
-                Nav ve modal. İçeriği zeminden net ayırır.
-              </p>
-            </GlassSurface>
-
-            <GlassSurface tone="brand" className="p-5">
-              <p className="text-sm font-medium">glass-brand</p>
-              <p className="mt-1 text-xs text-white/75">
-                Birincil aksiyon. Sayfada bir tane olur.
-              </p>
-            </GlassSurface>
           </div>
         </section>
       </main>
 
       <footer className="mx-auto w-full max-w-5xl px-4 pb-8">
-        <GlassSurface className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 text-xs text-fg-muted">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--glass-border)] px-1 py-4 text-xs text-fg-muted">
           <span>Expyra</span>
           <span className="font-mono">Faz 0 · iskelet</span>
-        </GlassSurface>
+        </div>
       </footer>
     </div>
   )

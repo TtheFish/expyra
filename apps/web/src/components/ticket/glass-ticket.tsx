@@ -58,11 +58,11 @@ export function GlassTicket({ ticket, qrMarkup }: Props) {
 
         {/* --- Üst: deneyim kimliği ------------------------------------- */}
         <div
-          className="relative h-28 w-full"
+          className="relative h-20 w-full"
           style={{
             background: `linear-gradient(135deg,
-              oklch(0.74 0.17 ${ticket.hue} / 0.92),
-              oklch(0.52 0.19 ${ticket.hue + 40} / 0.92))`,
+              oklch(0.55 0.06 ${ticket.hue} / 0.55),
+              oklch(0.40 0.05 ${ticket.hue + 30} / 0.65))`,
           }}
           aria-hidden="true"
         />

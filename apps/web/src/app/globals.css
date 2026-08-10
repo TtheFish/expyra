@@ -61,7 +61,7 @@
   --glass-opacity: 0.55;
   --glass-opacity-thick: 0.72;
   --glass-blur: 20px;
-  --glass-saturate: 180%;
+  --glass-saturate: 150%;
 
   /* Kenar ışığı: üstte parlak, altta sönük — ışık yukarıdan gelir */
   --glass-edge-top: rgb(255 255 255 / 0.75);
@@ -79,15 +79,15 @@
     0 12px 32px -6px rgb(16 24 40 / 0.14),
     0 40px 72px -16px rgb(16 24 40 / 0.16);
 
-  /* Zemindeki renk lekelerinin yoğunluğu. Cam ancak arkasında renk varsa görünür. */
-  --mesh-a1: 0.34;
-  --mesh-a2: 0.30;
-  --mesh-a3: 0.32;
-  --mesh-a4: 0.26;
-  --mesh-a5: 0.18;
+  /* Zemindeki renk lekelerinin yoğunluğu. Daha sakin, profesyonel zemin. */
+  --mesh-a1: 0.08;
+  --mesh-a2: 0.05;
+  --mesh-a3: 0.06;
+  --mesh-a4: 0.04;
+  --mesh-a5: 0.03;
 
   /* Zemin örtüsünün yoğunluğu — metin kontrastını bu ayarlıyor */
-  --veil: 62%;
+  --veil: 88%;
 
   /* Vurgu metni: her temada AA kontrastı tutan uçlar */
   --grad-from: oklch(0.56 0.20 25);
@@ -106,14 +106,14 @@
   --glass-opacity: 0.10;
   --glass-opacity-thick: 0.20;
   --glass-blur: 26px;
-  --glass-saturate: 190%;
+  --glass-saturate: 160%;
 
-  --mesh-a1: 0.62;
-  --mesh-a2: 0.55;
-  --mesh-a3: 0.58;
-  --mesh-a4: 0.46;
-  --mesh-a5: 0.38;
-  --veil: 58%;
+  --mesh-a1: 0.12;
+  --mesh-a2: 0.08;
+  --mesh-a3: 0.09;
+  --mesh-a4: 0.06;
+  --mesh-a5: 0.05;
+  --veil: 82%;
   --grad-from: oklch(0.80 0.14 25);
   --grad-to: oklch(0.82 0.11 220);
 
@@ -144,15 +144,14 @@
     --glass-opacity: 0.10;
     --glass-opacity-thick: 0.20;
     --glass-blur: 26px;
-    --glass-saturate: 190%;
+    --glass-saturate: 160%;
 
-    /* Koyu zeminde renk daha çabuk kayboluyor — lekeleri güçlendiriyoruz */
-    --mesh-a1: 0.62;
-    --mesh-a2: 0.55;
-    --mesh-a3: 0.58;
-    --mesh-a4: 0.46;
-    --mesh-a5: 0.38;
-    --veil: 58%;
+    --mesh-a1: 0.12;
+    --mesh-a2: 0.08;
+    --mesh-a3: 0.09;
+    --mesh-a4: 0.06;
+    --mesh-a5: 0.05;
+    --veil: 82%;
     --grad-from: oklch(0.80 0.14 25);
     --grad-to: oklch(0.82 0.11 220);
 
@@ -199,13 +198,12 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60rem 55rem at 22% 24%, oklch(0.70 0.20 25  / var(--mesh-a1)), transparent 68%),
-    radial-gradient(55rem 50rem at 78% 18%, oklch(0.66 0.19 305 / var(--mesh-a2)), transparent 68%),
-    radial-gradient(65rem 58rem at 68% 78%, oklch(0.64 0.18 220 / var(--mesh-a3)), transparent 68%),
-    radial-gradient(50rem 46rem at 28% 80%, oklch(0.78 0.16 65  / var(--mesh-a4)), transparent 68%),
-    radial-gradient(70rem 60rem at 50% 50%, oklch(0.60 0.14 280 / var(--mesh-a5)), transparent 72%);
-  filter: blur(20px);
-  animation: mesh-drift 28s var(--ease-glass) infinite alternate;
+    radial-gradient(55rem 50rem at 18% 20%, oklch(0.62 0.08 40  / var(--mesh-a1)), transparent 70%),
+    radial-gradient(50rem 48rem at 82% 22%, oklch(0.58 0.06 250 / var(--mesh-a2)), transparent 70%),
+    radial-gradient(60rem 52rem at 70% 80%, oklch(0.55 0.05 220 / var(--mesh-a3)), transparent 72%),
+    radial-gradient(45rem 40rem at 24% 78%, oklch(0.60 0.04 60  / var(--mesh-a4)), transparent 72%);
+  filter: blur(28px);
+  animation: mesh-drift 40s var(--ease-glass) infinite alternate;
 }
 
 /*
@@ -342,15 +340,15 @@ body::after {
   background:
     linear-gradient(
       to bottom,
-      oklch(0.72 0.18 25 / 0.92),
-      oklch(0.60 0.20 25 / 0.92)
+      oklch(0.62 0.14 25 / 0.94),
+      oklch(0.52 0.15 25 / 0.94)
     );
-  border-color: oklch(0.80 0.14 25 / 0.55);
+  border-color: oklch(0.70 0.10 25 / 0.35);
   color: white;
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.35),
-    0 2px 8px oklch(0.56 0.20 25 / 0.30),
-    0 12px 28px -8px oklch(0.56 0.20 25 / 0.45);
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 1px 2px oklch(0.40 0.08 25 / 0.18),
+    0 8px 20px -8px oklch(0.40 0.08 25 / 0.28);
 }
 
 /* ---------------------------------------------------------------------------
