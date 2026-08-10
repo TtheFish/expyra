@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { SiteChrome } from '@/components/brand/site-chrome'
 import './globals.css'
 
 const geistSans = Geist({
@@ -48,7 +49,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        {children}
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   )

@@ -46,8 +46,8 @@ export function BrandLogo({ className = '', href = '/', markOnly = false }: Bran
   )
 
   const classes = [
-    'inline-flex items-center gap-2.5 text-fg transition-opacity duration-300 hover:opacity-90',
-    className,
+    'inline-flex items-center gap-2.5 transition-opacity duration-300 hover:opacity-90',
+    className || 'text-fg',
   ].join(' ')
 
   if (href) {

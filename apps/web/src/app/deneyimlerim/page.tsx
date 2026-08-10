@@ -26,25 +26,29 @@ export default async function MyExperiencesPage() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="relative z-10 px-4 pt-4">
-        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
-          <BrandLogo />
+        <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+          <BrandLogo className="text-white text-on-media" />
           <nav className="flex items-center gap-1" aria-label="Ana menü">
-            <GlassButton variant="ghost" size="sm" href="/">Keşfet</GlassButton>
-            <GlassButton variant="ghost" size="sm" href="/deneyimlerim" className="!text-fg">
+            <GlassButton variant="ghost" size="sm" href="/" className="text-nav-link">
+              Keşfet
+            </GlassButton>
+            <GlassButton variant="ghost" size="sm" href="/deneyimlerim" className="text-nav-link !text-white">
               Deneyimlerim
             </GlassButton>
           </nav>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:py-16">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Deneyimlerim</h1>
-        <p className="mt-2 text-fg-muted">
+      <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:py-16">
+        <h1 className="text-on-media text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Deneyimlerim
+        </h1>
+        <p className="text-on-media mt-2 text-white/85">
           Biletlerin burada. Girişte host QR kodu okutacak.
         </p>
 
         <section className="mt-10" aria-labelledby="yaklasan">
-          <h2 id="yaklasan" className="mb-5 text-sm font-medium text-fg-muted">
+          <h2 id="yaklasan" className="text-on-media mb-5 text-sm font-medium text-white/75">
             Yaklaşan · {upcoming.length}
           </h2>
 
@@ -64,7 +68,7 @@ export default async function MyExperiencesPage() {
         </section>
 
         <section className="mt-14" aria-labelledby="gecmis">
-          <h2 id="gecmis" className="mb-5 text-sm font-medium text-fg-muted">
+          <h2 id="gecmis" className="text-on-media mb-5 text-sm font-medium text-white/75">
             Geçmiş işlemler · {past.length}
           </h2>
 

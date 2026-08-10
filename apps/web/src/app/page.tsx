@@ -1,5 +1,4 @@
 import { BrandLogo } from '@/components/brand/brand-logo'
-import { HeroWallpaper } from '@/components/brand/hero-wallpaper'
 import { GlassButton } from '@/components/ui/glass-button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 
@@ -37,17 +36,21 @@ const experiences = [
 
 export default function Home() {
   return (
-    <div className="relative flex min-h-dvh flex-col">
-      <HeroWallpaper />
-
+    <div className="flex min-h-dvh flex-col">
       <header className="relative z-10 px-4 pt-4">
-        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
-          <BrandLogo />
+        <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+          <BrandLogo className="text-white text-on-media" />
 
           <nav className="hidden items-center gap-1 sm:flex" aria-label="Ana menü">
-            <GlassButton variant="ghost" size="sm" href="/">Keşfet</GlassButton>
-            <GlassButton variant="ghost" size="sm" href="/deneyimlerim">Deneyimlerim</GlassButton>
-            <GlassButton variant="ghost" size="sm" href="/host">Host ol</GlassButton>
+            <GlassButton variant="ghost" size="sm" href="/" className="text-nav-link">
+              Keşfet
+            </GlassButton>
+            <GlassButton variant="ghost" size="sm" href="/deneyimlerim" className="text-nav-link">
+              Deneyimlerim
+            </GlassButton>
+            <GlassButton variant="ghost" size="sm" href="/host" className="text-nav-link">
+              Host ol
+            </GlassButton>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -59,13 +62,13 @@ export default function Home() {
 
       <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 py-16 sm:py-24">
         <section className="mb-16 text-center">
-          <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
+          <h1 className="text-on-media text-balance text-4xl font-semibold tracking-tight text-white sm:text-6xl">
             Yerel deneyimleri
             <br />
             <span className="text-gradient-brand">keşfetmenin yeni yolu</span>
           </h1>
 
-          <p className="mx-auto mt-5 max-w-xl text-pretty text-base text-fg-muted sm:text-lg">
+          <p className="text-on-media mx-auto mt-5 max-w-xl text-pretty text-base text-white/90 sm:text-lg">
             Şehri en iyi bilenlerden. Küçük gruplar, gerçek insanlar,
             unutulmayan birkaç saat.
           </p>
@@ -74,7 +77,9 @@ export default function Home() {
             <GlassButton variant="primary" size="lg" href="/#ornek-deneyimler">
               Deneyimleri gör
             </GlassButton>
-            <GlassButton size="lg" href="/nasil-calisir">Nasıl çalışır?</GlassButton>
+            <GlassButton size="lg" href="/nasil-calisir" className="!bg-[rgb(12_14_20_/_0.55)] !text-white">
+              Nasıl çalışır?
+            </GlassButton>
           </div>
         </section>
 

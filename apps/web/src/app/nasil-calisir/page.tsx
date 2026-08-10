@@ -24,15 +24,19 @@ export default function HowItWorksPage() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="relative z-10 px-4 pt-4">
-        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
-          <BrandLogo />
-          <GlassButton variant="ghost" size="sm" href="/">Geri</GlassButton>
+        <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+          <BrandLogo className="text-white text-on-media" />
+          <GlassButton variant="ghost" size="sm" href="/" className="text-nav-link">
+            Geri
+          </GlassButton>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-16">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Nasıl çalışır?</h1>
-        <p className="mt-3 max-w-lg text-fg-muted">
+      <main className="relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 py-16">
+        <h1 className="text-on-media text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Nasıl çalışır?
+        </h1>
+        <p className="text-on-media mt-3 max-w-lg text-white/85">
           Üç adım. Faz 0 iskelet — akışın özeti burada.
         </p>
 

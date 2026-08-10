@@ -9,13 +9,15 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="relative z-10 px-4 pt-4">
-        <div className="glass glass-edge glass-thick mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
-          <BrandLogo />
-          <GlassButton variant="ghost" size="sm" href="/">Geri</GlassButton>
+        <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+          <BrandLogo className="text-white text-on-media" />
+          <GlassButton variant="ghost" size="sm" href="/" className="text-nav-link">
+            Geri
+          </GlassButton>
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-16">
+      <main className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-16">
         <div className="glass glass-edge p-8">
           <h1 className="text-2xl font-semibold tracking-tight">Giriş</h1>
           <p className="mt-3 text-sm leading-relaxed text-fg-muted">
