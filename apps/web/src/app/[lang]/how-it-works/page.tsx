@@ -1,8 +1,13 @@
+import type { Metadata } from 'next'
 import { BrandLogo } from '@/components/brand/brand-logo'
 import { GlassButton } from '@/components/ui/glass-button'
+import { alternateLinks, path } from '@/lib/routes'
 
-export const metadata = {
-  title: 'Nasıl çalışır? · Expyra',
+export function generateMetadata(): Metadata {
+  return {
+    title: 'Nasıl çalışır? · Expyra',
+    alternates: { languages: alternateLinks('howItWorks') },
+  }
 }
 
 const steps = [
@@ -20,13 +25,15 @@ const steps = [
   },
 ]
 
-export default function HowItWorksPage() {
+export default async function HowItWorksPage({ params }: { params: Promise<{ lang: string }> }) {
+  const { lang } = await params
+
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="relative z-10 px-4 pt-4">
+      <header className="relative z-30 px-4 pt-4">
         <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
-          <BrandLogo className="text-white text-on-media" />
-          <GlassButton variant="ghost" size="sm" href="/" className="text-nav-link">
+          <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
+          <GlassButton variant="ghost" size="sm" href={path(lang, 'home')} className="text-nav-link">
             Geri
           </GlassButton>
         </div>
@@ -57,7 +64,9 @@ export default function HowItWorksPage() {
         </ol>
 
         <div className="mt-10">
-          <GlassButton variant="primary" size="md" href="/">Keşfe dön</GlassButton>
+          <GlassButton variant="primary" size="md" href={path(lang, 'explore')}>
+            Keşfe dön
+          </GlassButton>
         </div>
       </main>
     </div>

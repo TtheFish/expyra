@@ -1,8 +1,10 @@
+import type { Metadata } from 'next'
 import { BrandLogo } from '@/components/brand/brand-logo'
 import { GlassButton } from '@/components/ui/glass-button'
 import { GlassTicket } from '@/components/ticket/glass-ticket'
 import { DEMO_TICKETS, qrSvg } from '@/lib/ticket'
-import '../ticket.css'
+import { alternateLinks, path } from '@/lib/routes'
+import '../../ticket.css'
 
 /**
  * "Deneyimlerim" — gezginin biletleri.
@@ -11,28 +13,48 @@ import '../ticket.css'
  * Faz 5'te gerçek rezervasyon verisine bağlanacak; şu an demo veri.
  */
 
-export const metadata = {
-  title: 'Deneyimlerim · Expyra',
+export function generateMetadata(): Metadata {
+  return {
+    title: 'Deneyimlerim · Expyra',
+    alternates: { languages: alternateLinks('myExperiences') },
+  }
 }
 
-export default async function MyExperiencesPage() {
-  const tickets = await Promise.all(
-    DEMO_TICKETS.map(async (ticket) => ({ ticket, qrMarkup: await qrSvg(ticket) })),
-  )
+export default async function MyExperiencesPage({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}) {
+  const [{ lang }, tickets] = await Promise.all([
+    params,
+    Promise.all(
+      DEMO_TICKETS.map(async (ticket) => ({ ticket, qrMarkup: await qrSvg(ticket) })),
+    ),
+  ])
 
   const upcoming = tickets.filter((t) => t.ticket.status === 'valid')
   const past = tickets.filter((t) => t.ticket.status !== 'valid')
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="relative z-10 px-4 pt-4">
+      <header className="relative z-30 px-4 pt-4">
         <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
-          <BrandLogo className="text-white text-on-media" />
+          <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
           <nav className="flex items-center gap-1" aria-label="Ana menü">
-            <GlassButton variant="ghost" size="sm" href="/" className="text-nav-link">
+            <GlassButton
+              variant="ghost"
+              size="sm"
+              href={path(lang, 'explore')}
+              className="text-nav-link"
+            >
               Keşfet
             </GlassButton>
-            <GlassButton variant="ghost" size="sm" href="/deneyimlerim" className="text-nav-link !text-white">
+            <GlassButton
+              variant="ghost"
+              size="sm"
+              href={path(lang, 'myExperiences')}
+              className="text-nav-link !text-white"
+            >
               Deneyimlerim
             </GlassButton>
           </nav>

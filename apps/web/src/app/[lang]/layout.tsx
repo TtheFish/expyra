@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
+import { notFound } from 'next/navigation'
 import { SiteChrome } from '@/components/brand/site-chrome'
-import './globals.css'
+import { findLanguage } from '@/lib/languages'
+import { isRoutableLanguage, routableLanguages } from '@/lib/routes'
+import '../globals.css'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -25,6 +28,11 @@ export const viewport: Viewport = {
   ],
 }
 
+/** Arayüz dilleri build'de üretilir; başka dil segmenti 404. */
+export function generateStaticParams() {
+  return routableLanguages.map((lang) => ({ lang }))
+}
+
 /**
  * Tema, React hidrasyonundan ÖNCE uygulanmalı — yoksa koyu tema kullanıcısı
  * ilk karede beyaz ekran görür. Bu yüzden senkron inline script.
@@ -38,13 +46,29 @@ const themeScript = `
 })();
 `
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode
+  params: Promise<{ lang: string }>
 }>) {
+  const { lang } = await params
+
+  // Bilinmeyen dil segmenti 404. Aksi halde `/xx/kesfet` Türkçe arayüzü
+  // "xx dili" gibi sunar ve arama motorları o URL'i indeksler.
+  if (!isRoutableLanguage(lang)) {
+    notFound()
+  }
+
+  const language = findLanguage(lang)
+
   return (
-    <html lang="tr" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang={lang}
+      dir={language?.rtl ? 'rtl' : 'ltr'}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

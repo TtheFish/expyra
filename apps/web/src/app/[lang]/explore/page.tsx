@@ -1,17 +1,17 @@
-import { BrandLogo } from '@/components/brand/brand-logo'
+import type { Metadata } from 'next'
+import { SiteFooter } from '@/components/brand/site-footer'
+import { SiteHeader } from '@/components/brand/site-header'
 import { ExperienceCard } from '@/components/experience/experience-card'
-import { LanguagePicker } from '@/components/i18n/language-picker'
 import { ExperienceSearch } from '@/components/search/experience-search'
 import { GlassButton } from '@/components/ui/glass-button'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { experiences, filterExperiences } from '@/lib/experiences'
-import { defaultLanguage } from '@/lib/languages'
+import { alternateLinks, path } from '@/lib/routes'
 
 /**
  * PROTOTİP ARAMA SONUCU — Faz 4'te gerçek arama (Postgres full-text + konum
  * hiyerarşisi + sayfalama) ile değişecek. Şu an sabit listeyi filtreliyor.
  *
- * Arama durumu URL'de: /kesfet?nerede=prag&tarih=2026-09-01&yetiskin=2&cocuk=0
+ * Arama durumu URL'de: /tr/kesfet?nerede=prag&tarih=2026-09-01&yetiskin=2&cocuk=0
  * Böylece sonuç paylaşılabilir ve geri tuşu çalışır.
  */
 
@@ -25,13 +25,23 @@ const toCount = (value: string | string[] | undefined): number => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
 }
 
-export default async function Kesfet({ searchParams }: { searchParams: SearchParams }) {
-  const params = await searchParams
+export function generateMetadata(): Metadata {
+  return { alternates: { languages: alternateLinks('explore') } }
+}
 
-  const destination = first(params['nerede'])
-  const date = first(params['tarih'])
-  const adults = toCount(params['yetiskin']) || 2
-  const children = toCount(params['cocuk'])
+export default async function Explore({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ lang: string }>
+  searchParams: SearchParams
+}) {
+  const [{ lang }, query] = await Promise.all([params, searchParams])
+
+  const destination = first(query['nerede'])
+  const date = first(query['tarih'])
+  const adults = toCount(query['yetiskin']) || 2
+  const children = toCount(query['cocuk'])
 
   const results = filterExperiences(experiences, {
     destination,
@@ -40,21 +50,11 @@ export default async function Kesfet({ searchParams }: { searchParams: SearchPar
 
   return (
     <div className="flex min-h-dvh flex-col">
-      {/* z-30: nav'daki açılır paneller (dil seçici) main'in üstünde çizilmeli. */}
-      <header className="relative z-30 px-4 pt-4">
-        <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
-          <BrandLogo className="text-white text-on-media" />
-
-          <div className="flex items-center gap-2">
-            <LanguagePicker current={defaultLanguage} />
-            <ThemeToggle />
-            <GlassButton variant="primary" size="sm" href="/giris">Giriş yap</GlassButton>
-          </div>
-        </div>
-      </header>
+      <SiteHeader lang={lang} />
 
       <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 py-10">
         <ExperienceSearch
+          action={path(lang, 'explore')}
           defaultDestination={destination}
           defaultDate={date}
           defaultAdults={adults}
@@ -93,19 +93,16 @@ export default async function Kesfet({ searchParams }: { searchParams: SearchPar
                 sayısını azalt. Yeni şehirler ekleniyor.
               </p>
               <div className="mt-5">
-                <GlassButton variant="primary" href="/kesfet">Tüm deneyimleri gör</GlassButton>
+                <GlassButton variant="primary" href={path(lang, 'explore')}>
+                  Tüm deneyimleri gör
+                </GlassButton>
               </div>
             </div>
           )}
         </section>
       </main>
 
-      <footer className="relative z-10 mx-auto w-full max-w-5xl px-4 pb-8">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--glass-border)] px-1 py-4 text-xs text-fg-muted">
-          <span className="font-semibold tracking-tight text-fg">Expyra</span>
-          <span className="font-mono">Faz 0 · iskelet</span>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

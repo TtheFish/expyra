@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   contentLanguages,
@@ -8,6 +9,7 @@ import {
   uiLanguages,
   type Language,
 } from '@/lib/languages'
+import { isRoutableLanguage, switchLanguage } from '@/lib/routes'
 
 /**
  * Dil seçici.
@@ -34,6 +36,9 @@ export function LanguagePicker({ current }: { current: string }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+
+  const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (!open) return
@@ -74,9 +79,25 @@ export function LanguagePicker({ current }: { current: string }) {
     // (Faz 8.1) aynı çerezi okuyacak. SameSite=Lax — e-postadan gelen bağlantı
     // tercihi kaybetmesin.
     document.cookie = `${COOKIE_NAME}=${encodeURIComponent(language.code)}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`
+    setOpen(false)
+
+    // Arayüz dili ise URL de değişmeli: /tr/kesfet → /en/explore. Aynı sayfada
+    // kalıyoruz — dil değiştirmenin bedelini kullanıcıya ana sayfaya atarak ödetmek
+    // en sık yapılan i18n hatası (docs/I18N.md §5).
+    if (isRoutableLanguage(language.code)) {
+      // Query korunuyor: arama durumu URL'de yaşıyor (`?nerede=prag&yetiskin=2`).
+      // Dil değiştirince aramanın sıfırlanması, kullanıcının girdiği her şeyi
+      // silmek demek. useSearchParams yerine window: bu bir olay işleyicisi,
+      // her zaman istemcide çalışıyor ve Suspense sınırı gerektirmiyor.
+      router.push(switchLanguage(pathname, language.code) + window.location.search)
+      return
+    }
+
+    // Arayüz çevirisi olmayan bir içerik dili: URL değişmez, yalnızca tercih
+    // saklanır. `lang`/`dir` yine de güncellenir — ekran okuyucu ve yazı yönü
+    // için doğru olan bu.
     document.documentElement.lang = language.code
     document.documentElement.dir = language.rtl ? 'rtl' : 'ltr'
-    setOpen(false)
     triggerRef.current?.focus()
   }
 

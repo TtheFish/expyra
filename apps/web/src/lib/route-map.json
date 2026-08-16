@@ -1,0 +1,30 @@
+{
+  "note": "Lokalize URL segmentleri. TEK KAYNAK: hem src/lib/routes.ts (istemci/sunucu link üretimi) hem next.config.ts (rewrite + redirect) bu dosyayı okur. İkiye ayrılırsa linkler ile rewrite'lar sessizce uyuşmaz. Tasarım: docs/I18N.md §5.",
+  "defaultLanguage": "tr",
+  "canonical": {
+    "home": "",
+    "explore": "explore",
+    "howItWorks": "how-it-works",
+    "myExperiences": "my-experiences",
+    "becomeHost": "become-a-host",
+    "signIn": "sign-in"
+  },
+  "localized": {
+    "tr": {
+      "home": "",
+      "explore": "kesfet",
+      "howItWorks": "nasil-calisir",
+      "myExperiences": "deneyimlerim",
+      "becomeHost": "host-ol",
+      "signIn": "giris"
+    },
+    "en": {
+      "home": "",
+      "explore": "explore",
+      "howItWorks": "how-it-works",
+      "myExperiences": "my-experiences",
+      "becomeHost": "become-a-host",
+      "signIn": "sign-in"
+    }
+  }
+}

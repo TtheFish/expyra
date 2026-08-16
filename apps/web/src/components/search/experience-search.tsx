@@ -15,6 +15,8 @@ import { GuestPicker } from '@/components/search/guest-picker'
  */
 
 type ExperienceSearchProps = {
+  /** Sonuç sayfasının yolu — dile göre değişiyor (`/tr/kesfet`, `/en/explore`). */
+  action: string
   defaultDestination?: string
   defaultDate?: string
   defaultAdults?: number
@@ -23,6 +25,7 @@ type ExperienceSearchProps = {
 }
 
 export function ExperienceSearch({
+  action,
   defaultDestination = '',
   defaultDate = '',
   defaultAdults,
@@ -31,7 +34,7 @@ export function ExperienceSearch({
 }: ExperienceSearchProps) {
   return (
     <Form
-      action="/kesfet"
+      action={action}
       /*
         relative + z-20 şart: `.glass` içinde `isolation: isolate` var, yani çubuk kendi
         stacking context'ini kuruyor. Context'in kendisi z-auto kalırsa misafir paneli
