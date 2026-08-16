@@ -1,9 +1,11 @@
 import { BrandLogo } from '@/components/brand/brand-logo'
 import { ExperienceCard } from '@/components/experience/experience-card'
+import { LanguagePicker } from '@/components/i18n/language-picker'
 import { ExperienceSearch } from '@/components/search/experience-search'
 import { GlassButton } from '@/components/ui/glass-button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { experiences, filterExperiences } from '@/lib/experiences'
+import { defaultLanguage } from '@/lib/languages'
 
 /**
  * PROTOTİP ARAMA SONUCU — Faz 4'te gerçek arama (Postgres full-text + konum
@@ -38,11 +40,13 @@ export default async function Kesfet({ searchParams }: { searchParams: SearchPar
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="relative z-10 px-4 pt-4">
+      {/* z-30: nav'daki açılır paneller (dil seçici) main'in üstünde çizilmeli. */}
+      <header className="relative z-30 px-4 pt-4">
         <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
           <BrandLogo className="text-white text-on-media" />
 
           <div className="flex items-center gap-2">
+            <LanguagePicker current={defaultLanguage} />
             <ThemeToggle />
             <GlassButton variant="primary" size="sm" href="/giris">Giriş yap</GlassButton>
           </div>

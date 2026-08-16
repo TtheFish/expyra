@@ -31,7 +31,13 @@ export function ExperienceSearch({
   return (
     <Form
       action="/kesfet"
-      className={`glass glass-edge glass-thick search-bar mx-auto w-full max-w-4xl ${className}`}
+      /*
+        relative + z-20 şart: `.glass` içinde `isolation: isolate` var, yani çubuk kendi
+        stacking context'ini kuruyor. Context'in kendisi z-auto kalırsa misafir paneli
+        (context İÇİNDE z-30) DOM'da sonra gelen kardeşlerin — butonlar, kartlar —
+        altında çizilir. Paneldeki z-index tek başına yetmez.
+      */
+      className={`glass glass-edge glass-thick search-bar relative z-20 mx-auto w-full max-w-4xl ${className}`}
     >
       <div className="search-group">
         <label className="search-field" htmlFor="search-nerede">

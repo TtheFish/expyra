@@ -77,7 +77,14 @@ export function GuestPicker({ defaultAdults = 2, defaultChildren = 0 }: GuestPic
           id={panelId}
           role="dialog"
           aria-label="Misafir sayısı"
-          className="glass glass-edge glass-thick absolute right-0 z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-[var(--radius-glass)] p-4 shadow-lg"
+          /*
+            Panelin arkası OPAK. Cam malzeme yüzeyler için doğru ama okunacak bir
+            listenin arkasında video akarken "13 yaş ve üzeri" satırı arkadaki
+            butonun metniyle karışıyor — kontrast AA'nın altına düşüyor.
+            CLAUDE.md'nin kuralı bu: kontrast düşerse örtü artırılır, metin rengi değişmez.
+          */
+          style={{ backgroundColor: 'color-mix(in oklch, var(--bg) 97%, transparent)' }}
+          className="glass glass-edge absolute right-0 z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-[var(--radius-glass)] p-4 shadow-lg"
         >
           <Counter
             label="Yetişkin"
