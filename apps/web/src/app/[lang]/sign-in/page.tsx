@@ -27,9 +27,11 @@ export default async function SignInPage({ params }: { params: Promise<{ lang: s
       <main className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-16">
         <div className="glass glass-edge p-8">
           <h1 className="text-2xl font-semibold tracking-tight">Giriş</h1>
+          {/* Dahili faz numarası kullanıcıya bir şey anlatmıyor; ürünü yarım
+              değil terk edilmiş gösteriyor ve yol haritasını dışarı açıyor. */}
           <p className="mt-3 text-sm leading-relaxed text-fg-muted">
-            Kimlik doğrulama henüz hazır değil (Faz 1). Bu ekran şimdilik yer tutucu —
-            giriş akışı eklendiğinde buradan devam edeceksin.
+            Giriş yakında açılıyor. Şimdilik hesapsız gezebilirsin — rezervasyon
+            açıldığında giriş de hazır olacak.
           </p>
           <div className="mt-8">
             <GlassButton variant="primary" size="md" href={path(lang, 'home')} className="w-full">

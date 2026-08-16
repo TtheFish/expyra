@@ -82,7 +82,12 @@ export default async function MyExperiencesPage({
                   <GlassButton variant="primary" size="sm" href={`/api/bilet/${ticket.code}/pdf`}>
                     PDF indir
                   </GlassButton>
-                  <GlassButton size="sm">Apple Cüzdan’a ekle</GlassButton>
+                  {/* disabled: hiçbir şey yapmayan ama basma geri bildirimi veren
+                      buton, yanındaki gerçek butondan ayırt edilemiyordu. Bilet
+                      ekranı ödeme yapmış kullanıcının güven sınadığı yer. */}
+                  <GlassButton size="sm" disabled title="Yakında">
+                    Apple Cüzdan’a ekle
+                  </GlassButton>
                 </div>
               </div>
             ))}
@@ -102,7 +107,10 @@ export default async function MyExperiencesPage({
                   <GlassButton size="sm" href={`/api/bilet/${ticket.code}/pdf`}>
                     PDF indir
                   </GlassButton>
-                  <GlassButton size="sm">Değerlendir</GlassButton>
+                  {/* "Değerlendir" sistemin fiili; kullanıcı puan verir. */}
+                  <GlassButton size="sm" disabled title="Deneyim tamamlanınca açılır">
+                    Puan ver
+                  </GlassButton>
                 </div>
               </div>
             ))}

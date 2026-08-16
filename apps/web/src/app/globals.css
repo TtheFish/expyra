@@ -89,12 +89,27 @@
   /* Zemin örtüsünün yoğunluğu — metin kontrastını bu ayarlıyor */
   --veil: 72%;
 
+  /*
+    Medya üstü örtü rengi. TEMAYA GÖRE DEĞİŞMEZ: üstündeki metin her iki temada
+    da beyaz, dolayısıyla altındaki katman her iki temada da koyu olmalı.
+    Kontrast düşerse örtü yüzdeleri veya --glass-opacity artırılır.
+  */
+  --media-scrim: oklch(0.18 0.02 265);
+
   /* Vurgu metni: her temada AA kontrastı tutan uçlar */
   --grad-from: oklch(0.58 0.24 25);
   --grad-to: oklch(0.52 0.16 35);
 
   /* Native tarih girdisinin takvim ikonu koyu temada ters çevrilir */
   --calendar-icon-invert: 0;
+
+  /*
+    Hata rengi. Marka rengi de kırmızı (--color-brand-500), bu yüzden hata ASLA
+    yalnız renkle anlatılmaz (WCAG 1.4.1): role="alert" metni + aria-invalid
+    kenarlığı + metnin kendisi. Bu token üç temada da tanımlı olmak ZORUNDA —
+    birini unutmak sistem koyu temasında hata metnini görünmez yapar.
+  */
+  --danger: oklch(0.52 0.19 30);
 }
 
 /* Koyu tema: manuel toggle (data-theme) ve sistem tercihi için iki blok.
@@ -106,8 +121,16 @@
   --fg: oklch(0.96 0.01 260);
   --fg-muted: oklch(0.72 0.02 260);
 
-  --glass-opacity: 0.10;
-  --glass-opacity-thick: 0.20;
+  /*
+    Cam koyu temada KOYU tonlanır. Beyaz tint (%10) arkadaki videoya beyaz
+    EKLİYORDU — yani yüzey yalnızca aydınlatabiliyor, hiçbir zaman
+    koyulaştıramıyordu. Parlak bir video karesinde alan etiketleri 1.28:1'e
+    düşüyordu. Blur bunu kurtarmaz: bulanıklık dokuyu yumuşatır, ortalama
+    parlaklığı korur.
+  */
+  --glass-tint: 14 17 24;
+  --glass-opacity: 0.42;
+  --glass-opacity-thick: 0.72;
   --glass-blur: 26px;
   --glass-saturate: 160%;
 
@@ -120,6 +143,7 @@
   --grad-from: oklch(0.78 0.18 25);
   --grad-to: oklch(0.82 0.12 40);
   --calendar-icon-invert: 1;
+  --danger: oklch(0.75 0.16 30);
 
   --glass-edge-top: rgb(255 255 255 / 0.28);
   --glass-edge-bottom: rgb(255 255 255 / 0.04);
@@ -144,9 +168,11 @@
     --fg: oklch(0.96 0.01 260);
     --fg-muted: oklch(0.72 0.02 260);
 
-
-    --glass-opacity: 0.10;
-    --glass-opacity-thick: 0.20;
+    /* Gerekçe yukarıdaki [data-theme="dark"] bloğunda. Değerler eşit kalmak
+       ZORUNDA: biri kullanıcının seçimi, diğeri işletim sisteminin. */
+    --glass-tint: 14 17 24;
+    --glass-opacity: 0.42;
+    --glass-opacity-thick: 0.72;
     --glass-blur: 26px;
     --glass-saturate: 160%;
 
@@ -159,6 +185,7 @@
     --grad-from: oklch(0.78 0.18 25);
     --grad-to: oklch(0.82 0.12 40);
     --calendar-icon-invert: 1;
+    --danger: oklch(0.75 0.16 30);
 
     --glass-edge-top: rgb(255 255 255 / 0.28);
     --glass-edge-bottom: rgb(255 255 255 / 0.04);
@@ -240,8 +267,13 @@ body::after {
   position: relative;
   isolation: isolate;
   background-color: rgb(var(--glass-tint) / var(--glass-opacity));
+  /*
+    Öneki ELLE YAZMA. Lightning CSS `-webkit-backdrop-filter` ile öneksizini aynı
+    özellik sayıp son yazılanı tutuyordu; Chrome öneki tanımadığı için tüm cam
+    yüzeylerde blur sessizce kayboldu (ölçüldü: 9 yüzeyin 9'unda `none`).
+    Derleyici öneki browserslist'e göre kendi ekler.
+  */
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-glass);
   box-shadow: var(--glass-shadow);
@@ -329,7 +361,6 @@ body::after {
 @utility glass-thick {
   background-color: rgb(var(--glass-tint) / var(--glass-opacity-thick));
   backdrop-filter: blur(32px) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(32px) saturate(var(--glass-saturate));
 }
 
 /* Tema duyarlı vurgu metni. Doğrudan brand-500 kullanmak koyu zeminde
@@ -597,6 +628,14 @@ body::after {
   will-change: transform;
 }
 
+/*
+  Örtü temaya BAĞLI DEĞİL — bilerek.
+
+  Eskiden `var(--bg)` kullanıyordu. Açık temada `--bg` beyaza yakın olduğu için
+  örtü videoyu koyulaştırmak yerine AYDINLATIYORDU: üstündeki beyaz hero başlığı
+  1.35:1'e düşüyordu (AA için 3:1 gerekiyor). Metin her iki temada da beyaz
+  olduğuna göre altındaki katman da her iki temada koyu olmak zorunda.
+*/
 .hero-wallpaper-veil {
   position: absolute;
   inset: 0;
@@ -604,11 +643,11 @@ body::after {
     /* Üst/orta: hero metni için daha koyu okunabilirlik katmanı */
     linear-gradient(
       to bottom,
-      color-mix(in oklch, var(--bg) 58%, transparent) 0%,
-      color-mix(in oklch, var(--bg) 48%, transparent) 28%,
-      color-mix(in oklch, var(--bg) 42%, transparent) 48%,
-      color-mix(in oklch, var(--bg) 72%, transparent) 78%,
-      color-mix(in oklch, var(--bg) 88%, transparent) 100%
+      color-mix(in oklch, var(--media-scrim) 58%, transparent) 0%,
+      color-mix(in oklch, var(--media-scrim) 48%, transparent) 28%,
+      color-mix(in oklch, var(--media-scrim) 42%, transparent) 48%,
+      color-mix(in oklch, var(--media-scrim) 72%, transparent) 78%,
+      color-mix(in oklch, var(--media-scrim) 88%, transparent) 100%
     ),
     radial-gradient(
       48rem 28rem at 50% 32%,
@@ -629,13 +668,28 @@ body::after {
 @utility glass-nav {
   background-color: rgb(10 12 18 / 0.68);
   backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
   border-color: rgb(255 255 255 / 0.16);
   box-shadow:
     0 1px 2px rgb(0 0 0 / 0.25),
     0 10px 28px -8px rgb(0 0 0 / 0.45);
+
+  /*
+    Bar her iki temada da koyu, dolayısıyla İÇİNDEKİ metin de her iki temada
+    açık olmalı. Renk değişkenlerini burada yeniden tanımlamak, bardaki her
+    `text-fg` / `text-fg-muted` tüketicisini aynı anda düzeltiyor — nav
+    linklerini, tema düğmesini, ileride eklenecek her şeyi.
+
+    Alternatif olan "her kontrole tek tek `text-nav-link` yaz" yolu zaten
+    denenmiş ve tutmamıştı: utility sırası yüzünden `text-fg-muted` onu eziyor,
+    hover'da `hover:text-fg` devreye girip linki büsbütün görünmez yapıyordu.
+    Açık temada ölçülen en kötü durum 1.13:1 idi.
+  */
+  --fg: rgb(255 255 255 / 0.95);
+  --fg-muted: rgb(255 255 255 / 0.80);
 }
 
+/* Cam bar DIŞINDA, doğrudan video üstünde duran linkler için. `glass-nav`
+   içinde gerek yok — orada renk zaten --fg/--fg-muted'dan geliyor. */
 @utility text-nav-link {
   color: rgb(255 255 255 / 0.88);
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
@@ -738,8 +792,230 @@ body::after {
   backdrop-filter desteklemeyen tarayıcı: camı opaklaştır.
   Aksi halde metin okunmaz hale gelir.
 */
-@supports not (backdrop-filter: blur(1px)) {
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass {
     background-color: rgb(var(--glass-tint) / 0.92);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Kimlik akışı (/giris)
+   ---------------------------------------------------------------------------
+   Yeni cam yüzey TANIMLANMIYOR: kart `GlassSurface tone="thick"`. Buradaki
+   alanlar camın üzerinde duran yüzeyler — `.search-field-input` ile aynı kalıp.
+   Ayrı bir `glass-input` bileşeni de yok; auth girdisi cam malzeme kullanmıyor.
+
+   Yön-nötr yazıldı (`padding-inline`, `text-align: start`): `Language.IsRightToLeft`
+   zaten var, RTL geldiğinde bu dosyaya dönmek gerekmesin.
+   --------------------------------------------------------------------------- */
+
+.auth-card {
+  padding: 1.75rem;
+}
+
+@media (min-width: 30rem) {
+  .auth-card {
+    padding: 2.25rem;
+  }
+}
+
+.auth-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: start;
+}
+
+.auth-lede {
+  margin-top: 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--fg-muted);
+  text-align: start;
+}
+
+/* Uzun adresler karta sığmayıp yatay kaydırma açmasın */
+.auth-email {
+  color: var(--fg);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.auth-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: start;
+}
+
+.auth-input {
+  display: block;
+  width: 100%;
+  /* WCAG 2.5.8 dokunma hedefi; font-size 16px'in ALTINA düşmemeli, iOS Safari
+     odakta sayfayı zoomlar ve kullanıcı formu kaybeder. */
+  min-height: 3rem;
+  padding-block: 0.625rem;
+  padding-inline: 0.875rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass-sm);
+  background-color: rgb(var(--glass-tint) / 0.35);
+  color: var(--fg);
+  font-size: 1rem;
+  text-align: start;
+  outline: none;
+  transition: border-color 0.25s var(--ease-glass);
+
+  &::placeholder {
+    color: var(--fg-muted);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
+
+/* Hatanın ikinci sinyali: kenarlık. Metin ve role="alert" diğer ikisi. */
+.auth-input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.auth-help {
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--fg-muted);
+  text-align: start;
+}
+
+/*
+  Hata kutusu boşken de DOM'da duruyor (ekran okuyucu sonradan eklenen alert
+  düğümünü kaçırabiliyor). `min-height` kartın hata çıkınca zıplamasını önler.
+*/
+.auth-alert {
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  padding-block: 0.5rem;
+  padding-inline: 0.875rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--danger);
+  text-align: start;
+}
+
+.auth-alert:not(:empty) {
+  border: 1px solid color-mix(in oklch, var(--danger) 45%, transparent);
+  border-radius: var(--radius-glass-sm);
+  background-color: color-mix(in oklch, var(--danger) 10%, transparent);
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.auth-link-button {
+  min-height: 2.75rem;
+  padding-block: 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--fg);
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+    border-radius: var(--radius-glass-sm);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Kod alanı: TEK input, altı kutu değil.
+   ---------------------------------------------------------------------------
+   Yuvalar `aria-hidden` bir grid, rakamlar `letter-spacing` ile onların ortasına
+   oturuyor. Hizalama monospace + `ch` sayesinde deterministik: her karakter 1ch
+   yer kaplar, ardından `--otp-cell - 1ch` boşluk gelir → karakter i'nin sol kenarı
+   tam olarak i * --otp-cell. `text-indent` de o boşluğun yarısı kadar kaydırıp
+   rakamı kutunun ortasına getiriyor.
+   --------------------------------------------------------------------------- */
+
+.otp-field {
+  --otp-cell: clamp(2.25rem, 13vw, 2.9rem);
+  position: relative;
+  width: calc(var(--otp-cell) * var(--otp-length, 6));
+}
+
+.otp-slots {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--otp-length, 6), 1fr);
+  pointer-events: none;
+}
+
+.otp-slot {
+  margin-inline: 0.1875rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass-sm);
+  background-color: rgb(var(--glass-tint) / 0.35);
+  transition: border-color 0.25s var(--ease-glass);
+}
+
+.otp-field:has(.otp-input:focus-visible) .otp-slot {
+  border-color: var(--color-brand-400);
+}
+
+.otp-field:has(.otp-input[aria-invalid='true']) .otp-slot {
+  border-color: var(--danger);
+}
+
+.otp-input {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 3.5rem;
+  text-align: start;
+  letter-spacing: calc(var(--otp-cell) - 1ch);
+  text-indent: calc((var(--otp-cell) - 1ch) / 2);
+  caret-color: var(--color-brand-400);
+  outline: none;
+
+  &:disabled {
+    opacity: 0.6;
   }
 }

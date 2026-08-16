@@ -60,7 +60,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
         </section>
       </main>
 
-      <SiteFooter />
+      <SiteFooter lang={lang} />
     </div>
   )
 }

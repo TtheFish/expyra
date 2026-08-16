@@ -153,7 +153,8 @@ export async function buildTicketPdf(ticket: Ticket): Promise<Uint8Array> {
   y -= 46
 
   drawLabelled(page, fonts, MARGIN, y, 'Tarih ve saat', formatLocalDateTime(ticket))
-  page.drawText(`Deneyimin yerel saati · ${ticket.timeZone}`, {
+  // IANA kimliği yerine şehir: bu belge yazdırılıp kapıya götürülüyor.
+  page.drawText(`${ticket.location.split(',')[0]} saatiyle`, {
     x: MARGIN, y: y - 30, size: 8.5, font: regular, color: MUTED,
   })
   y -= 56

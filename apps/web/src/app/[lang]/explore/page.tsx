@@ -102,7 +102,7 @@ export default async function Explore({
         </section>
       </main>
 
-      <SiteFooter />
+      <SiteFooter lang={lang} />
     </div>
   )
 }

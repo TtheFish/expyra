@@ -42,3 +42,16 @@ dotnet_diagnostic.CA1062.severity = none
 # Testlerde daha gevşek
 [**/tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
+
+# ---------------------------------------------------------------------------
+# EF Core'un ÜRETTİĞİ migration'lar
+# ---------------------------------------------------------------------------
+# Bu dosyalar elle yazılmıyor. Biçimlerini düzeltmek anlamsız: bir sonraki
+# `dotnet ef migrations add` aynı çıktıyı yeniden üretir ve build yine kırılır.
+# Kuralları burada kapatmak, üretilen kodu her seferinde elle onarmaktan iyi.
+[**/Migrations/*.cs]
+# IDE0161: EF blok namespace yazıyor, repo file-scoped istiyor.
+csharp_style_namespace_declarations = file_scoped:silent
+dotnet_diagnostic.IDE0161.severity = none
+# CA1861: seed verisi sabit dizi olarak gömülüyor (InsertData) — kasıtlı.
+dotnet_diagnostic.CA1861.severity = none

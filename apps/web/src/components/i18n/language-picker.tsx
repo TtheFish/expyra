@@ -93,11 +93,10 @@ export function LanguagePicker({ current }: { current: string }) {
       return
     }
 
-    // Arayüz çevirisi olmayan bir içerik dili: URL değişmez, yalnızca tercih
-    // saklanır. `lang`/`dir` yine de güncellenir — ekran okuyucu ve yazı yönü
-    // için doğru olan bu.
-    document.documentElement.lang = language.code
-    document.documentElement.dir = language.rtl ? 'rtl' : 'ltr'
+    // Arayüz çevirisi olmayan bir içerik dili: yalnızca tercih saklanır.
+    // `<html lang>`e DOKUNULMUYOR — sayfa hâlâ Türkçe ve `lang="ja"` yazmak
+    // ekran okuyucuyu Japonca ses motoruna geçirip metni anlaşılmaz kılar
+    // (WCAG 3.1.1). `lang`/`dir`in tek kaynağı [lang]/layout.tsx.
     triggerRef.current?.focus()
   }
 
@@ -127,7 +126,14 @@ export function LanguagePicker({ current }: { current: string }) {
           aria-label="Dil seçimi"
           /* Panel opak — arkasında video akarken 49 satırlık liste okunmaz. */
           style={{ backgroundColor: 'color-mix(in oklch, var(--bg) 97%, transparent)' }}
-          className="glass glass-edge absolute right-0 z-30 mt-2 flex max-h-[26rem] w-[min(22rem,calc(100vw-2rem))] flex-col rounded-[var(--radius-glass)] p-3"
+          /*
+            Telefonda viewport'a sabitleniyor. `absolute right-0` + sabit genişlik,
+            tetikleyici sağda olduğu için paneli ekranın soluna taşırıyordu:
+            375 px'te sol kenar -140 px, yani dil adlarının tamamı ekran dışında
+            kalıp yalnız iki harflik kodlar görünüyordu. `end-0` (RTL için `right`
+            değil) ve `sm:` üstü eski davranış.
+          */
+          className="glass glass-edge fixed inset-x-4 top-[4.25rem] z-30 flex max-h-[26rem] flex-col rounded-[var(--radius-glass)] p-3 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[22rem]"
         >
           <label className="sr-only" htmlFor={`${panelId}-ara`}>
             Dil ara

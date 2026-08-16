@@ -44,7 +44,7 @@ export default async function HowItWorksPage({ params }: { params: Promise<{ lan
           Nasıl çalışır?
         </h1>
         <p className="text-on-media mt-3 max-w-lg text-white/85">
-          Üç adım. Faz 0 iskelet — akışın özeti burada.
+          Üç adımda bitiyor.
         </p>
 
         <ol className="mt-12 space-y-4">

@@ -84,7 +84,9 @@ export function GuestPicker({ defaultAdults = 2, defaultChildren = 0 }: GuestPic
             CLAUDE.md'nin kuralı bu: kontrast düşerse örtü artırılır, metin rengi değişmez.
           */
           style={{ backgroundColor: 'color-mix(in oklch, var(--bg) 97%, transparent)' }}
-          className="glass glass-edge absolute right-0 z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-[var(--radius-glass)] p-4 shadow-lg"
+          /* `end-0` (RTL), telefonda viewport'a sabit. `shadow-lg` YOK: .glass'ın
+             üç katmanlı gölgesini eziyor ve panel zeminden ayrılamıyor. */
+          className="glass glass-edge fixed inset-x-4 top-[4.25rem] z-30 rounded-[var(--radius-glass)] p-4 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[20rem]"
         >
           <Counter
             label="Yetişkin"

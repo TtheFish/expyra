@@ -96,8 +96,11 @@ export function GlassTicket({ ticket, qrMarkup }: Props) {
           </dl>
 
           <p className="mt-4 text-sm font-medium">{formatLocalDateTime(ticket)}</p>
+          {/* IANA kimliği (`Europe/Prague`) sistemler arası eşleşme için var,
+              okunmak için değil. Biletin en kritik alanı saat — yanlış anlaşılması
+              kaçırılmış deneyim demek. */}
           <p className="text-[0.6875rem] text-fg-muted">
-            Deneyimin yerel saati · {ticket.timeZone}
+            {ticket.location.split(',')[0]} saatiyle
           </p>
         </div>
 
@@ -113,6 +116,10 @@ export function GlassTicket({ ticket, qrMarkup }: Props) {
           <div className="ticket-qr relative mx-auto w-fit p-4">
             <div
               className="w-40"
+              // Ekran okuyucudan gizli: bilet kodu hemen altında metin olarak
+              // zaten var, QR'ın metin karşılığına ihtiyacı yok. Adsız 160×160
+              // grafik olarak ağaçta durması yalnızca gürültü (WCAG 1.1.1).
+              aria-hidden="true"
               // QR sunucuda üretildi; string sabit ve kullanıcı girdisi içermiyor.
               dangerouslySetInnerHTML={{ __html: qrMarkup }}
             />

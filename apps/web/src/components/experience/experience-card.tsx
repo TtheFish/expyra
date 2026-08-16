@@ -3,7 +3,15 @@ import { formatPrice, type Experience } from '@/lib/experiences'
 /** Deneyim kartı. Ana sayfa ve arama sonuçları aynı kartı kullanır. */
 export function ExperienceCard({ item }: { item: Experience }) {
   return (
-    <article className="glass glass-edge glass-interactive overflow-hidden rounded-[var(--radius-glass-lg)]">
+    /*
+      `glass-interactive` YOK — hover'da yükselip basılınca çöken bir yüzey
+      "tıklayınca bir yere gider" diyor, kart ise tıklanamıyor (detay sayfası
+      Faz 4.5). Yanlış afordans; taklidi kaldırmak dürüst olan.
+      Detay sayfası gelince: başlığı <a> yap + after:absolute after:inset-0,
+      article'a relative. Kartı komple <a> ile sarmak ekran okuyucuda tüm metni
+      tek link adı olarak okutur.
+    */
+    <article className="glass glass-edge overflow-hidden rounded-[var(--radius-glass-lg)]">
       <div
         className="h-40 w-full"
         style={{
