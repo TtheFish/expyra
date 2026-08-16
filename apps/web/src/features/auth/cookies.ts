@@ -12,14 +12,25 @@
  * JS'ine bırakılırsa iki sekme aynı refresh token için yarışır.
  */
 
-import { LOGIN_PATH } from './return-to'
 
 export const ACCESS_COOKIE = 'expyra_at'
 export const REFRESH_COOKIE = 'expyra_rt'
 export const CHALLENGE_COOKIE = 'expyra_otp'
 
-/** Challenge çerezi yalnız giriş ekranına gönderilir — başka hiçbir istekte taşınmaz. */
-export const CHALLENGE_COOKIE_PATH = LOGIN_PATH
+/**
+ * Challenge çerezi kök yola yazılıyor.
+ *
+ * Eskiden `/giris`e daraltılmıştı — çerezi yalnız giriş ekranına göndermek
+ * doğru içgüdü. Ama giriş yolu artık dile bağlı (`/tr/giris`, `/en/sign-in`);
+ * tek bir sabit `path` yazılırsa kullanıcı diğer dilde giriş yaptığında çerez
+ * hiç gönderilmez ve akış sessizce 1. adıma çakılır. Dinamik `path` de işe
+ * yaramaz: silme işlemi yazarkenkiyle AYNI path'i vermek zorunda, dil değişmiş
+ * olabilir ve çerez kalıcı olarak silinemez hale gelir.
+ *
+ * Bedeli: 10 dakika boyunca her isteğe ~100 bayt ekleniyor. İçeriği
+ * challengeId + kullanıcının kendi e-postası, `httpOnly` ve `sameSite=lax`.
+ */
+export const CHALLENGE_COOKIE_PATH = '/'
 
 const SESSION_COOKIE_PATH = '/'
 

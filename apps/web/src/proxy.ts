@@ -6,7 +6,8 @@ import {
   refreshCookieName,
   sessionCookieOptions,
 } from '@/features/auth/cookies'
-import { LOGIN_PATH, RETURN_TO_PARAM } from '@/features/auth/return-to'
+import { RETURN_TO_PARAM } from '@/features/auth/return-to'
+import { path, resolvePage, type PageId } from '@/lib/routes'
 
 /**
  * Next 16'da bu dosyanın adı `proxy` — `middleware` kullanımdan kaldırıldı.
@@ -32,7 +33,12 @@ import { LOGIN_PATH, RETURN_TO_PARAM } from '@/features/auth/return-to'
  */
 
 /** Oturum ister görünen yollar. Kısa tutuluyor: liste büyüdükçe yanlış negatif riski artar. */
-const PROTECTED_PREFIXES = ['/deneyimlerim']
+/**
+ * Korumalı sayfalar SAYFA KİMLİĞİ ile tanımlı, yol dizesiyle değil: aynı sayfa
+ * her dilde farklı yolda (`/tr/deneyimlerim`, `/en/my-experiences`). Dize
+ * listesi tutulsaydı yeni dil eklendiğinde koruma sessizce delinirdi.
+ */
+const PROTECTED_PAGES: PageId[] = ['myExperiences']
 
 type AuthTokens = {
   accessToken: string
@@ -109,11 +115,15 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 function guard(request: NextRequest): NextResponse {
   const { pathname, search } = request.nextUrl
 
-  if (!PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
+  const resolved = resolvePage(pathname)
+
+  if (!resolved || !PROTECTED_PAGES.includes(resolved.page)) {
     return NextResponse.next()
   }
 
-  const target = new URL(LOGIN_PATH, request.nextUrl)
+  // Giriş ekranı kullanıcının bulunduğu dilde açılıyor: korumalı sayfaya
+  // İngilizce yoldan gelen kullanıcıyı Türkçe girişe atmak dilini sıfırlar.
+  const target = new URL(path(resolved.language, 'signIn'), request.nextUrl)
   // `searchParams.set` kodlamayı kendisi yapıyor; elle birleştirmek açık
   // yönlendirme yüzeyi açar. Değer ayrıca `safeReturnTo`'dan da geçecek.
   target.searchParams.set(RETURN_TO_PARAM, `${pathname}${search}`)

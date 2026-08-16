@@ -15,23 +15,31 @@
  *   `javascript:...` → `/` ile başlamadığı için ilk kapıda düşer
  */
 
+import { resolvePage } from '@/lib/routes'
+
 export const RETURN_TO_PARAM = 'donus'
 
 /**
- * Giriş ve çıkış yolları TEK yerde. Üç ayrı yer aynı değere bağlı: challenge
- * çerezinin `path`'i, proxy'nin yönlendirme hedefi ve aşağıdaki kendine-döngü
- * kontrolü. Yol değişirse (ör. `/tr/giris` gibi dil segmenti eklenirse) üçünün
- * birlikte değişmesi şart — biri geride kalırsa çerez hiç gönderilmez ve akış
- * sessizce 1. adıma çakılır.
+ * Giriş yolu artık dile bağlı: `/tr/giris`, `/en/sign-in`. Sabit bir dize
+ * tutulamıyor, çünkü `route-map.json`'a yeni dil eklendiğinde burası sessizce
+ * geride kalırdı — ve geride kalması akışı 1. adıma çakar.
+ *
+ * Bu yüzden yol karşılaştırması `resolvePage` üzerinden yapılıyor: hangi dilde
+ * olursa olsun "bu sayfa giriş sayfası mı" sorusunun tek cevabı orada.
  */
-export const LOGIN_PATH = '/giris'
 export const SIGN_OUT_PATH = '/cikis'
 
 /** Hedef güvenilmezse buraya düşülür. */
 export const DEFAULT_RETURN_TO = '/'
 
-/** Kendisine dönmesi anlamsız olan yollar. */
-const SELF_LOOP_PREFIXES = [LOGIN_PATH, SIGN_OUT_PATH]
+function isSelfLoop(pathname: string): boolean {
+  if (pathname === SIGN_OUT_PATH || pathname.startsWith(`${SIGN_OUT_PATH}/`)) {
+    return true
+  }
+
+  // Giriş sayfasının kendisi: kullanıcı girişten girişe dönerse ekrandan çıkamaz.
+  return resolvePage(pathname)?.page === 'signIn'
+}
 
 /** Makul bir üst sınır: bundan uzun bir `donus` yalnız zorlama denemesinden gelir. */
 const MAX_LENGTH = 512
@@ -59,8 +67,7 @@ export function safeReturnTo(candidate: string | string[] | null | undefined): s
   // Yüzde-kodlanmış CR / LF / NUL: aynı saldırının çözülmemiş hâli.
   if (/%0[0ad]/i.test(value)) return DEFAULT_RETURN_TO
 
-  const path = value.split(/[?#]/)[0]
-  if (SELF_LOOP_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) {
+  if (isSelfLoop(value.split(/[?#]/)[0])) {
     return DEFAULT_RETURN_TO
   }
 
