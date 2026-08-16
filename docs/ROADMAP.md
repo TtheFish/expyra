@@ -67,7 +67,7 @@ Sıfırdan yayına kadar tüm iş listesi. Her satır bir **dikey dilim**: API +
 |---|---|---|
 | 2.1 | Object storage altyapısı (S3/R2) | Presigned URL. **Base64 DB'ye yazma yok** |
 | 2.2 | Deneyim oluştur (taslak) | Başlık, açıklama, süre, kapasite |
-| 2.3 | **Çok dilli içerik veri modeli** | Başlık/açıklama dil bazlı saklanır; host birden fazla dilde girebilir |
+| 2.3 | **Çok dilli içerik veri modeli** | `ExperienceTranslation` + `Language` kayıt defteri; dil listesi kodda sabit DEĞİL. Tasarım: [I18N.md](I18N.md) |
 | 2.4 | Görsel yükleme | Çoklu, sıralama, kapak seçimi, boyut/format doğrulama |
 | 2.5 | Kategori & etiket | Sabit kategori listesi + serbest etiket |
 | 2.6 | **Konum hiyerarşisi** | Ülke → şehir → koordinat. Global aramanın temeli; şehir serbest metin OLAMAZ |
@@ -106,8 +106,8 @@ biriminde yapılır — aksi halde kur farkı riskini platform üstlenir.
 |---|---|---|
 | 4.1 | Deneyim listeleme + sayfalama | Cursor tabanlı |
 | 4.2 | **Ülke/şehir gezinme** | Global katalogda kaybolmadan daralma |
-| 4.3 | Metin arama | Postgres full-text, dil duyarlı |
-| 4.4 | Filtreler | Tarih, fiyat (kur duyarlı), kategori, süre, dil |
+| 4.3 | Metin arama | Postgres full-text, dil duyarlı. **Çekçe stemmer'ı yok (Prag!), KO/JA'da parser yok** — [I18N.md](I18N.md) §4 |
+| 4.4 | Filtreler | Tarih, fiyat (kur duyarlı), kategori, süre, **konuşulan dil** (ilan metninin dili değil — [I18N.md](I18N.md) §3) |
 | 4.5 | Deneyim detay sayfası | Görseller, açıklama, takvim, host kartı |
 | 4.6 | **Boş sonuç akışı** | "Burada henüz yok" → yakın şehirler + haber ver. Global olmanın en büyük ürün riski |
 | 4.7 | Favoriler | |
@@ -144,6 +144,7 @@ sonuç yoksa bile eli boş dönmez.
 | 6.1 | `IPaymentProvider` soyutlaması | Tek arayüz: ödeme başlat, doğrula, iade et |
 | 6.2 | `FakePaymentProvider` | Gerçekçi davranır: gecikme, başarısız kart, timeout senaryoları |
 | 6.3 | Ödeme akışı (API + web) | Sepet → ödeme → sipariş durumu; **gerçek olan kısım bu** |
+| 6.3b | **Makbuz yazıcı animasyonu** | Ödeme tamamlanınca bilet "yazdırılır" — referans: dqnamo.com/experiments/receipt-printer. Detay aşağıda |
 | 6.4 | Sipariş durum makinesi | beklemede → ödendi → tamamlandı / iade edildi |
 | 6.5 | Komisyon hesabı | Platform payı kayıtta tutulur, henüz tahsil edilmez |
 | 6.6 | İade / kısmi iade | İptal politikasına bağlı |
@@ -156,6 +157,33 @@ sonuç yoksa bile eli boş dönmez.
 yaşar. "Nasıl olsa sahte" diye kısayol alınmaz — idempotency, durum makinesi, hata
 yolları gerçekmiş gibi yazılır. Aksi halde Stripe geldiğinde bu fazın tamamı yeniden
 yazılır ve hiçbir şey kazanılmamış olur.
+
+### Makbuz yazıcı animasyonu (6.3b)
+
+Ödeme onaylandığında sonuç ekranı düz bir "başarılı" mesajı olmayacak: bilet, bir
+yazarkasa makbuzu gibi kademeli olarak "yazdırılır". Referans:
+[dqnamo.com/experiments/receipt-printer](https://www.dqnamo.com/experiments/receipt-printer).
+
+Üç aşama: **işleniyor → yazdırılıyor → tamam**. Kağıt aşağı doğru adım adım
+(stepped keyframe) beslenir, düz kayma değil — mekanik his buradan geliyor.
+Alt kenar `clip-path` ile testere dişli (kopartılmış kağıt). Tipografi monospace.
+
+Bunu bir süs olarak değil, üç sebeple yapıyoruz:
+
+1. **Ödeme onayı beklerken geçen süreyi doldurur.** Sahte sağlayıcıda bile gecikme
+   var (6.2), gerçek Stripe'ta daha fazla olacak — boş spinner yerine anlamlı hareket.
+2. **Bilet zaten var.** Prototip `GlassTicket` + PDF üretimi (7.1b) hazır; makbuz
+   aynı verinin ikinci sunumu, yeni veri modeli gerektirmiyor.
+3. Paylaşılabilir bir an yaratır — ekran görüntüsü alınası bir onay ekranı.
+
+**Kurallar:**
+
+- `prefers-reduced-motion` açıksa animasyon çalışmaz, bilet doğrudan görünür.
+  Sistemde bu zaten global olarak uygulanıyor (`globals.css`) — kontrol et, ezme.
+- Animasyon **ödemenin durumunu temsil etmez.** Sipariş durumu sunucudan gelir;
+  yazdırma bitmeden kullanıcı sayfadan ayrılırsa rezervasyon yine tamamdır.
+  Animasyonu akışın kapısı yapmak, eski projenin "UI durumu = iş durumu" hatasıdır.
+- Atlanabilir olmalı — tıklayınca sona atlar. 1,75 sn ilk seferde hoş, beşincide değil.
 
 ---
 
@@ -226,8 +254,8 @@ Prototipten çıkan iki ders:
 
 | # | İş | Not |
 |---|---|---|
-| 8.1 | Arayüz çeviri altyapısı | **Hardcoded metin yok**. İçerik modeli Faz 2.3'te geldi, bu arayüz katmanı |
-| 8.2 | Dil seçimi ve algılama | Tarayıcı dili + kullanıcı tercihi; URL'de dil segmenti |
+| 8.1 | Arayüz çeviri altyapısı | **Hardcoded metin yok**; eksik anahtar derlemeyi kırar. İçerik modeli Faz 2.3'te geldi, bu arayüz katmanı |
+| 8.2 | Dil seçimi ve algılama | Tarayıcı dili + kullanıcı tercihi; URL'de dil segmenti. **Türkçe route isimleri burada karara bağlanır** — [I18N.md](I18N.md) §5 |
 | 8.3 | SEO | Metadata, sitemap, hreflang, structured data (Event/Offer) |
 | 8.4 | Çoklu para birimi | Görüntüleme + tahsilat kuru ayrımı |
 | 8.5 | Paylaşım kartları | OG görselleri |
