@@ -4,6 +4,16 @@
     <ProjectReference Include="..\Expyra.Application\Expyra.Application.csproj" />
   </ItemGroup>
 
+  <!--
+    Dil kayıt defterinin seed verisi. docs/languages.json KOPYALANMAZ, buradan
+    gömülü kaynak olarak bağlanır — liste dokümanla kod arasında ikiye ayrılırsa
+    hangisinin doğru olduğu belirsizleşir.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\..\docs\languages.json"
+                      LogicalName="Expyra.Infrastructure.Seed.languages.json" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />

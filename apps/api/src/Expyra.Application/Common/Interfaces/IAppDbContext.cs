@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Expyra.Domain.Languages;
 
 namespace Expyra.Application.Common.Interfaces;
 
@@ -9,6 +10,9 @@ namespace Expyra.Application.Common.Interfaces;
 /// </summary>
 public interface IAppDbContext
 {
+    /// <summary>Dil kayıt defteri — sistemin desteklediği diller (docs/I18N.md).</summary>
+    DbSet<Language> Languages { get; }
+
     DbSet<TEntity> Set<TEntity>() where TEntity : class;
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

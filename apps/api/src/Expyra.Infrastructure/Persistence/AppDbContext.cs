@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Expyra.Application.Common.Interfaces;
 using Expyra.Domain.Common;
+using Expyra.Domain.Languages;
 
 namespace Expyra.Infrastructure.Persistence;
 
@@ -11,6 +12,8 @@ public sealed class AppDbContext(
     IDateTimeProvider dateTimeProvider)
     : DbContext(options), IAppDbContext
 {
+    public DbSet<Language> Languages => Set<Language>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

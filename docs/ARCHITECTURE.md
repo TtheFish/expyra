@@ -92,6 +92,7 @@ log toplama eklenecek.
 | Kimlik doğrulama (JWT + refresh token) | Faz 1 |
 | Dosya depolama (S3/R2) | Faz 2 |
 | Stripe Connect | Faz 3 — Prag/Estonya şirket kararı beklemede |
-| i18n (EN/CS/TR) | Faz 4 |
+| i18n — içerik modeli ([I18N.md](I18N.md)) | Faz 2.3 |
+| i18n — arayüz çevirisi | Faz 8.1 |
 | Expo mobil | Faz 5 |
 | Rate limiting, caching, deploy | Faz 6 |

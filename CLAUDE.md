@@ -54,7 +54,8 @@ Bileşenler: `apps/web/src/components/ui/`.
 - Yeni yüzey `GlassSurface` üzerine kurulur, elle `backdrop-filter` yazılmaz.
 - Cam ancak arkasında renk varsa görünür — zemindeki mesh gradient buna hizmet eder.
 - Kontrast WCAG AA altına düşerse `--veil` artırılır, metin rengi değiştirilmez.
-- Metin hardcode edilmez; i18n Faz 4'te geliyor, yeni metinleri o yapıya hazır yaz.
+- Metin hardcode edilmez; arayüz çevirisi Faz 8'de geliyor, yeni metinleri o yapıya
+  hazır yaz. Dil listesi koda gömülmez — `docs/I18N.md`.
 
 ## Paket sürümleri
 

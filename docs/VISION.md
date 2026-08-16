@@ -49,7 +49,7 @@ Bunun anlamı — bunlar sonradan eklenecek özellikler değil, **veri modelinin
 
 | Boyut | Gereklilik |
 |---|---|
-| Dil | İçerik çok dilli saklanır; arayüz çevirisi ayrı katman |
+| Dil | İçerik çok dilli saklanır; arayüz çevirisi ayrı katman. **Dil listesi kodda sabit değil** — bkz. [I18N.md](I18N.md) |
 | Para birimi | Fiyat, para birimiyle birlikte saklanır; görüntüleme kuru ayrı |
 | Saat dilimi | Her deneyim kendi yerel saatinde; UTC saklanır |
 | Konum | Ülke → şehir → koordinat hiyerarşisi + coğrafi arama |
@@ -201,10 +201,19 @@ kapatılır. Kural net: para platformdan geçer.
 > Bunlar Faz 7'ye eklendi — MVP'de en azından **ban uygulanabilir** olmalı,
 > yoksa kural sadece kâğıt üstünde kalır.
 
+**Dil kapsamı — sınırsız, liste kodda tutulmaz.**
+Avrupa dilleriyle sınırlı değil; Korece, Japonca ve sonrasında gelen her dil aynı
+yoldan girer. Sistemde "desteklenen diller" diye bir enum yok — dil bir veri satırı.
+
+> İki ayrı kapsam var, karıştırılmamalı: **içerik** dilinde kısıt yok (host hangi
+> dilde yazarsa), **arayüz** çevirisi kademeli açılır (lansman EN + TR, sonrası
+> talebe göre). Detay ve veri modeli: [I18N.md](I18N.md).
+
 ### Hâlâ karar bekleyen
 
 1. **Arz odağı:** ilk 20 host hangi şehirden toplanacak?
 2. **Komisyon oranı:** host'tan kaç %, gezginden hizmet bedeli var mı?
-3. **Başlangıç dilleri:** EN zorunlu. Yanına CS + TR mi, sadece EN mi?
-4. **Coğrafi kapsam sınırı:** ilk sürümde sadece AB host'ları mı? (vergi ve
+3. **Coğrafi kapsam sınırı:** ilk sürümde sadece AB host'ları mı? (vergi ve
    ileride Stripe KYC yükünü belirler)
+4. **Arayüz dili sırası:** EN + TR'den sonra hangi dil? (çeviri iş yükü, arz
+   odağı şehriyle uyumlu olmalı)
