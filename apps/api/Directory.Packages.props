@@ -30,6 +30,16 @@
     <PackageVersion Include="Scalar.AspNetCore" Version="2.0.0" />
   </ItemGroup>
 
+  <ItemGroup Label="Identity">
+    <!--
+      Infrastructure token üretiyor; ASP.NET'e bağımlı JwtBearer paketini oraya çekmek
+      katman ihlali olur. Sürüm, JwtBearer 10.0.10'un transitive getirdiğine SABİTLENDİ
+      (doğrulandı: project.assets.json → 8.19.2). Farklı verilirse
+      CentralPackageTransitivePinning açık olduğu için NU1605/NU1608 alırsın.
+    -->
+    <PackageVersion Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.19.2" />
+  </ItemGroup>
+
   <!--
     Transitive pinning: güvenlik açığı olan dolaylı bağımlılıkları buradan zorluyoruz.
     NU1903 hatası alırsan yeni paketi buraya ekle, csproj'a DOKUNMA.

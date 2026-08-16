@@ -12,6 +12,11 @@ secrets.json
 appsettings.Local.json
 appsettings.Production.json
 
+# Dev e-posta sink'i: içinde GERÇEK tek kullanımlık giriş kodları duruyor.
+# Commit'lenirse gitleaks tüm geçmişi tarıyor (ci.yml, fetch-depth: 0) ve
+# history yeniden yazılana kadar CI kırık kalır.
+apps/api/.mail-drop/
+
 # .NET
 bin/
 obj/

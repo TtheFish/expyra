@@ -34,12 +34,42 @@ public sealed class BadRequestException(string message) : AppException(message)
 }
 
 /// <summary>
+/// 401 — oturum yok ya da artık geçerli değil (yenileme token'ı ölü, kullanıcı satırı silinmiş).
+///
+/// <para>Neden UnauthorizedAccessException değil: GlobalExceptionHandler onu sabit bir
+/// başlıkla ("Kimlik doğrulaması gerekli.") çeviriyor ve mesaj kayboluyor. Yenileme
+/// ucunun "Oturum geçersiz." demesi gerekiyor; AppException dalı mesajı zaten taşıyor.
+/// UnauthorizedAccessException bu repoda "istekte hiç kimlik yok" anlamında kalır.</para>
+/// </summary>
+public sealed class UnauthorizedException(string message = "Oturum geçersiz.") : AppException(message)
+{
+    public override int StatusCode => StatusCodes.Unauthorized;
+}
+
+/// <summary>
+/// 429 — hız sınırı. Şifresiz sistemde hız sınırı bir sertleştirme değil, kimlik
+/// doğrulama mekanizmasının kendisidir.
+///
+/// <para><see cref="RetryAfter"/> TimeSpan olarak taşınır; saniyeye çevirme ve
+/// Retry-After başlığını yazma işi GlobalExceptionHandler'ın — Application katmanı
+/// HTTP başlığı bilmez.</para>
+/// </summary>
+public sealed class TooManyRequestsException(string message, TimeSpan retryAfter) : AppException(message)
+{
+    public TimeSpan RetryAfter { get; } = retryAfter;
+
+    public override int StatusCode => StatusCodes.TooManyRequests;
+}
+
+/// <summary>
 /// Application katmanı ASP.NET'e bağımlı olmadığı için status kodları burada sabit.
 /// </summary>
 internal static class StatusCodes
 {
     internal const int BadRequest = 400;
+    internal const int Unauthorized = 401;
     internal const int Forbidden = 403;
     internal const int NotFound = 404;
     internal const int Conflict = 409;
+    internal const int TooManyRequests = 429;
 }

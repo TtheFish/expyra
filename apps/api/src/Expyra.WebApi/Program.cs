@@ -23,7 +23,21 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Sahte gönderici SADECE arayüzün arkasında ve SADECE Development'ta yaşar; gerçek
+// kayıt varsayılan, bu satır üzerine yazıyor. Config bayrağı (Email:Provider=filesystem)
+// tercih EDİLMEDİ: yanlış bir ortam değişkeniyle üretime sızabilir ve OTP'ler diske düşer.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDevelopmentEmailSender();
+}
+
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddClientContext();
+
+builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddAuthorization();
+builder.Services.AddApiRateLimiter();
 
 // CORS: origin'ler config'ten gelir. AllowAnyOrigin YASAK — kimlik doğrulamalı
 // API'de credential taşıyan isteklerde güvenlik açığı yaratır.
@@ -38,6 +52,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 app.UseExceptionHandler();
+
+// Gövdesiz 4xx/5xx yanıtlara ProblemDetails gövdesi yazar. Bunsuz [Authorize]
+// başarısızlığı BOŞ GÖVDELİ 401 döner: istemci "ağ hatası mı, oturum mu bitti"
+// ayrımını yapamaz. Exception yolu GlobalExceptionHandler'da, bu onun tamamlayıcısı.
+app.UseStatusCodePages();
+
 app.UseSerilogRequestLogging();
 
 if (app.Environment.IsDevelopment())
@@ -51,6 +71,13 @@ else
 }
 
 app.UseCors("default");
+
+// CORS'tan SONRA: 429 yanıtının da CORS başlıklarını taşıması gerekiyor, aksi halde
+// tarayıcı hız sınırını "ağ hatası" olarak gösterir. Preflight'ı UseCors zaten kısa
+// devre yaptığı için OPTIONS istekleri kotayı yemiyor.
+// Kimlik doğrulamadan ÖNCE: seli token doğrulamaya ulaşmadan kesiyoruz.
+app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

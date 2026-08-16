@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# Örnek dosya sır içermiyor ve repoda DURMALI. Kök .gitignore'daki `!.env.example`
+# istisnası buraya ulaşmıyor: daha derindeki .gitignore önce uygulanıyor.
+!.env.example
 
 # vercel
 .vercel

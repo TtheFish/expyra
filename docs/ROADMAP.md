@@ -45,19 +45,34 @@ Sıfırdan yayına kadar tüm iş listesi. Her satır bir **dikey dilim**: API +
 
 ## Faz 1 — Kimlik & hesap · 2 hafta
 
+> **Karar: ŞİFRE YOK.** Kayıt ve giriş tek akış — kullanıcı e-postasını yazar, tek
+> kullanımlık kod alır, kodu girer, oturum açılır. Argon2id, şifre politikası, şifre
+> sıfırlama ve ayrı e-posta doğrulama akışı tamamen düştü.
+
 | # | İş | Not |
 |---|---|---|
-| 1.1 | E-posta + şifre ile kayıt | Argon2id/PBKDF2, şifre politikası |
-| 1.2 | Giriş + JWT + **refresh token rotasyonu** | Eski projede refresh token yoktu |
-| 1.3 | E-posta doğrulama | Tek kullanımlık token, süre sınırlı |
-| 1.4 | Şifre sıfırlama | Aynı token altyapısı |
-| 1.5 | Profil görüntüle / düzenle | Ad, kullanıcı adı, biyografi |
+| 1.1 | **E-posta + tek kullanımlık kod ile kayıt & giriş (tek akış)** | Şifre YOK. 6 hane / 10 dk, HMAC-SHA256 + pepper, 5 deneme. Hesap doğrulama anında doğar |
+| 1.2 | **JWT + refresh token rotasyonu + yeniden kullanım tespiti** | 1.1 ile aynı dilimde biter. Access 15 dk, refresh 30 gün / mutlak tavan 90 gün, aile bazlı iptal |
+| 1.3 | ~~E-posta doğrulama~~ | **DÜŞTÜ** — akışın kendisi. "Hesap = doğrulanmış e-posta" değişmezi bedava geldi |
+| 1.4 | ~~Şifre sıfırlama~~ | **DÜŞTÜ** — şifre yok |
+| 1.5 | Profil görüntüle / düzenle | Ad, kullanıcı adı, biyografi. Görünen ad buraya taşındı (kayıt akışında sorulmuyor). E-posta değişikliği **step-up OTP** ister |
 | 1.6 | Avatar yükleme | Faz 2'deki storage'ın ilk müşterisi |
-| 1.7 | Rol modeli: gezgin ↔ host | Tek hesap iki rol; host olma akışı |
-| 1.8 | Oturum koruması | Web route guard + API `[Authorize]` politikaları |
-| 1.9 | Sosyal giriş (Google + Apple) | Apple, mobil store şartı — şimdi yapılırsa Faz 9 kolaylaşır |
+| 1.7 | Rol modeli: gezgin ↔ host | Tek hesap iki rol; host olma akışı. `app_user.roles` sütunu 1.1'de açılmadı — bu maddenin migration'ı |
+| 1.8 | Oturum koruması | **Daraltıldı:** web `proxy.ts` guard + API JWT şeması 1.1'de girdi. Kalan: `[Authorize]` politikaları ve rol bazlı yetki |
+| 1.9 | Sosyal giriş (Google + Apple) | `external_login` tablosu 1.1'de kuruldu (Apple `sub`'a bağlanır, e-postaya bağlanamaz) → saf handler işi, migration yok |
+| 1.10 | **Kimlik uçlarında hız sınırı** | 10.1'den öne çekildi: şifresiz sistemde hız sınırı sertleştirme değil, mekanizmanın kendisi. E-posta/IP/challenge bazlı üç sayaç |
 
-**Çıktı:** Kullanıcı kayıt olur, giriş yapar, profilini yönetir.
+**Çıktı:** Kullanıcı e-postasıyla kod alarak tek adımda kayıt olur ve giriş yapar;
+oturumu güvenle yenilenir.
+
+**Neden şifresiz daha güvenli, daha az kod:** Şifreli sistemde de "şifremi unuttum"
+e-postaya düşer — yani e-posta zaten kök yetkidir; şifre sadece bir katman görüntüsü
+ekler. Kaldırınca şifre hash'i, politika, sızdırılmış parola kontrolü, sıfırlama akışı
+ve "doğrulanmamış kullanıcı" durumu birlikte gider.
+
+**Bilinen zayıflık:** e-posta OTP, gerçek zamanlı phishing/relay'e (AiTM) karşı korunaklı
+değildir — hiçbir paylaşılan sır değildir. Gerçek çözüm passkey (v2); `external_login`
+tablosu bugünden kabul ediyor.
 
 ---
 
