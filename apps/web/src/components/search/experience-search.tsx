@@ -1,4 +1,5 @@
 import Form from 'next/form'
+import { DateField } from '@/components/search/date-field'
 import { GuestPicker } from '@/components/search/guest-picker'
 
 /**
@@ -55,16 +56,7 @@ export function ExperienceSearch({
 
         <div className="search-divider" aria-hidden="true" />
 
-        <label className="search-field" htmlFor="search-tarih">
-          <span className="search-field-label">Ne zaman?</span>
-          <input
-            id="search-tarih"
-            name="tarih"
-            type="date"
-            defaultValue={defaultDate}
-            className="search-field-input"
-          />
-        </label>
+        <DateField defaultValue={defaultDate} />
 
         <div className="search-divider" aria-hidden="true" />
 
