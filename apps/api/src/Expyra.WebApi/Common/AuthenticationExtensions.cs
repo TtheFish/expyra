@@ -1,7 +1,20 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Expyra.Application.Common.Interfaces;
+using Expyra.Domain.Users;
 
 namespace Expyra.WebApi.Common;
+
+/// <summary>
+/// Policy adları. Controller'daki <c>[Authorize(Policy = ...)]</c> ile AYNI string
+/// olmak zorunda; yazım hatası derlenmez ama çalışma anında
+/// "policy not found" ile 500 verir, bu yüzden sabit.
+/// </summary>
+internal static class AuthorizationPolicies
+{
+    /// <summary>3-16 arası her host ucunun önündeki kapı.</summary>
+    internal const string Host = "Host";
+}
 
 /// <summary>
 /// JWT Bearer şeması. Program.cs şişmesin diye ayrı dosyada.
@@ -56,10 +69,40 @@ internal static class AuthenticationExtensions
                     // gecikmesinin tavanını sessizce 20 dk'ya çıkarır. İmzalayan ve
                     // doğrulayan aynı süreç olduğu için saat kayması yok.
                     ClockSkew = TimeSpan.Zero,
+
+                    // Varsayılan, WS-Federation URI'si (ClaimTypes.Role). Token'da o ad
+                    // YOK — MapInboundClaims kapalı ve biz 'role' yazıyoruz. Ayarlanmazsa
+                    // User.IsInRole ve [Authorize(Roles = ...)] hep false döner; hata
+                    // "host olduğum hâlde 403 alıyorum" biçiminde çıkar ve nedeni
+                    // görünmez. Kapı bugün RequireClaim ile kuruluyor (aşağıda), bu satır
+                    // ikisinin bir gün ayrışmasını engelliyor.
+                    RoleClaimType = AuthClaimNames.Role,
                 };
             });
 
         return services;
+    }
+
+    /// <summary>
+    /// Yetki politikaları. <c>AddAuthorization()</c> ÇIPLAK bırakılmıyor: host uçlarının
+    /// kapısı tek yerde tanımlanmalı ki Blok 3-16'daki her uç aynı kararı miras alsın,
+    /// her controller kendi claim kontrolünü yazmasın.
+    /// </summary>
+    public static IServiceCollection AddExpyraAuthorization(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        return services.AddAuthorization(options =>
+            options.AddPolicy(AuthorizationPolicies.Host, policy => policy
+                // İki başarısızlık AYRI kod üretiyor ve bu bilinçli: kimliksiz istek
+                // RequireAuthenticatedUser'a takılıp 401 (challenge) alıyor, kimliği olup
+                // rolü olmayan 403 (forbid). Aynı koda indirilirse istemci "yeniden giriş
+                // yap" ile "önce host ol" arasındaki farkı gösteremez.
+                .RequireAuthenticatedUser()
+
+                // RequireRole DEĞİL: o, RoleClaimType ayarı üzerinden dolaşır.
+                // RequireClaim doğrudan token'da duran adı ve değeri arıyor.
+                .RequireClaim(AuthClaimNames.Role, UserRole.Host)));
     }
 
     private static string Required(IConfiguration configuration, string key)

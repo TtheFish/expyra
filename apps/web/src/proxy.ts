@@ -37,6 +37,14 @@ import { path, resolvePage, type PageId } from '@/lib/routes'
  * Korumalı sayfalar SAYFA KİMLİĞİ ile tanımlı, yol dizesiyle değil: aynı sayfa
  * her dilde farklı yolda (`/tr/deneyimlerim`, `/en/my-experiences`). Dize
  * listesi tutulsaydı yeni dil eklendiğinde koruma sessizce delinirdi.
+ *
+ * **`becomeHost` bilerek BURADA DEĞİL** — ve eklenmemeli. O sayfa oturumsuz
+ * ziyaretçiye ne vaat ettiğimizi anlatan tek ekran; giriş kapısının arkasına
+ * konursa host adayı sayfayı hiç görmeden giriş formuna düşer. VISION §8'e göre
+ * projenin en büyük riski arz tarafı (host bulmak), yani tam olarak o ziyaretçi.
+ * Sayfa kişisel veri göstermiyor: oturumsuz görünümü tamamen tanıtım, oturumlu
+ * görünümü ise sayfanın kendi içinde çözülüyor (`become-a-host/page.tsx`).
+ * Blok 5'in gerçek host ekranları (`/host/deneyim/...`) bu listeye girecek.
  */
 const PROTECTED_PAGES: PageId[] = ['myExperiences', 'account']
 

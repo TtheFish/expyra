@@ -147,7 +147,11 @@ internal sealed class RefreshSessionCommandHandler(
             CreatedByIp = clientContext.IpPrefix,
         });
 
-        var accessToken = tokenService.CreateAccessToken(userId);
+        // Roller her yenilemede DB'den TAZE okunuyor (satır yukarıda ban kontrolü için
+        // zaten çekildi). İki sonucu var: host olan kullanıcı 90 gün boyunca rolünü
+        // koruyor (PLAN Blok 2, kabul kriteri 4) ve rolü alınan kullanıcı en geç bir
+        // yenileme sonra rolsüz kalıyor — rol geri alma ayrı bir mekanizma istemiyor.
+        var accessToken = tokenService.CreateAccessToken(userId, user.Roles);
 
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);

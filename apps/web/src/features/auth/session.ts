@@ -55,6 +55,23 @@ export async function setSession(tokens: AuthTokens): Promise<void> {
   )
 }
 
+/**
+ * Yalnız access çerezini tazeler; refresh çerezine DOKUNMAZ.
+ *
+ * `POST /api/host/activate` için var: o uç rol claim'i eklenmiş yeni bir access
+ * token döndürüyor ama refresh token döndürmüyor (API kararı — döndürseydi
+ * yazmayı atlayan istemci kendi oturumunu düşürürdü). `setSession` burada
+ * kullanılamaz: `AuthTokens` refresh ömrünü de istiyor ve elimizde o damga yok;
+ * uydurulan bir tarih oturumu ya erken keser ya da ölü token'ı çerezde bırakır.
+ *
+ * Çerez yazma mantığı yine BU dosyada: `cookies.ts` "tek tanım" diyor, ikinci
+ * bir yerde `accessCookieName()` çağırmak o kuralı sessizce deler.
+ */
+export async function setAccessToken(accessToken: string, expiresAtUtc: string): Promise<void> {
+  const store = await cookies()
+  store.set(accessCookieName(), accessToken, sessionCookieOptions(expiresAtUtc))
+}
+
 export async function clearSession(): Promise<void> {
   const store = await cookies()
   const options = clearedCookieOptions(SESSION_COOKIE_PATH)

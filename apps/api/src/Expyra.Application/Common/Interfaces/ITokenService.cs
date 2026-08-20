@@ -8,10 +8,16 @@ namespace Expyra.Application.Common.Interfaces;
 public interface ITokenService
 {
     /// <summary>
-    /// JWT HS256. Claim'ler: sub, jti, iat, nbf, exp, iss, aud.
-    /// Rol claim'i YOK (Faz 1.7), e-posta claim'i YOK (token küçük ve PII'siz kalsın).
+    /// JWT HS256. Claim'ler: sub, jti, iat, nbf, exp, iss, aud + rol varsa
+    /// <see cref="AuthClaimNames.Role"/>. E-posta claim'i YOK (token küçük ve PII'siz kalsın).
     /// </summary>
-    AccessToken CreateAccessToken(Guid userId);
+    /// <param name="roles">
+    /// Kullanıcının rolleri — <c>app_user.roles</c> sütununun aynısı. Parametre olarak
+    /// isteniyor çünkü token üretilirken satır ZATEN elde oluyor; servisin kendi başına
+    /// veritabanına gitmesi her giriş ve her yenilemeye bir sorgu daha eklerdi. Boş
+    /// koleksiyon geçerli ve olağan hâl: "yalnız gezgin".
+    /// </param>
+    AccessToken CreateAccessToken(Guid userId, IReadOnlyCollection<string> roles);
 
     /// <summary>32 bayt CSPRNG → Base64Url. Ham değer yalnız yanıtta döner, DB'ye özeti yazılır.</summary>
     RefreshTokenMaterial CreateRefreshToken();
@@ -21,6 +27,24 @@ public interface ITokenService
     /// CSPRNG çıktısının kaba kuvvet uzayı yok).
     /// </summary>
     byte[] HashRefreshToken(string refreshToken);
+}
+
+/// <summary>
+/// Token'a yazılan, RFC 7519'da karşılığı olmayan claim adları. Üreten (JwtTokenService)
+/// ve okuyan (CurrentUser, authorization policy) taraf AYNI sabiti kullanmak zorunda.
+///
+/// <para>Kısa ad bilinçli: JwtBearer'da <c>MapInboundClaims = false</c>, yani buraya
+/// yazılan ad token'da ve <c>ClaimsPrincipal</c>'da AYNEN duruyor — WS-Federation
+/// URI'sine dönüşüm yok. Uzun URI'ler token'ı büyütmekten başka bir şey yapmıyordu.</para>
+/// </summary>
+public static class AuthClaimNames
+{
+    /// <summary>
+    /// Rol claim'i. Değerleri <c>Expyra.Domain.Users.UserRole</c> sabitleri;
+    /// birden fazla rol JSON dizisi olarak yazılır ve okuyan tarafta ayrı ayrı
+    /// claim'lere açılır.
+    /// </summary>
+    public const string Role = "role";
 }
 
 /// <param name="Value">İstemciye dönen JWT. Loglanmaz.</param>

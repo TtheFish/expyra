@@ -16,12 +16,20 @@ public sealed record GetCurrentUserQuery : IRequest<CurrentUserResponse>;
 /// <summary>
 /// E-posta claim'i token'da YOK — PII'yi token'da taşımak yerine bu uçtan veriyoruz.
 /// </summary>
+/// <param name="IsHost">
+/// Kaynağı VERİTABANI, token değil. Arayüz "Host paneli" bağlantısını buna göre
+/// gösteriyor; token'dan okunsaydı rolünü yeni kazanmış kullanıcı menüde bağlantıyı
+/// token yenilenene kadar göremezdi. Rol dizisi olduğu gibi DÖNMÜYOR: istemcinin
+/// ihtiyacı "host mu" sorusunun cevabı ve dizi kıyaslamasını her istemcide yeniden
+/// yazmak, rol adını üç ayrı yerde daha kopyalamak demek.
+/// </param>
 public sealed record CurrentUserResponse(
     Guid Id,
     string Email,
     string? DisplayName,
     string? PreferredLanguage,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    bool IsHost);
 
 internal sealed class GetCurrentUserQueryHandler(
     IAppDbContext dbContext,
@@ -57,5 +65,9 @@ internal sealed class GetCurrentUserQueryHandler(
                 x.Email,
                 x.DisplayName,
                 x.PreferredLanguage,
-                x.CreatedAtUtc));
+                x.CreatedAtUtc,
+                // user.HasRole(...) DEĞİL: metot çağrısı SQL'e çevrilemez ve sorgu
+                // istemciye değerlendirmeye düşerdi. Contains, Npgsql'de
+                // `roles @> ARRAY['Host']` oluyor.
+                x.Roles.Contains(UserRole.Host)));
 }

@@ -148,7 +148,9 @@ internal sealed class VerifyLoginCodeCommandHandler(
             CreatedByIp = clientContext.IpPrefix,
         });
 
-        var accessToken = tokenService.CreateAccessToken(user.Id);
+        // Roller satırdan okunuyor: yeni hesapta boş ("yalnız gezgin"), host olan
+        // hesapta {Host}. Girişte DB'ye ekstra sorgu yok — satır zaten elde.
+        var accessToken = tokenService.CreateAccessToken(user.Id, user.Roles);
 
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);

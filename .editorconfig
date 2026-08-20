@@ -36,6 +36,14 @@ dotnet_diagnostic.CA1716.severity = none
 # CA1848: LoggerMessage kaynak üreteci — performans kritik olmayan yerlerde zorlamıyoruz.
 dotnet_diagnostic.CA1848.severity = none
 
+# CA1873: "log kapalıysa argüman değerlendirmesi boşa gider". CA1848 ile aynı aileden
+# ve aynı gerekçeyle kapalı: burada değerlendirilen şeyler enum/Guid/string gibi hazır
+# değerler, maliyeti bir boxing. Açık tutmak her yeni log satırında `IsEnabled` sarmalı
+# yazdırıyor — CA1848 zaten kapalıyken bu tutarsız, ve gürültü gerçek bulguları gizler.
+# Log argümanı GERÇEKTEN pahalıysa (sorgu, serileştirme) guard elle yazılır; kod
+# tabanında örneği var (VerifyLoginCodeCommand, FileSystemEmailSender).
+dotnet_diagnostic.CA1873.severity = none
+
 # CA1062: public metotlarda null kontrolü — nullable reference types zaten açık.
 dotnet_diagnostic.CA1062.severity = none
 

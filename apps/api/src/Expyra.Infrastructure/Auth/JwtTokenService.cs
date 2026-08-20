@@ -31,10 +31,34 @@ internal sealed class JwtTokenService(
     private readonly SigningCredentials credentials =
         new(new SymmetricSecurityKey(signingKey), SecurityAlgorithms.HmacSha256);
 
-    public AccessToken CreateAccessToken(Guid userId)
+    public AccessToken CreateAccessToken(Guid userId, IReadOnlyCollection<string> roles)
     {
+        ArgumentNullException.ThrowIfNull(roles);
+
         var now = dateTimeProvider.UtcNow;
         var expiresAtUtc = now + options.AccessTokenLifetime;
+
+        var claims = new Dictionary<string, object>(StringComparer.Ordinal)
+        {
+            // "D" formatı: okuyan taraf Guid.Parse ediyor ve "N" ile yazılırsa
+            // sessizce başka bir string olur. E-posta claim'i YOK — token PII'siz kalıyor.
+            [JwtRegisteredClaimNames.Sub] = userId.ToString("D", CultureInfo.InvariantCulture),
+
+            // Guid v7: jti hem tekil hem zaman sıralı; ileride kara liste tutulursa
+            // eski kayıtlar aralıkla süpürülebilir.
+            [JwtRegisteredClaimNames.Jti] = Guid.CreateVersion7().ToString("D", CultureInfo.InvariantCulture),
+        };
+
+        // Rol claim'i YALNIZ rol varsa yazılıyor. Gezginlik taban olduğu için her token'a
+        // sabit bir "Traveler" koymak, hiçbir policy'nin bakmadığı bir claim'le token'ı
+        // şişirmek olurdu — claim'in yokluğu zaten "yalnız gezgin" demek.
+        //
+        // Dizi olarak veriliyor, tek rolde bile: JsonWebTokenHandler tek değeri skaler,
+        // birden fazlasını dizi yazardı ve okuyan taraf iki farklı JSON şekli görürdü.
+        if (roles.Count > 0)
+        {
+            claims[AuthClaimNames.Role] = roles.ToArray();
+        }
 
         var descriptor = new SecurityTokenDescriptor
         {
@@ -44,17 +68,7 @@ internal sealed class JwtTokenService(
             NotBefore = now.UtcDateTime,
             Expires = expiresAtUtc.UtcDateTime,
             SigningCredentials = credentials,
-            Claims = new Dictionary<string, object>(StringComparer.Ordinal)
-            {
-                // "D" formatı: okuyan taraf Guid.Parse ediyor ve "N" ile yazılırsa
-                // sessizce başka bir string olur. Rol claim'i YOK (Faz 1.7),
-                // e-posta claim'i YOK — token küçük ve PII'siz kalıyor.
-                [JwtRegisteredClaimNames.Sub] = userId.ToString("D", CultureInfo.InvariantCulture),
-
-                // Guid v7: jti hem tekil hem zaman sıralı; ileride kara liste tutulursa
-                // eski kayıtlar aralıkla süpürülebilir.
-                [JwtRegisteredClaimNames.Jti] = Guid.CreateVersion7().ToString("D", CultureInfo.InvariantCulture),
-            },
+            Claims = claims,
         };
 
         return new AccessToken(TokenHandler.CreateToken(descriptor), expiresAtUtc);

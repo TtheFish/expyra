@@ -32,6 +32,22 @@ export type CurrentUser = {
   displayName: string | null
   preferredLanguage: string | null
   createdAtUtc: string
+  /**
+   * Kaynağı API tarafında VERİTABANI, token değil. Arayüz host panelini buna
+   * göre açıyor: token'dan okunsaydı rolünü yeni kazanmış kullanıcı, elindeki
+   * eski access token bitene kadar (15 dk) panelini göremezdi.
+   */
+  isHost: boolean
+}
+
+/**
+ * `POST /api/host/activate` yanıtı. Refresh token DÖNMÜYOR (API kararı) —
+ * çerezin yalnız access yarısı tazeleniyor.
+ */
+export type HostActivation = {
+  isHost: boolean
+  accessToken: string
+  accessTokenExpiresAtUtc: string
 }
 
 /**
@@ -228,6 +244,32 @@ export async function refreshSession(refreshToken: string): Promise<AuthTokens> 
 /** Bilinmeyen/expired token da 204 döner — idempotent, oracle üretmiyor. */
 export async function signOut(refreshToken: string): Promise<void> {
   await post('/api/auth/sign-out', { refreshToken })
+}
+
+/**
+ * "Host ol". ONAY SÜRECİ YOK (VISION §9): çağrı başarılıysa kullanıcı o an host.
+ *
+ * **Gövde YOK ve olmayacak**: kime rol verileceği token'ın `sub`'undan okunuyor
+ * (CLAUDE.md #3). Buraya bir kullanıcı kimliği konsaydı uç "başkasını host yap"
+ * ucuna dönerdi.
+ *
+ * İdempotent: ikinci çağrı da 200 döner. Çift tıklama hata ekranı üretmemeli.
+ *
+ * Yanıttaki **taze access token yazılmak zorunda** (bkz. `activateHostAction`):
+ * eldeki token rolsüz ve süresi dolana kadar host uçlarından 403 alır.
+ */
+export async function activateHost(accessToken: string): Promise<HostActivation> {
+  const response = await fetch(`${apiBaseUrl()}/api/host/activate`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, ...(await forwardedHeaders()) },
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    throw await problemOf(response)
+  }
+
+  return (await response.json()) as HostActivation
 }
 
 /**

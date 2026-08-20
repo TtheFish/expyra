@@ -36,7 +36,10 @@ builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddClientContext();
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
-builder.Services.AddAuthorization();
+
+// Çıplak AddAuthorization() DEĞİL: "Host" policy'si burada kayıtlı olmadan
+// [Authorize(Policy = "Host")] taşıyan uç çalışma anında 500 verir.
+builder.Services.AddExpyraAuthorization();
 builder.Services.AddApiRateLimiter(builder.Configuration);
 
 // CORS: origin'ler config'ten gelir. AllowAnyOrigin YASAK — kimlik doğrulamalı

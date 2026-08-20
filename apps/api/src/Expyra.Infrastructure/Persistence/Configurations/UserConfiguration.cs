@@ -37,9 +37,12 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.EmailVerifiedAtUtc)
             .HasColumnName("email_verified_at_utc");
 
+        // Genişlik Domain'den okunuyor: doğrulayıcı da aynı sabiti kullanıyor. İki ayrı
+        // 80 yazıldığında yalnız biri değişiyor ve fazla uzun ad doğrulamayı geçip
+        // DbUpdateException'a, yani 500'e düşüyordu.
         builder.Property(x => x.DisplayName)
             .HasColumnName("display_name")
-            .HasMaxLength(80);
+            .HasMaxLength(User.DisplayNameMaxLength);
 
         builder.Property(x => x.LastLoginAtUtc)
             .HasColumnName("last_login_at_utc");
@@ -64,6 +67,17 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasDefaultValue(UserStatus.Active)
             .IsRequired();
 
+        // Roller Postgres dizisi (text[]) olarak: status'taki okunabilirlik tercihinin
+        // aynısı — psql'de `{Host}` diye görünür, jsonb'nin aksine `roles @> ARRAY['Host']`
+        // ile doğrudan sorgulanabilir.
+        //
+        // Varsayılan SQL tarafında da tanımlı: sütun mevcut satırlara eklenirken NOT NULL
+        // olabilmesi bunu gerektiriyor, aksi halde migration dolu tabloda patlar.
+        builder.PrimitiveCollection(x => x.Roles)
+            .HasColumnName("roles")
+            .HasDefaultValueSql("'{}'::text[]")
+            .IsRequired();
+
         // Sistemin en sıcak lookup'ı. Banlı satır SİLİNMEDİĞİ için bu index aynı
         // adresin ikinci kez kayıt olmasını da engelliyor (VISION §9).
         builder.HasIndex(x => x.NormalizedEmail)
@@ -72,6 +86,11 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasIndex(x => x.PreferredLanguage)
             .HasDatabaseName("ix_app_user_preferred_language");
+
+        // roles üzerinde INDEX YOK ve bu bilinçli: bu sütunda filtreleyen tek bir sorgu
+        // yok. "Bu kullanıcı host mu" satırı birincil anahtarla okuyor; "host'un
+        // ilanları" ise experience.host_id üzerinden gidecek, buraya hiç bakmayacak.
+        // Sorgusu olmayan GIN index yalnız her yazmayı pahalılaştırır.
 
         // Navigation property YOK (Language'da da yok): Domain nesne grafiği taşımıyor,
         // her sorgu açık join. Kazara eager/lazy sürprizi olmuyor.
