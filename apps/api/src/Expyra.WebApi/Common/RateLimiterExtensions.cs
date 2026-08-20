@@ -19,9 +19,22 @@ internal static class RateLimiterExtensions
     /// <summary>Controller'daki <c>[EnableRateLimiting]</c> ile aynı ad olmak zorunda.</summary>
     internal const string AuthPolicy = "auth";
 
-    private const int AuthPermitLimit = 30;
+    private const int VarsayilanAuthPermitLimit = 30;
 
-    public static IServiceCollection AddApiRateLimiter(this IServiceCollection services)
+    /// <summary>
+    /// Dakikadaki izin. Yapılandırmadan okunuyor çünkü integration testler tek IP'den
+    /// (localhost) yüzlerce istek atıyor ve bu sayaç süreç boyunca paylaşıldığı için
+    /// testler birbirini 429'a düşürüyordu — tek başına geçen test, hep birlikte
+    /// koşunca kırılıyordu. Test ortamı yüksek bir değer verir; asıl kotalar
+    /// (e-posta 5/saat, IP 20/saat, challenge başına 5 deneme) `login_code`
+    /// tablosundan okunduğu için testlerin doğruladığı davranış değişmiyor.
+    /// </summary>
+    private static int AuthPermitLimit(IConfiguration configuration)
+        => configuration.GetValue<int?>("Auth:RateLimit:PermitPerMinute") ?? VarsayilanAuthPermitLimit;
+
+    public static IServiceCollection AddApiRateLimiter(
+        this IServiceCollection services,
+        IConfiguration configuration)
         => services.AddRateLimiter(options =>
         {
             // Varsayılan 503'tür ve "sunucu çöktü" gibi okunur; doğrusu 429.
@@ -31,7 +44,7 @@ internal static class RateLimiterExtensions
                 PartitionKey(httpContext),
                 _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = AuthPermitLimit,
+                    PermitLimit = AuthPermitLimit(configuration),
                     Window = TimeSpan.FromMinutes(1),
 
                     // Kuyruk YOK: hız sınırına takılan istek beklemez, anında 429 alır.

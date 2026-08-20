@@ -31,8 +31,29 @@ public sealed class DatabaseFixture : IAsyncLifetime
         await db.Database.MigrateAsync().ConfigureAwait(false);
 
         await EnsureIdentitySchemaAsync(db).ConfigureAwait(false);
+
+        await ResetDataAsync(db).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Koşu başında kimlik tablolarını boşaltır.
+    ///
+    /// <para>Bu bir temizlik takıntısı değil, doğruluk şartı: IP ve e-posta kotaları
+    /// (20/saat, 5/saat) <c>login_code</c> tablosundaki GEÇMİŞ satırlardan okunuyor.
+    /// Satırlar koşular arasında birikince testler kendi kotalarını doldurup 429 almaya
+    /// başlıyor — belirtisi aldatıcı: aynı test dün geçer, bugün "beklenen 202, gelen
+    /// 429" der ve kodda hiçbir şey değişmemiştir.</para>
+    ///
+    /// <para><c>language</c> tablosuna DOKUNULMUYOR: seed verisi, migration ile geliyor
+    /// ve silinirse dil çözümü yapan her uç bozulur.</para>
+    /// </summary>
+    private static Task ResetDataAsync(AppDbContext db)
+        // refresh_token ve external_login app_user'a FK ile bağlı; CASCADE ikisini de
+        // alır. Tablo adları EF modelinden değil elle yazılıyor çünkü TRUNCATE ham SQL
+        // ister — ad değişirse test derlenmeye devam eder ama burada patlar, sessizce
+        // yanlış çalışmaz.
+        => db.Database.ExecuteSqlRawAsync(
+            "truncate table login_code, refresh_token, external_login, app_user restart identity cascade");
     public Task DisposeAsync() => Task.CompletedTask;
 
     /// <summary>

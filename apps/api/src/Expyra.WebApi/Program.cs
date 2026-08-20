@@ -37,7 +37,7 @@ builder.Services.AddClientContext();
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddAuthorization();
-builder.Services.AddApiRateLimiter();
+builder.Services.AddApiRateLimiter(builder.Configuration);
 
 // CORS: origin'ler config'ten gelir. AllowAnyOrigin YASAK — kimlik doğrulamalı
 // API'de credential taşıyan isteklerde güvenlik açığı yaratır.

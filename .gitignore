@@ -15,7 +15,12 @@ appsettings.Production.json
 # Dev e-posta sink'i: içinde GERÇEK tek kullanımlık giriş kodları duruyor.
 # Commit'lenirse gitleaks tüm geçmişi tarıyor (ci.yml, fetch-depth: 0) ve
 # history yeniden yazılana kadar CI kırık kalır.
-apps/api/.mail-drop/
+# Geliştirmede e-posta ağa çıkmıyor, buraya .eml olarak düşüyor — yani içinde
+# GERÇEK giriş kodları var. Yol proje köküne göre DEĞİL, çalışma dizinine göre
+# oluşuyor (dotnet run WebApi'den başlatılınca orada). Tek bir yol yazmak yetmez:
+# gitleaks CI'da tüm geçmişi tarıyor ve bir kez girerse geçmiş yeniden yazılana
+# kadar CI kırık kalır.
+**/.mail-drop/
 
 # .NET
 bin/

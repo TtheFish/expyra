@@ -65,6 +65,18 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+        // Orta katman hız sınırı testlerde ETKİSİZ.
+        //
+        // O sayaç süreç boyunca yaşıyor ve koleksiyondaki tüm sınıflar tek süreçte
+        // koşuyor: dakikada 30 isteklik kova, testleri birbirine 429 yedirir. Belirtisi
+        // aldatıcıdır — test tek başına geçer, hep birlikte koşunca kırılır ve hata
+        // "bu testte bir şey bozuldu" gibi görünür.
+        //
+        // Kaldırılan şey bir güvenlik davranışı DEĞİL: o kova yalnız kaba trafiği
+        // DB'ye ulaşmadan kesen bir sel kesici. Kimlik akışının gerçek kotaları
+        // (e-posta 5/saat, IP 20/saat, challenge başına 5 deneme) `login_code`
+        // tablosundan okunuyor ve bu testlerde AYNEN çalışmaya devam ediyor.
+        builder.UseSetting("Auth:RateLimit:PermitPerMinute", "1000000");
 
         builder.ConfigureTestServices(services =>
         {
@@ -110,7 +122,10 @@ public sealed class TestClock : IDateTimeProvider
 {
     private long offsetTicks;
 
-    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow.AddTicks(Interlocked.Read(ref offsetTicks));
+    // Kesme üretim sağlayıcısıyla AYNI olmalı: yalnız üretim keserse test,
+    // üretimde var olmayan bir hassasiyet farkı üretir ve sahte kırmızı verir.
+    public DateTimeOffset UtcNow =>
+        DateTimeOffset.UtcNow.AddTicks(Interlocked.Read(ref offsetTicks)).TruncateToMicroseconds();
 
     /// <summary>
     /// <c>using</c> ile kullanılır: kapsam bitince kaydırma sıfırlanır. Sıfırlanmazsa

@@ -1,0 +1,35 @@
+# Local geliştirme veritabanı.
+#
+# Docker kullanmıyorsan gerek yok — `pnpm db:up` yerel bir PostgreSQL kurulumunu da
+# tanır (scripts/db-up.sh). Bu dosya, makineye Postgres kurmak istemeyenler ve
+# temiz bir kopyayla çalışmak isteyenler için.
+#
+# Sürüm 17: CI'da (.github/workflows/ci.yml) kullanılan sürümle aynı kalmalı —
+# farklı sürümler farklı davranır ve "bende çalışıyordu" oraya taşınır.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: expyra-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      # Yalnız localhost'a bağlı bir geliştirme konteyneri; gerçek bir sır değil.
+      # Prod bağlantı dizesi ortam değişkeninden gelir (CLAUDE.md #4).
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: expyra_dev
+    ports:
+      # 127.0.0.1'e bağlı: ağdaki başka makineler bu veritabanını göremez.
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - expyra-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # `pg_isready` tek başına yetmiyor: sunucu bağlantı kabul etmeye başladıktan
+      # sonra da initdb betikleri sürerken sorgular reddedilebiliyor.
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d expyra_dev && psql -U postgres -d expyra_dev -c "select 1" >/dev/null']
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  expyra-pgdata:
