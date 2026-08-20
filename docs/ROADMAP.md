@@ -5,6 +5,11 @@ Sıfırdan yayına kadar tüm iş listesi. Her satır bir **dikey dilim**: API +
 
 **Takım:** 2 kişi. **Tahminler** ikisinin paralel çalıştığı varsayımıyla.
 
+> **Uygulama sırası için [PLAN.md](PLAN.md).** Bu dosya *ne* yapılacağını fazlara
+> bölüyor; PLAN.md *hangi sırayla ve neden* — her blok misafir ve host tarafını
+> birlikte kapsıyor. İkisi çelişirse PLAN.md'nin "ROADMAP ile farklar" bölümü
+> gerekçesiyle birlikte kazanır.
+
 > **Universal kapsam kararı ([VISION.md](VISION.md) §4):** platform ilk günden çok
 > dilli, çok para birimli, çok ülkeli. Bu yüzden i18n veri modeli, para birimi ve
 > konum hiyerarşisi **öne çekildi** — Faz 8'e bırakılamaz, çünkü ikisi de
