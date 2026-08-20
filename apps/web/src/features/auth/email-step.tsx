@@ -18,7 +18,7 @@ const INITIAL: AuthFormState = { error: null, at: 0 }
 const HELP_ID = 'eposta-yardim'
 const ERROR_ID = 'eposta-hata'
 
-export function EmailStep({ returnTo }: { returnTo: string }) {
+export function EmailStep({ returnTo, lang }: { returnTo: string; lang: string }) {
   const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
     requestCodeAction,
     INITIAL,
@@ -27,6 +27,9 @@ export function EmailStep({ returnTo }: { returnTo: string }) {
   return (
     <form action={formAction} className="auth-form">
       <input type="hidden" name={RETURN_TO_PARAM} value={returnTo} />
+      {/* Kod postasının dili: kullanıcının bulunduğu sayfadan geliyor, tarayıcı
+          tercihinden değil (bkz. requestCodeAction). */}
+      <input type="hidden" name="dil" value={lang} />
 
       <div>
         {/* Görünür etiket: placeholder etiket yerine geçmez, odakta kaybolur. */}

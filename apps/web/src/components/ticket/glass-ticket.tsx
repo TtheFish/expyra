@@ -10,6 +10,13 @@ import { formatLocalDateTime, formatMoney } from '@/lib/ticket'
  * Tasarım kararı: cam malzeme bileti SARAR, QR'ın üstüne BİNMEZ.
  * Kamera düşük kontrastlı kodu okuyamaz — kapıda okunmayan bilet, ne kadar
  * güzel olursa olsun başarısızdır. Bu yüzden QR alanı opak beyaz.
+ *
+ * **"Demo" ibaresi neden biletin ÜSTÜNDE:** QR bugün imzasız düz bir URL taşıyor
+ * (`lib/ticket.ts` `ticketPayload`) ve işaret ettiği `/dogrula/[code]` sayfası
+ * hiç yok — okutulduğunda 404 veriyor. Yani bu bilet kapıda çalışmaz. Bunu
+ * yalnız kod yorumunda söylemek yetmez: ekranı gören kişi biletinin geçerli
+ * olduğunu sanar ve bunu kapıda öğrenir. İbare Blok 12'de (imzalı token +
+ * doğrulama sayfası + check-in) kalkacak.
  */
 
 type Props = {
@@ -55,6 +62,14 @@ export function GlassTicket({ ticket, qrMarkup }: Props) {
         }`}
       >
         <div className="ticket-holo" aria-hidden="true" />
+
+        {/*
+          Renkli banttan bağımsız duruyor (bant `aria-hidden`), çünkü bu bir
+          süs değil bilgi: ekran okuyucu da duymalı.
+        */}
+        <p className="absolute right-4 top-4 z-[3] rounded-full border border-white/25 bg-[rgb(12_14_20_/_0.62)] px-2.5 py-1 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-white">
+          Demo bilet
+        </p>
 
         {/* --- Üst: deneyim kimliği ------------------------------------- */}
         <div
@@ -130,10 +145,14 @@ export function GlassTicket({ ticket, qrMarkup }: Props) {
             {ticket.code}
           </p>
 
-          <p className="mt-1 text-center text-[0.6875rem] text-fg-muted">
-            {isUsed
-              ? 'Bu bilet giriş için kullanıldı'
-              : 'Girişte host bu kodu okutacak · tek kullanımlık'}
+          {/*
+            Eski metin "girişte host bu kodu okutacak · tek kullanımlık" diyordu;
+            ikisi de bugün doğru değil (okutacak bir ekran ve tek kullanımı
+            garantileyen bir kayıt yok). Yerine ne olduğu ve ne zaman gerçek
+            olacağı yazıyor.
+          */}
+          <p className="mx-auto mt-2 max-w-[15rem] text-center text-[0.6875rem] leading-relaxed text-fg-muted">
+            Örnek bilet: QR henüz imzalanmıyor ve girişte doğrulanamıyor.
           </p>
 
           {isUsed && (

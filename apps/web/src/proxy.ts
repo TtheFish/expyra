@@ -38,7 +38,7 @@ import { path, resolvePage, type PageId } from '@/lib/routes'
  * her dilde farklı yolda (`/tr/deneyimlerim`, `/en/my-experiences`). Dize
  * listesi tutulsaydı yeni dil eklendiğinde koruma sessizce delinirdi.
  */
-const PROTECTED_PAGES: PageId[] = ['myExperiences']
+const PROTECTED_PAGES: PageId[] = ['myExperiences', 'account']
 
 type AuthTokens = {
   accessToken: string

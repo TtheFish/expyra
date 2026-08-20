@@ -1,11 +1,19 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { RedirectType, redirect } from 'next/navigation'
-import { ApiError, requestLoginCode, verifyLoginCode } from './api'
+import {
+  ApiError,
+  DISPLAY_NAME_MAX_LENGTH,
+  requestLoginCode,
+  updateProfile,
+  verifyLoginCode,
+} from './api'
+import { t as ta, type AccountMessageKey } from './account-messages'
 import { clearChallenge, getChallenge, setChallenge } from './challenge'
 import { formatNumber, t, type MessageKey } from './messages'
 import { safeReturnTo } from './return-to'
-import { setSession } from './session'
+import { getSession, setSession } from './session'
 
 /**
  * Giriş akışının sunucu eylemleri.
@@ -24,6 +32,8 @@ export type AuthFormState = {
 }
 
 const EMAIL_FIELD = 'eposta'
+/** Sayfanın dili; gizli input ile geliyor (bkz. requestCodeAction). */
+const LANG_FIELD = 'dil'
 const CODE_FIELD = 'kod'
 const RETURN_TO_FIELD = 'donus'
 
@@ -35,10 +45,15 @@ export async function requestCodeAction(
   if (!email) return fail('auth.email.error.invalid')
 
   try {
-    // `preferredLanguage` gönderilmiyor: arayüz dili henüz kullanıcıya sorulmuyor
-    // ve `Accept-Language` zaten API'ye iletiliyor. Sabit 'tr' yazmak, tarayıcı
-    // tercihini sessizce ezerdi (docs/I18N.md §2).
-    const issued = await requestLoginCode({ email })
+    // Dil, kullanıcının BULUNDUĞU SAYFADAN geliyor: /tr/giris'teki kullanıcı Türkçe
+    // kod postası almalı. Önceki sürüm bunu `Accept-Language`'e bırakıyordu ve
+    // tarayıcısı İngilizce olan biri Türkçe ekrandan giriş yapıp İNGİLİZCE mail
+    // alıyordu (ölçüldü). Adres çubuğundaki dil, tarayıcı tercihinden daha güçlü
+    // bir niyet beyanı — kullanıcı o dili görmeyi zaten seçmiş.
+    const issued = await requestLoginCode({
+      email,
+      preferredLanguage: readField(formData, LANG_FIELD) || null,
+    })
 
     await setChallenge({
       id: issued.challengeId,
@@ -115,6 +130,95 @@ export async function verifyCodeAction(
 /** Adres değiştirme: challenge çerezi silinince sayfa kendiliğinden 1. adıma döner. */
 export async function restartFlowAction(): Promise<void> {
   await clearChallenge()
+}
+
+/**
+ * Hesap formunun durumu. Giriş akışındaki `AuthFormState`'ten ayrı: burada
+ * başarı da GÖRÜNÜR bir sonuç. Giriş formunda başarı = yönlendirme, ekranda
+ * duracak bir şey yok; burada kullanıcı aynı sayfada kalıyor ve "kaydedildi mi"
+ * sorusunun cevabını görmek zorunda.
+ */
+export type ProfileFormState = {
+  error: string | null
+  success: string | null
+  at: number
+}
+
+const DISPLAY_NAME_FIELD = 'ad'
+const LANGUAGE_FIELD = 'dil'
+
+export async function updateProfileAction(
+  _previous: ProfileFormState,
+  formData: FormData,
+): Promise<ProfileFormState> {
+  // Kullanıcı kimliği İSTEMCİDEN GELMİYOR (CLAUDE.md #3): formda kullanıcı
+  // kimliği alanı yok, API adresi token'daki `sub`'dan çözüyor.
+  const session = await getSession()
+  if (!session?.accessToken) {
+    return profileFail('account.error.signedOut')
+  }
+
+  const displayName = readField(formData, DISPLAY_NAME_FIELD)
+  const preferredLanguage = readField(formData, LANGUAGE_FIELD)
+
+  if (displayName !== null && displayName.length > DISPLAY_NAME_MAX_LENGTH) {
+    return profileFailWith(
+      ta('account.error.name', { karakter: formatNumber(DISPLAY_NAME_MAX_LENGTH) }),
+    )
+  }
+
+  try {
+    // İKİ ALAN DA gönderiliyor. API gövdeyi tam profil olarak okuyor: eksik
+    // bırakılan alan temizleniyor, delta olarak yorumlanmıyor. Yalnız değişeni
+    // göndermek, kullanıcının dil tercihini adını düzeltirken silerdi.
+    await updateProfile(session.accessToken, { displayName, preferredLanguage })
+  } catch (error) {
+    return profileFailure(error)
+  }
+
+  // Ad yalnız bu sayfada değil, HER sayfanın üst çubuğunda duruyor. Yalnız hesap
+  // sayfasını tazelemek, kullanıcı "Keşfet"e geçtiğinde önbellekteki eski adı
+  // geri getirirdi. Statik önbellek bedeli sıfır: üst çubuk oturum okuduğu için
+  // sayfaların hiçbiri zaten statik değil.
+  revalidatePath('/', 'layout')
+
+  return { error: null, success: ta('account.saved'), at: Date.now() }
+}
+
+function profileFail(key: AccountMessageKey): ProfileFormState {
+  return profileFailWith(ta(key))
+}
+
+function profileFailWith(message: string): ProfileFormState {
+  return { error: message, success: null, at: Date.now() }
+}
+
+/**
+ * Bilinmeyen hata YUTULMAZ (CLAUDE.md #1) — eşlenmeyen her durum yeniden
+ * fırlatılıp Next'in hata sınırına gider.
+ *
+ * 400'ün iki ayrı şekli var ve ikisi de kullanıcıya farklı şey söylüyor:
+ * `ValidationProblemDetails` (biçim hatası, alan adı `errors` sözlüğünde) ve
+ * düz `ProblemDetails` (kayıt defterinde olmayan/kapalı dil).
+ */
+function profileFailure(error: unknown): ProfileFormState {
+  if (error instanceof ApiError) {
+    if (error.status === 401) return profileFail('account.error.signedOut')
+
+    if (error.status === 400) {
+      if (error.hasFieldError('displayName')) {
+        return profileFailWith(
+          ta('account.error.name', { karakter: formatNumber(DISPLAY_NAME_MAX_LENGTH) }),
+        )
+      }
+
+      // Kalan tek 400 kaynağı dil alanı: ya biçim bozuk ya da o dil kapalı.
+      // API'nin `title`'ı gösterilmiyor — kullanıcının diliyle aynı olma garantisi yok.
+      return profileFail('account.error.language')
+    }
+  }
+
+  throw error
 }
 
 function readField(formData: FormData, name: string): string | null {

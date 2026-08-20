@@ -73,7 +73,7 @@ export default async function SignInPage({
           </AuthCard>
         ) : (
           <AuthCard title={t('auth.title')} lede={t('auth.email.lede')}>
-            <EmailStep returnTo={returnTo} />
+            <EmailStep returnTo={returnTo} lang={lang} />
           </AuthCard>
         )}
       </main>

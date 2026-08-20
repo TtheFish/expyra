@@ -7,7 +7,8 @@
     "howItWorks": "how-it-works",
     "myExperiences": "my-experiences",
     "becomeHost": "become-a-host",
-    "signIn": "sign-in"
+    "signIn": "sign-in",
+    "account": "account"
   },
   "localized": {
     "tr": {
@@ -16,7 +17,8 @@
       "howItWorks": "nasil-calisir",
       "myExperiences": "deneyimlerim",
       "becomeHost": "host-ol",
-      "signIn": "giris"
+      "signIn": "giris",
+      "account": "hesap"
     },
     "en": {
       "home": "",
@@ -24,7 +26,8 @@
       "howItWorks": "how-it-works",
       "myExperiences": "my-experiences",
       "becomeHost": "become-a-host",
-      "signIn": "sign-in"
+      "signIn": "sign-in",
+      "account": "account"
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { headers } from 'next/headers'
+import { cache } from 'react'
 
 /**
  * .NET API'ye giden tek kapı (BFF). Tarayıcı JS'i API'yi hiç görmüyor:
@@ -33,16 +34,45 @@ export type CurrentUser = {
   createdAtUtc: string
 }
 
+/**
+ * `ValidationProblemDetails.errors` sözlüğü: alan adı → mesajlar.
+ *
+ * Mesajların KENDİSİ kullanıcıya gösterilmiyor (API'nin dili kullanıcının dili
+ * olmak zorunda değil). Değerli olan anahtar: hangi alanın reddedildiğini
+ * söylüyor, çağıran da o alanın kendi metnini seçiyor.
+ */
+export type ProblemErrors = Readonly<Record<string, readonly string[]>>
+
 /** API'nin ProblemDetails yanıtı. `message` kullanıcıya GÖSTERİLMEZ — çağıran eşler. */
 export class ApiError extends Error {
   readonly status: number
   readonly retryAfterSeconds: number | null
+  readonly errors: ProblemErrors | null
 
-  constructor(status: number, message: string, retryAfterSeconds: number | null) {
+  constructor(
+    status: number,
+    message: string,
+    retryAfterSeconds: number | null,
+    errors: ProblemErrors | null = null,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.retryAfterSeconds = retryAfterSeconds
+    this.errors = errors
+  }
+
+  /**
+   * Alan adı karşılaştırması BÜYÜK/KÜÇÜK HARF DUYARSIZ. API `DisplayName`
+   * gönderiyor, JSON ayarı değişirse `displayName` gönderir; iki durumda da
+   * doğrulama hatası alanına bağlanmalı, yoksa kullanıcı "bir şeyler ters gitti"
+   * görür ve hangi alanı düzelteceğini bilemez.
+   */
+  hasFieldError(field: string): boolean {
+    if (!this.errors) return false
+
+    const needle = field.toLowerCase()
+    return Object.keys(this.errors).some((key) => key.toLowerCase() === needle)
   }
 }
 
@@ -117,19 +147,41 @@ async function post(path: string, body: unknown): Promise<Response> {
 async function problemOf(response: Response): Promise<ApiError> {
   const retryAfterSeconds = parseRetryAfter(response.headers.get('retry-after'))
   let title = ''
+  let errors: ProblemErrors | null = null
 
   try {
     const payload: unknown = await response.json()
-    if (payload && typeof payload === 'object' && 'title' in payload) {
-      const value = (payload as { title: unknown }).title
-      if (typeof value === 'string') title = value
+    if (payload && typeof payload === 'object') {
+      if ('title' in payload) {
+        const value = (payload as { title: unknown }).title
+        if (typeof value === 'string') title = value
+      }
+
+      if ('errors' in payload) {
+        errors = validationErrorsOf((payload as { errors: unknown }).errors)
+      }
     }
   } catch {
     // Gövde ProblemDetails değil (ör. ters proxy'nin HTML hata sayfası). Hata
     // yutulmuyor: zaten ApiError üretiyoruz, yalnız mesaj durum koduna düşüyor.
   }
 
-  return new ApiError(response.status, title || `API ${response.status}`, retryAfterSeconds)
+  return new ApiError(response.status, title || `API ${response.status}`, retryAfterSeconds, errors)
+}
+
+/** Gövdenin şekli garanti değil; beklenmeyen biçim `null` olur, patlamaz. */
+function validationErrorsOf(value: unknown): ProblemErrors | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+
+  const result: Record<string, string[]> = {}
+
+  for (const [field, messages] of Object.entries(value as Record<string, unknown>)) {
+    if (Array.isArray(messages)) {
+      result[field] = messages.filter((item): item is string => typeof item === 'string')
+    }
+  }
+
+  return Object.keys(result).length > 0 ? result : null
 }
 
 /** `Retry-After` yalnız saniye biçiminde bekleniyor; HTTP-date biçimi kullanılmıyor. */
@@ -178,9 +230,62 @@ export async function signOut(refreshToken: string): Promise<void> {
   await post('/api/auth/sign-out', { refreshToken })
 }
 
-export async function fetchCurrentUser(accessToken: string): Promise<CurrentUser> {
+/**
+ * `cache` ile sarılı — token değeri anahtar. Üst çubuk artık her sayfada adı
+ * gösterdiği için bu uç render başına birden çok yerden çağrılıyor (header +
+ * hesap sayfası); sarmalanmasaydı tek sayfa görüntülemesi iki API turu ederdi.
+ *
+ * TUZAK: önbellek İSTEK ömürlü ve sunucu eylemi ile onu izleyen yeniden render
+ * AYNI istekte çalışıyor. Bir eylem mutasyondan ÖNCE burayı çağırırsa, sonrasında
+ * basılan header eski adı gösterir. `updateProfileAction` bu yüzden `/me`
+ * çağırmıyor; PATCH yanıtı zaten güncel profili taşıyor.
+ */
+export const fetchCurrentUser = cache(async (accessToken: string): Promise<CurrentUser> => {
   const response = await fetch(`${apiBaseUrl()}/api/auth/me`, {
     headers: { Authorization: `Bearer ${accessToken}`, ...(await forwardedHeaders()) },
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    throw await problemOf(response)
+  }
+
+  return (await response.json()) as CurrentUser
+})
+
+/**
+ * `app_user.display_name` sütunuyla AYNI değer olmak zorunda; API tarafındaki
+ * validator da aynı sabiti taşıyor. Tek yer değişirse API 400 yerine 500 döner
+ * (kalıcı çözüm: sabiti API domain'ine taşımak — docs/PLAN.md Blok 2).
+ *
+ * Web tarafında yine de gerekli: kullanıcı 200 karakter yazıp gönder'e bastıktan
+ * sonra değil, yazarken durdurulmalı.
+ */
+export const DISPLAY_NAME_MAX_LENGTH = 80
+
+/**
+ * Profil güncelleme. **Gövde TAM PROFİLİ taşır, delta değil**: `null` gönderilen
+ * alan sunucuda TEMİZLENİR. İki alanın da her çağrıda gönderilmesi zorunlu —
+ * yalnız ad gönderilirse kullanıcının dil tercihi sessizce silinir.
+ *
+ * Yanıt `GET /api/auth/me` ile birebir aynı şekilde (`CurrentUser`) ve zaten
+ * güncel: PATCH sonrası ayrıca `/me` çağırmaya gerek yok.
+ */
+export async function updateProfile(
+  accessToken: string,
+  input: { displayName: string | null; preferredLanguage: string | null },
+): Promise<CurrentUser> {
+  const response = await fetch(`${apiBaseUrl()}/api/users/me`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      ...(await forwardedHeaders()),
+    },
+    body: JSON.stringify({
+      displayName: input.displayName,
+      preferredLanguage: input.preferredLanguage,
+    }),
     cache: 'no-store',
   })
 
