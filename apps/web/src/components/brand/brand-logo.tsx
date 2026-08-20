@@ -31,14 +31,15 @@ export function ExpyraMark({ className = 'size-7' }: { className?: string }) {
       <rect width="48" height="48" rx="14" fill={`url(#${gradientId})`} />
 
       {/*
-        Barlar KALIN, aralıklar dar (7'ye 3). Nav'da mark 28 px'e iniyor: ince
-        barlar o ölçekte griye çalıyor ve üç çizgi tek bir bulanık kütleye
-        dönüşüyor. Uçlar tam yuvarlak (rx = yükseklik/2).
+        Oranlar referans mark'tan ölçüldü: bar kalınlığı ≈ aralık (5.4'e 4.9).
+        Aralığı daraltmak kutuyu doldurup markı hamburger menüsüne çeviriyor —
+        aradaki boşluk bu logoda barlar kadar taşıyıcı. Üstte ve altta 11 birim
+        boşluk kalıyor, yani mark kutuya sıkışmıyor.
       */}
       <g fill="white">
-        <rect x="11" y="10.5" width="26" height="7" rx="3.5" />
-        <rect x="11" y="20.5" width="26" height="7" rx="3.5" />
-        <rect x="11" y="30.5" width="26" height="7" rx="3.5" />
+        <rect x="11" y="11" width="26" height="5.4" rx="2.7" />
+        <rect x="11" y="21.3" width="26" height="5.4" rx="2.7" />
+        <rect x="11" y="31.6" width="26" height="5.4" rx="2.7" />
       </g>
     </svg>
   )
