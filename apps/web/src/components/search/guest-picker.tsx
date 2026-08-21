@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useId, useRef, useState } from 'react'
+import type { PluralTemplates } from '@/features/i18n/dictionary'
+import { formatPlural, interpolate } from '@/features/i18n/format'
 
 /**
  * Misafir seçici — Booking tarzı açılır panel, artı/eksi sayaçlarla.
@@ -11,17 +13,61 @@ import { useEffect, useId, useRef, useState } from 'react'
  *
  * Değer gizli input'larla forma yazılır: JS kapalıyken bile arama, panelde
  * seçilmemiş varsayılanla (2 yetişkin) çalışmaya devam eder.
+ *
+ * ## Metin: etiketler hazır, özet ŞABLON
+ *
+ * Sabit etiketler sunucuda çözülüp `labels` ile iniyor — bu repodaki istemci
+ * bileşenlerinin kuralı (bkz. `site-header.tsx`). Tetikleyicideki özet ise
+ * ("2 yetişkin, 1 çocuk") istisna: sayıyı +/− düğmeleri değiştiriyor, sayfa
+ * yenilenmiyor, dolayısıyla metni sunucu YAZAMIYOR.
+ *
+ * Bu yüzden özet için çoğul BİÇİM TABLOSU geliyor (`getPluralTemplates`) ve
+ * çekimi `formatPlural` istemcide seçiyor. Elle "s" eklemek çözüm değildi:
+ * İngilizce'de "1 child" / "2 children", Rusça'da dört biçim var. Tarayıcıya
+ * inen şey yine sözlük değil, iki anahtarın birkaç dizgesi.
  */
 
 const MAX_ADULTS = 20
 const MAX_CHILDREN = 10
 
+export type GuestPickerLabels = {
+  trigger: string
+  dialog: string
+  done: string
+  adults: string
+  adultsHint: string
+  /** Sayaç düğmelerinin `aria-label`'ı — tam cümle, parçadan kurulmuyor. */
+  adultsDecrease: string
+  adultsIncrease: string
+  children: string
+  childrenHint: string
+  childrenDecrease: string
+  childrenIncrease: string
+  /** İki parçayı birleştiren şablon: ayırıcı ve sıra çevirmenin elinde. */
+  summaryBoth: string
+}
+
+export type GuestPickerSummaryForms = {
+  adults: PluralTemplates
+  children: PluralTemplates
+}
+
 type GuestPickerProps = {
+  /** Çoğul biçimini ve sayı yazımını seçen dil. */
+  lang: string
+  labels: GuestPickerLabels
+  summaryForms: GuestPickerSummaryForms
   defaultAdults?: number
   defaultChildren?: number
 }
 
-export function GuestPicker({ defaultAdults = 2, defaultChildren = 0 }: GuestPickerProps) {
+export function GuestPicker({
+  lang,
+  labels,
+  summaryForms,
+  defaultAdults = 2,
+  defaultChildren = 0,
+}: GuestPickerProps) {
   const [adults, setAdults] = useState(defaultAdults)
   const [children, setChildren] = useState(defaultChildren)
   const [open, setOpen] = useState(false)
@@ -68,15 +114,17 @@ export function GuestPicker({ defaultAdults = 2, defaultChildren = 0 }: GuestPic
         aria-controls={panelId}
         className="search-field w-full text-left"
       >
-        <span className="search-field-label">Misafirler</span>
-        <span className="search-field-value">{summarize(adults, children)}</span>
+        <span className="search-field-label">{labels.trigger}</span>
+        <span className="search-field-value">
+          {summarize(lang, labels, summaryForms, adults, children)}
+        </span>
       </button>
 
       {open ? (
         <div
           id={panelId}
           role="dialog"
-          aria-label="Misafir sayısı"
+          aria-label={labels.dialog}
           /*
             Panelin arkası OPAK. Cam malzeme yüzeyler için doğru ama okunacak bir
             listenin arkasında video akarken "13 yaş ve üzeri" satırı arkadaki
@@ -89,8 +137,11 @@ export function GuestPicker({ defaultAdults = 2, defaultChildren = 0 }: GuestPic
           className="glass glass-edge fixed inset-x-4 top-[4.25rem] z-30 rounded-[var(--radius-glass)] p-4 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[20rem]"
         >
           <Counter
-            label="Yetişkin"
-            hint="13 yaş ve üzeri"
+            lang={lang}
+            label={labels.adults}
+            hint={labels.adultsHint}
+            decreaseLabel={labels.adultsDecrease}
+            increaseLabel={labels.adultsIncrease}
             value={adults}
             min={1}
             max={MAX_ADULTS}
@@ -100,8 +151,11 @@ export function GuestPicker({ defaultAdults = 2, defaultChildren = 0 }: GuestPic
           <div className="my-3 h-px bg-[var(--glass-border)]" />
 
           <Counter
-            label="Çocuk"
-            hint="0-12 yaş"
+            lang={lang}
+            label={labels.children}
+            hint={labels.childrenHint}
+            decreaseLabel={labels.childrenDecrease}
+            increaseLabel={labels.childrenIncrease}
             value={children}
             min={0}
             max={MAX_CHILDREN}
@@ -116,7 +170,7 @@ export function GuestPicker({ defaultAdults = 2, defaultChildren = 0 }: GuestPic
             }}
             className="mt-4 w-full rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] px-4 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[rgb(var(--glass-tint)_/_0.35)] focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-2"
           >
-            Tamam
+            {labels.done}
           </button>
         </div>
       ) : null}
@@ -125,15 +179,28 @@ export function GuestPicker({ defaultAdults = 2, defaultChildren = 0 }: GuestPic
 }
 
 type CounterProps = {
+  lang: string
   label: string
   hint: string
+  decreaseLabel: string
+  increaseLabel: string
   value: number
   min: number
   max: number
   onChange: (next: number) => void
 }
 
-function Counter({ label, hint, value, min, max, onChange }: CounterProps) {
+function Counter({
+  lang,
+  label,
+  hint,
+  decreaseLabel,
+  increaseLabel,
+  value,
+  min,
+  max,
+  onChange,
+}: CounterProps) {
   const labelId = useId()
 
   return (
@@ -147,7 +214,7 @@ function Counter({ label, hint, value, min, max, onChange }: CounterProps) {
 
       <span className="flex items-center gap-3">
         <StepButton
-          label={`${label} sayısını azalt`}
+          label={decreaseLabel}
           disabled={value <= min}
           onClick={() => onChange(Math.max(min, value - 1))}
         >
@@ -157,13 +224,18 @@ function Counter({ label, hint, value, min, max, onChange }: CounterProps) {
         {/*
           Sayı canlı bölge: ekran okuyucu butona basınca yeni değeri duyurur.
           Sadece butonun aria-label'ı okunursa kullanıcı kaçta kaldığını bilemez.
+          Rakamlar da dile bağlı — Arapça arayüzde "٥" beklenir.
         */}
-        <output aria-labelledby={labelId} aria-live="polite" className="w-6 text-center text-sm font-semibold tabular-nums">
-          {value}
+        <output
+          aria-labelledby={labelId}
+          aria-live="polite"
+          className="w-6 text-center text-sm font-semibold tabular-nums"
+        >
+          {new Intl.NumberFormat(lang).format(value)}
         </output>
 
         <StepButton
-          label={`${label} sayısını artır`}
+          label={increaseLabel}
           disabled={value >= max}
           onClick={() => onChange(Math.min(max, value + 1))}
         >
@@ -198,11 +270,24 @@ function StepButton({
   )
 }
 
-/** "2 yetişkin, 1 çocuk" — çocuk yoksa yazılmaz, gürültü olur. */
-function summarize(adults: number, children: number): string {
-  const parts = [`${adults} yetişkin`]
-  if (children > 0) {
-    parts.push(`${children} çocuk`)
-  }
-  return parts.join(', ')
+/**
+ * "2 yetişkin, 1 çocuk" — çocuk yoksa yazılmaz, gürültü olur.
+ *
+ * İki parçanın birleşimi de bir ŞABLON (`summaryBoth`): burada `join(', ')`
+ * yazmak, ayırıcıyı ve sırayı Türkçe'ye sabitlemek olurdu.
+ */
+function summarize(
+  lang: string,
+  labels: GuestPickerLabels,
+  forms: GuestPickerSummaryForms,
+  adults: number,
+  children: number,
+): string {
+  const adultsText = formatPlural(lang, forms.adults, adults)
+  if (children === 0) return adultsText
+
+  return interpolate(lang, labels.summaryBoth, {
+    yetiskin: adultsText,
+    cocuk: formatPlural(lang, forms.children, children),
+  })
 }

@@ -2,7 +2,9 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import fontkit from '@pdf-lib/fontkit'
 import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from 'pdf-lib'
-import { formatLocalDateTime, formatMoney, qrPngBytes, type Ticket } from './ticket'
+import type { Translate } from '@/features/i18n/dictionary'
+import { formatMoney, formatNumber, upperCase } from '@/features/i18n/format'
+import { formatLocalDateTime, qrPngBytes, type Ticket } from './ticket'
 
 /**
  * Yazdırılabilir bilet PDF'i.
@@ -16,16 +18,15 @@ import { formatLocalDateTime, formatMoney, qrPngBytes, type Ticket } from './tic
  */
 
 /**
- * Büyük harfe çevirme dile bağlıdır: Türkçe'de `i → İ`, `ı → I`. Varsayılan
- * `toUpperCase()` "Türkiye" kelimesini "TÜRKIYE" yapar. Universal bir platformda
- * bu tür sessiz bozulmalar her dilde ayrı ayrı çıkar.
+ * Belgenin dili artık SABİT DEĞİL: `buildTicketPdf` locale ve `t` alıyor,
+ * ikisini de PDF ucu sorgudan çözüyor (`app/api/bilet/[code]/pdf/route.ts`).
  *
- * i18n katmanı geldiğinde (Faz 8) locale buradan değil kullanıcıdan gelecek.
+ * Büyük harfe çevirme burada kritik: dile bağlıdır ve Türkçe'de `i → İ`,
+ * `ı → I`. Varsayılan `toUpperCase()` "Türkiye" kelimesini "TÜRKIYE" yapar —
+ * ters yönde de aynı tuzak var: İngilizce belgede Türkçe kuralla büyütmek
+ * "ISTANBUL" yerine "İSTANBUL" basar. Bu yüzden `upperCase(locale, …)`
+ * (`features/i18n/format.ts`) ve locale her çağrıya taşınıyor.
  */
-const LOCALE = 'tr-TR'
-
-const upper = (text: string) => text.toLocaleUpperCase(LOCALE)
-
 const A4 = { width: 595.28, height: 841.89 }
 const MARGIN = 56
 
@@ -78,12 +79,13 @@ function drawTracked(
 function drawLabelled(
   page: PDFPage,
   fonts: { regular: PDFFont; bold: PDFFont },
+  locale: string,
   x: number,
   y: number,
   label: string,
   value: string,
 ) {
-  drawTracked(page, upper(label), {
+  drawTracked(page, upperCase(locale, label), {
     x, y, size: 7.5, font: fonts.regular, color: MUTED, tracking: 1.1,
   })
   page.drawText(value, {
@@ -91,7 +93,15 @@ function drawLabelled(
   })
 }
 
-export async function buildTicketPdf(ticket: Ticket): Promise<Uint8Array> {
+/**
+ * @param locale Belgenin dili — tarih, para, sayı ve BÜYÜK HARF kuralı.
+ * @param t Aynı dile bağlı çevirmen; çağıran ikisini birlikte çözüyor.
+ */
+export async function buildTicketPdf(
+  ticket: Ticket,
+  locale: string,
+  t: Translate,
+): Promise<Uint8Array> {
   const pdf = await PDFDocument.create()
   pdf.registerFontkit(fontkit)
 
@@ -104,8 +114,9 @@ export async function buildTicketPdf(ticket: Ticket): Promise<Uint8Array> {
   const bold = regular
   const fonts = { regular, bold }
 
-  pdf.setTitle(`Expyra bileti — ${ticket.experienceTitle}`)
-  pdf.setSubject(`Bilet kodu ${ticket.code}`)
+  // Belge üstverisi de çeviriye dahil: PDF okuyucunun sekme başlığı bu.
+  pdf.setTitle(t('ticket.pdf.docTitle', { baslik: ticket.experienceTitle }))
+  pdf.setSubject(t('ticket.pdf.code', { kod: ticket.code }))
   pdf.setProducer('Expyra')
   pdf.setCreator('Expyra')
 
@@ -117,7 +128,7 @@ export async function buildTicketPdf(ticket: Ticket): Promise<Uint8Array> {
   drawTracked(page, 'EXPYRA', {
     x: MARGIN, y: y - 12, size: 13, font: bold, color: INK, tracking: 3,
   })
-  page.drawText('Deneyim bileti', {
+  page.drawText(t('ticket.pdf.kicker'), {
     x: MARGIN, y: y - 28, size: 9.5, font: regular, color: MUTED,
   })
   y -= 56
@@ -130,7 +141,9 @@ export async function buildTicketPdf(ticket: Ticket): Promise<Uint8Array> {
   y -= 40
 
   // --- Deneyim başlığı -----------------------------------------------------
-  drawTracked(page, upper(ticket.location), {
+  // Konum host'un yazdığı içerik; çevrilmiyor ama BÜYÜTÜLMESİ belgenin diline
+  // bağlı — "İstanbul" Türkçe kuralda "İSTANBUL", İngilizce kuralda "ISTANBUL".
+  drawTracked(page, upperCase(locale, ticket.location), {
     x: MARGIN, y, size: 8, font: regular, color: MUTED, tracking: 1.4,
   })
   y -= 26
@@ -145,16 +158,18 @@ export async function buildTicketPdf(ticket: Ticket): Promise<Uint8Array> {
 
   // --- Bilgi ızgarası ------------------------------------------------------
   const col = contentWidth / 3
-  drawLabelled(page, fonts, MARGIN, y, 'Kişi', String(ticket.guests))
-  drawLabelled(page, fonts, MARGIN + col, y, 'Tutar',
-    formatMoney(ticket.totalAmount, ticket.currency))
-  drawLabelled(page, fonts, MARGIN + col * 2, y, 'Durum',
-    ticket.status === 'used' ? 'Kullanıldı' : 'Geçerli')
+  drawLabelled(page, fonts, locale, MARGIN, y, t('ticket.guests'),
+    formatNumber(locale, ticket.guests))
+  drawLabelled(page, fonts, locale, MARGIN + col, y, t('ticket.amount'),
+    formatMoney(locale, ticket.totalAmount, ticket.currency))
+  drawLabelled(page, fonts, locale, MARGIN + col * 2, y, t('ticket.status'),
+    ticket.status === 'used' ? t('ticket.status.used') : t('ticket.status.valid'))
   y -= 46
 
-  drawLabelled(page, fonts, MARGIN, y, 'Tarih ve saat', formatLocalDateTime(ticket))
+  drawLabelled(page, fonts, locale, MARGIN, y, t('ticket.pdf.dateTime'),
+    formatLocalDateTime(locale, ticket))
   // IANA kimliği yerine şehir: bu belge yazdırılıp kapıya götürülüyor.
-  page.drawText(`${ticket.location.split(',')[0]} saatiyle`, {
+  page.drawText(t('ticket.timeZoneNote', { sehir: ticket.location.split(',')[0] ?? ticket.location }), {
     x: MARGIN, y: y - 30, size: 8.5, font: regular, color: MUTED,
   })
   y -= 56
@@ -188,8 +203,8 @@ export async function buildTicketPdf(ticket: Ticket): Promise<Uint8Array> {
   y -= 30
 
   const notice = ticket.status === 'used'
-    ? 'Bu bilet giriş için kullanıldı.'
-    : 'Girişte host bu kodu okutacak. Bilet tek kullanımlıktır.'
+    ? t('ticket.pdf.notice.used')
+    : t('ticket.pdf.notice.valid')
   const noticeWidth = regular.widthOfTextAtSize(notice, 10)
   page.drawText(notice, {
     x: (A4.width - noticeWidth) / 2, y, size: 10, font: regular, color: MUTED,
@@ -199,7 +214,7 @@ export async function buildTicketPdf(ticket: Ticket): Promise<Uint8Array> {
   page.drawText('expyra.com', {
     x: MARGIN, y: MARGIN - 16, size: 9, font: regular, color: MUTED,
   })
-  const codeFooter = `Bilet kodu ${ticket.code}`
+  const codeFooter = t('ticket.pdf.code', { kod: ticket.code })
   page.drawText(codeFooter, {
     x: A4.width - MARGIN - regular.widthOfTextAtSize(codeFooter, 9),
     y: MARGIN - 16, size: 9, font: regular, color: MUTED,

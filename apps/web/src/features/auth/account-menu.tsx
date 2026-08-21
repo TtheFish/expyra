@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useId, useRef, useState } from 'react'
-import { t } from './account-messages'
 
 /**
  * Hesap menüsü — üst çubuktaki "Giriş yap" düğmesinin oturum açıkken aldığı yer.
@@ -19,20 +18,35 @@ import { t } from './account-messages'
  * (link ön-yükleyicileri kullanıcıyı habersiz düşürmesin diye) ve native form
  * JS kapalıyken de çalışır. Çerezler `sameSite=lax` olduğu için siteler arası
  * bir POST oturum çerezini taşımaz — ayrı bir CSRF jetonu gerekmiyor.
+ *
+ * **Metin sözlükten değil PROP'tan geliyor.** Sözlük `server-only`; bu bileşen
+ * tarayıcıda çalışıyor ve ihtiyacı olan beş dizgeyi sunucudan hazır alıyor
+ * (bkz. `site-header.tsx`). Yer tutuculu ikisi — tetikleyici etiketi ve "…
+ * olarak giriş yaptın" — sunucuda dolduruluyor: ad ve adres render anında
+ * biliniyor, istemcide değişmiyorlar.
  */
+
+export type AccountMenuLabels = {
+  /** Doldurulmuş: "Hesap menüsü: Deniz K." */
+  trigger: string
+  title: string
+  /** Doldurulmuş; profil okunamadıysa `null` ve satır hiç çizilmiyor. */
+  signedInAs: string | null
+  account: string
+  signOut: string
+}
 
 type AccountMenuProps = {
   /** Tetikleyicide görünen ad: görünen ad, yoksa e-posta. */
   label: string
-  /** Panelde "… olarak giriş yaptın" satırı. Profil okunamadıysa null. */
-  email: string | null
   /** Avatar dairesindeki tek harf. Sunucuda üretiliyor — büyük harfe çevirme dile bağlı. */
   initial: string
   accountHref: string
   signOutPath: string
+  labels: AccountMenuLabels
 }
 
-export function AccountMenu({ label, email, initial, accountHref, signOutPath }: AccountMenuProps) {
+export function AccountMenu({ label, initial, accountHref, signOutPath, labels }: AccountMenuProps) {
   const [open, setOpen] = useState(false)
 
   const panelId = useId()
@@ -82,7 +96,7 @@ export function AccountMenu({ label, email, initial, accountHref, signOutPath }:
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={t('account.menu.trigger', { ad: label })}
+        aria-label={labels.trigger}
         /* Yükseklik komşularıyla aynı (h-9): 3.5rem'lik barda tek kontrolü
            büyütmek hizayı bozar. Dokunma hedefi 36×64 px — WCAG 2.5.8'in
            24×24 eşiğinin üstünde; panelin içindeki satırlar 3rem. */
@@ -107,7 +121,7 @@ export function AccountMenu({ label, email, initial, accountHref, signOutPath }:
         <div
           id={panelId}
           role="dialog"
-          aria-label={t('account.menu.title')}
+          aria-label={labels.title}
           /* Panel OPAK: arkasında video akarken satırlar okunmaz, kontrast AA
              altına düşer. Kural gereği örtü artırılıyor, metin rengi değil. */
           style={{ backgroundColor: 'color-mix(in oklch, var(--bg) 97%, transparent)' }}
@@ -116,10 +130,8 @@ export function AccountMenu({ label, email, initial, accountHref, signOutPath }:
              ekranın soluna taşıyor. */
           className="glass glass-edge fixed inset-x-4 top-[4.25rem] z-30 rounded-[var(--radius-glass)] p-2 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[17rem]"
         >
-          {email ? (
-            <p className="px-3 pb-2 pt-2 text-xs break-words text-fg-muted">
-              {t('account.menu.signedInAs', { eposta: email })}
-            </p>
+          {labels.signedInAs ? (
+            <p className="px-3 pb-2 pt-2 text-xs break-words text-fg-muted">{labels.signedInAs}</p>
           ) : null}
 
           <a
@@ -127,7 +139,7 @@ export function AccountMenu({ label, email, initial, accountHref, signOutPath }:
             href={accountHref}
             className="flex min-h-12 w-full items-center rounded-[var(--radius-glass-sm)] px-3 text-sm font-medium transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-[-2px]"
           >
-            {t('account.menu.account')}
+            {labels.account}
           </a>
 
           <div className="my-1 h-px bg-[var(--glass-border)]" />
@@ -137,7 +149,7 @@ export function AccountMenu({ label, email, initial, accountHref, signOutPath }:
               type="submit"
               className="flex min-h-12 w-full items-center rounded-[var(--radius-glass-sm)] px-3 text-left text-sm font-medium transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-[-2px]"
             >
-              {t('account.menu.signOut')}
+              {labels.signOut}
             </button>
           </form>
         </div>

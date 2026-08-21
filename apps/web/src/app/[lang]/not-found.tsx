@@ -3,38 +3,30 @@
 import { usePathname } from 'next/navigation'
 import { ExpyraMark } from '@/components/brand/brand-logo'
 import { GlassButton } from '@/components/ui/glass-button'
-import { defaultRouteLanguage, isRoutableLanguage, path } from '@/lib/routes'
+import { boundaryLocaleOf, boundaryMessages } from '@/features/i18n/boundary'
+import { path } from '@/lib/routes'
 
 /**
  * 404 — bu dil segmentinin altında eşleşmeyen her yol buraya düşer.
  *
- * **Neden Client Component:** `not-found.tsx` prop almıyor (Next 16 API'si), yani
- * `params.lang`'a erişemiyor. Next 16 `unstable_rootParams`'ı da kaldırdı. Dili
- * bilmeden link üretilemez — `/en/...`'den gelen kullanıcıyı Türkçe sayfaya atmak
- * 404'ün üstüne bir de dilini kaybettirmek olur. Kalan tek kaynak yol; onu yalnız
- * `usePathname` veriyor.
+ * **Neden Client Component:** `not-found.tsx` prop almıyor (Next 16 API'si, bkz.
+ * `node_modules/next/dist/docs/.../not-found.md`: *"do not accept any props"*),
+ * yani `params.lang`'a erişemiyor. Next 16 `unstable_rootParams`'ı da kaldırdı.
+ * Dili bilmeden link üretilemez — `/en/...`'den gelen kullanıcıyı Türkçe sayfaya
+ * atmak 404'ün üstüne bir de dilini kaybettirmek olur. Kalan tek kaynak yol;
+ * onu yalnız `usePathname` veriyor.
+ *
+ * Aynı kısıt METNİ de belirliyor: sunucu ebeveyni olmadığı için sözlük buraya
+ * prop olarak inemiyor. Metin bu yüzden istemci güvenli `features/i18n/boundary`
+ * tablosundan geliyor — gerekçesi ve bedeli o dosyada yazılı.
  *
  * `SiteHeader`/`SiteFooter` bilinçli olarak yok: 404 sayfasının işi kullanıcıyı
  * bir yere göndermek, tam bir sayfa iskeleti kurmak değil. Header oturum okuduğu
  * için burada ayrıca gereksiz bir dinamik sınır açardı.
  */
-
-const messages = {
-  title: 'Bu sayfa yok',
-  lede: 'Bağlantı eskimiş olabilir ya da adres yanlış yazılmış olabilir. Aradığın deneyim hâlâ burada olabilir — keşfetmeyi dene.',
-  explore: 'Deneyimleri keşfet',
-  home: 'Ana sayfaya dön',
-  /** Ekran okuyucu için: rakam yığını değil, ne olduğunun adı. */
-  code: 'Hata 404 · sayfa bulunamadı',
-} as const
-
 export default function NotFound() {
-  const pathname = usePathname()
-
-  // Yol `/tr/...` biçiminde. Tanımadığımız bir segment gelirse (ör. `/xx/...`)
-  // varsayılan dile düşüyoruz: 404 ekranında ikinci bir 404 üretmenin anlamı yok.
-  const segment = pathname.split('/')[1] ?? ''
-  const lang = isRoutableLanguage(segment) ? segment : defaultRouteLanguage
+  const lang = boundaryLocaleOf(usePathname())
+  const messages = boundaryMessages[lang].notFound
 
   return (
     <main className="relative z-10 mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-4 py-16">

@@ -4,6 +4,7 @@ import { SiteHeader } from '@/components/brand/site-header'
 import { ExperienceCard } from '@/components/experience/experience-card'
 import { ExperienceSearch } from '@/components/search/experience-search'
 import { GlassButton } from '@/components/ui/glass-button'
+import { getTranslator } from '@/features/i18n/translator'
 import {
   experiences,
   filterExperiences,
@@ -42,6 +43,7 @@ export default async function Explore({
   searchParams: SearchParams
 }) {
   const [{ lang }, query] = await Promise.all([params, searchParams])
+  const t = await getTranslator(lang)
 
   const destination = first(query['nerede'])
   const date = parseSearchDate(first(query['tarih']))
@@ -54,12 +56,30 @@ export default async function Explore({
     date,
   })
 
+  /*
+    Özet satırı TEK anahtardan çıkıyor: "3 deneyim · 2 kişi · 1 Eylül 2026"
+    parçalarını burada birleştirmek, sırayı Türkçe'ye çivilemek olurdu.
+
+    Misafir sayısı yer tutucu olarak giriyor çünkü satırda İKİ sayım var
+    (deneyim ve kişi) ve bir metin tek çekim taşıyabiliyor — kişi kendi
+    anahtarında çekimlenip hazır olarak yerleşiyor.
+  */
+  const guests = t('explore.summary.guests', { n: adults + children })
+  const summary = date
+    ? t('explore.summary.dated', {
+        n: results.length,
+        misafir: guests,
+        tarih: formatSearchDate(lang, date),
+      })
+    : t('explore.summary', { n: results.length, misafir: guests })
+
   return (
     <div className="flex min-h-dvh flex-col">
       <SiteHeader lang={lang} />
 
       <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 py-10">
         <ExperienceSearch
+          lang={lang}
           action={path(lang, 'explore')}
           defaultDestination={destination}
           defaultDate={date}
@@ -72,13 +92,12 @@ export default async function Explore({
             id="sonuc-basligi"
             className="text-on-media text-xl font-semibold text-white sm:text-2xl"
           >
-            {destination ? `“${destination}” için sonuçlar` : 'Tüm deneyimler'}
+            {destination
+              ? t('explore.heading.query', { arama: destination })
+              : t('explore.heading.all')}
           </h1>
 
-          <p className="text-on-media mt-1 text-sm text-white/85">
-            {results.length} deneyim · {adults + children} kişi
-            {date ? ` · ${formatSearchDate(date)}` : ''}
-          </p>
+          <p className="text-on-media mt-1 text-sm text-white/85">{summary}</p>
 
           {/*
             Tarih sonucu daraltmıyor ve bu kullanıcıya SÖYLENİYOR — gerekçe
@@ -88,15 +107,14 @@ export default async function Explore({
           */}
           {unapplied.includes('date') && (
             <p className="glass glass-edge mt-4 rounded-[var(--radius-glass-sm)] px-4 py-3 text-sm text-fg-muted">
-              Seçtiğin tarih sonuçları henüz daraltmıyor: deneyimlerin takvimi
-              sisteme girmedi. Aşağıdaki liste tüm tarihleri kapsıyor.
+              {t('explore.dateNotice')}
             </p>
           )}
 
           {results.length > 0 ? (
             <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {results.map((item) => (
-                <ExperienceCard key={item.slug} item={item} />
+                <ExperienceCard key={item.slug} item={item} lang={lang} t={t} />
               ))}
             </div>
           ) : (
@@ -106,14 +124,13 @@ export default async function Explore({
               "yakındaki şehirler" ve "haber ver" akışı buraya gelecek.
             */
             <div className="glass glass-edge glass-thick mt-6 rounded-[var(--radius-glass-lg)] p-8 text-center">
-              <p className="text-base font-semibold">Burada henüz deneyim yok</p>
+              <p className="text-base font-semibold">{t('explore.empty.title')}</p>
               <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">
-                Aramanı genişletmeyi dene: farklı bir şehir yaz ya da misafir
-                sayısını azalt. Yeni şehirler ekleniyor.
+                {t('explore.empty.body')}
               </p>
               <div className="mt-5">
                 <GlassButton variant="primary" href={path(lang, 'explore')}>
-                  Tüm deneyimleri gör
+                  {t('explore.empty.cta')}
                 </GlassButton>
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { GlassButton } from '@/components/ui/glass-button'
-import { t } from './account-messages'
+import { UI_LANGUAGE_FIELD } from '@/features/i18n/locale'
 import { updateProfileAction, type ProfileFormState } from './actions'
 
 /**
@@ -14,6 +14,11 @@ import { updateProfileAction, type ProfileFormState } from './actions'
  * sayfa gezinme olmadan görünmeli. `role="alert"` ancak metin SONRADAN
  * değişirse seslendirilir; sayfa yeniden yüklenip mesaj hazır gelseydi (ör.
  * `?durum=kaydedildi`) ekran okuyucu hiçbir şey duyurmazdı.
+ *
+ * Formda İKİ dil alanı var ve karıştırılmamaları şart:
+ * - `dil` → kullanıcının TERCİH ettiği içerik dili (49 seçenek, kaydediliyor).
+ * - `arayuz-dili` → sayfanın dili; yalnız sunucu eyleminin cevabını hangi dilde
+ *   yazacağını söylüyor, kaydedilmiyor.
  */
 
 const INITIAL: ProfileFormState = { error: null, success: null, at: 0 }
@@ -28,12 +33,25 @@ export type LanguageOption = {
   label: string
 }
 
+export type ProfileFormLabels = {
+  nameLabel: string
+  nameHelp: string
+  namePlaceholder: string
+  languageLabel: string
+  languageHelp: string
+  languageNone: string
+  save: string
+  saving: string
+}
+
 type ProfileFormProps = {
   displayName: string | null
   preferredLanguage: string | null
   languages: readonly LanguageOption[]
   /** API'nin kabul ettiği üst sınır; sunucuda da doğrulanıyor. */
   displayNameMaxLength: number
+  lang: string
+  labels: ProfileFormLabels
 }
 
 export function ProfileForm({
@@ -41,6 +59,8 @@ export function ProfileForm({
   preferredLanguage,
   languages,
   displayNameMaxLength,
+  lang,
+  labels,
 }: ProfileFormProps) {
   const [state, formAction, pending] = useActionState<ProfileFormState, FormData>(
     updateProfileAction,
@@ -49,10 +69,12 @@ export function ProfileForm({
 
   return (
     <form action={formAction} className="auth-form">
+      <input type="hidden" name={UI_LANGUAGE_FIELD} value={lang} />
+
       <div>
         {/* Görünür etiket: placeholder etiket yerine geçmez, odakta kaybolur. */}
         <label className="auth-label" htmlFor="ad">
-          {t('account.name.label')}
+          {labels.nameLabel}
         </label>
 
         <input
@@ -64,20 +86,20 @@ export function ProfileForm({
           /* `required` YOK: ad boş bırakılabilir ve boş gönderim onu temizler. */
           maxLength={displayNameMaxLength}
           defaultValue={displayName ?? ''}
-          placeholder={t('account.name.placeholder')}
+          placeholder={labels.namePlaceholder}
           disabled={pending}
           aria-describedby={`${NAME_HELP_ID} ${ERROR_ID}`}
           aria-invalid={state.error !== null}
         />
 
         <p id={NAME_HELP_ID} className="auth-help">
-          {t('account.name.help')}
+          {labels.nameHelp}
         </p>
       </div>
 
       <div>
         <label className="auth-label" htmlFor="dil">
-          {t('account.language.label')}
+          {labels.languageLabel}
         </label>
 
         {/*
@@ -95,7 +117,7 @@ export function ProfileForm({
           disabled={pending}
           aria-describedby={`${LANGUAGE_HELP_ID} ${ERROR_ID}`}
         >
-          <option value="">{t('account.language.none')}</option>
+          <option value="">{labels.languageNone}</option>
           {languages.map((language) => (
             <option key={language.code} value={language.code}>
               {language.label}
@@ -104,7 +126,7 @@ export function ProfileForm({
         </select>
 
         <p id={LANGUAGE_HELP_ID} className="auth-help">
-          {t('account.language.help')}
+          {labels.languageHelp}
         </p>
       </div>
 
@@ -118,7 +140,7 @@ export function ProfileForm({
 
       <div className="flex flex-wrap items-center gap-3">
         <GlassButton type="submit" variant="primary" size="lg" disabled={pending}>
-          {pending ? t('account.saving') : t('account.save')}
+          {pending ? labels.saving : labels.save}
         </GlassButton>
 
         {/*

@@ -5,8 +5,9 @@ import { RedirectType, redirect } from 'next/navigation'
 import { ApiError, activateHost } from '@/features/auth/api'
 import { RETURN_TO_PARAM } from '@/features/auth/return-to'
 import { getSession, setAccessToken } from '@/features/auth/session'
-import { defaultRouteLanguage, isRoutableLanguage, path } from '@/lib/routes'
-import { t } from './messages'
+import { UI_LANGUAGE_FIELD, uiLocaleOf, type UiLocale } from '@/features/i18n/locale'
+import { getTranslator } from '@/features/i18n/translator'
+import { path } from '@/lib/routes'
 
 /**
  * Host tarafının sunucu eylemleri.
@@ -15,6 +16,11 @@ import { t } from './messages'
  * anahtar değil. Başarı ayrı bir alan taşımıyor — başarının görünür karşılığı
  * sayfanın kendisi: rol yazıldığı an ekran davet ekranından panele döner.
  * "Host oldun" yazan bir kutu, altındaki panel zaten değişmişken gürültüdür.
+ *
+ * Formdan gelen dil İKİ işe yarıyor ve ikisi de daraltmayı zorunlu kılıyor:
+ * hata metninin dili ve yönlendirme hedefinin dil segmenti. `uiLocaleOf`
+ * bilinmeyen değeri varsayılana düşürüyor — daraltılmasaydı gizli input'a
+ * yazılan bir değer `path()` üzerinden URL'e olduğu gibi girerdi.
  */
 
 export type HostFormState = {
@@ -22,9 +28,6 @@ export type HostFormState = {
   /** Sunucu saati: `useActionState` aynı hatayı ikinci kez gösterdiğinde de yeni bir durum olsun. */
   at: number
 }
-
-/** Sayfanın dili; gizli input ile geliyor (`email-step.tsx`'teki kalıbın aynısı). */
-const LANG_FIELD = 'dil'
 
 /**
  * "Host ol". Yaptığı iş tek bir POST ama iki tuzağı kapatıyor:
@@ -42,7 +45,7 @@ export async function activateHostAction(
   _previous: HostFormState,
   formData: FormData,
 ): Promise<HostFormState> {
-  const lang = languageOf(formData)
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
 
   // Kullanıcı kimliği İSTEMCİDEN GELMİYOR (CLAUDE.md #3): formda kimlik alanı
   // yok, API rolü token'daki `sub`'a yazıyor.
@@ -68,6 +71,7 @@ export async function activateHostAction(
     } else if (error.status === 403) {
       // Tek 403 kaynağı: hesap Active değil (Suspended/Banned). Onay kapısı yok
       // ama ban var (VISION §9).
+      const t = await getTranslator(lang)
       return { error: t('host.error.blocked'), at: Date.now() }
     } else {
       // Bilinmeyen hata YUTULMAZ (CLAUDE.md #1): 500'ü "host olamadın" diye
@@ -96,18 +100,8 @@ export async function activateHostAction(
   return { error: null, at: Date.now() }
 }
 
-/**
- * Dil formdan geliyor ve `path()` onu URL'e OLDUĞU GİBİ gömüyor. Doğrulanmadan
- * geçirilirse gizli input'a yazılan bir değer yönlendirme hedefini bozabilir;
- * bilinmeyen değer varsayılan dile düşer.
- */
-function languageOf(formData: FormData): string {
-  const value = formData.get(LANG_FIELD)
-  return typeof value === 'string' && isRoutableLanguage(value) ? value : defaultRouteLanguage
-}
-
 /** Giriş sonrası kullanıcı host sayfasına döner; `donus` değeri `safeReturnTo`'dan da geçecek. */
-function signInHref(lang: string): string {
+function signInHref(lang: UiLocale): string {
   const query = new URLSearchParams({ [RETURN_TO_PARAM]: path(lang, 'becomeHost') })
   return `${path(lang, 'signIn')}?${query.toString()}`
 }

@@ -1,4 +1,6 @@
 import { getSession } from '@/features/auth/session'
+import { UI_LANGUAGE_FIELD, uiLocaleOf } from '@/features/i18n/locale'
+import { getTranslator } from '@/features/i18n/translator'
 import { findTicket } from '@/lib/ticket'
 import { buildTicketPdf } from '@/lib/ticket-pdf'
 
@@ -27,14 +29,27 @@ export const runtime = 'nodejs'
  * yenilenmiyor. Bilet API'ye taşındığında doğrulama gerçek olacak.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ code: string }> },
 ) {
+  /*
+    Belgenin dili SORGUDAN geliyor: `/api/...` yolunda dil segmenti yok ve bu uç
+    hem `/tr` hem `/en` sayfalarından çağrılıyor. Alan adı forma yazılanla aynı
+    sabit (`arayuz-dili`) — ikisi de "bu cevabı hangi dilde yaz" sorusuna cevap.
+
+    İstemciden gelmesi güvenlik sorunu değil: `uiLocaleOf` değeri kapalı bir
+    kümeye daraltıyor, en kötü ihtimalle belge varsayılan dilde çıkar. `notFound`
+    fırlatan `requireUiLocale` bilinçli KULLANILMIYOR: burada bir sayfa yok, bir
+    dosya var — biçim hatası yüzünden bileti hiç vermemek orantısız.
+  */
+  const locale = uiLocaleOf(new URL(request.url).searchParams.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(locale)
+
   const session = await getSession()
 
   if (!session) {
     return Response.json(
-      { title: 'Bileti görmek için giriş yapmalısın.', status: 401 },
+      { title: t('ticket.error.signedOut'), status: 401 },
       { status: 401, headers: { 'Cache-Control': 'private, no-store' } },
     )
   }
@@ -44,12 +59,12 @@ export async function GET(
 
   if (!ticket) {
     return Response.json(
-      { title: 'Bilet bulunamadı.', status: 404 },
+      { title: t('ticket.error.notFound'), status: 404 },
       { status: 404, headers: { 'Cache-Control': 'private, no-store' } },
     )
   }
 
-  const pdf = await buildTicketPdf(ticket)
+  const pdf = await buildTicketPdf(ticket, locale, t)
 
   return new Response(pdf as BodyInit, {
     headers: {

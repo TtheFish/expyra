@@ -3,12 +3,12 @@ import { SiteFooter } from '@/components/brand/site-footer'
 import { SiteHeader } from '@/components/brand/site-header'
 import { GlassButton } from '@/components/ui/glass-button'
 import { ApiError, fetchCurrentUser } from '@/features/auth/api'
-import { formatNumber } from '@/features/auth/messages'
 import { RETURN_TO_PARAM } from '@/features/auth/return-to'
 import { getSession } from '@/features/auth/session'
+import type { MessageKey, Translate } from '@/features/i18n/dictionary'
+import { formatMoney } from '@/features/i18n/format'
+import { getTranslator } from '@/features/i18n/translator'
 import { ActivateHostForm } from '@/features/host/activate-host-form'
-import { t, type HostMessageKey } from '@/features/host/messages'
-import { formatPrice } from '@/lib/experiences'
 import { alternateLinks, path } from '@/lib/routes'
 
 /**
@@ -31,9 +31,20 @@ import { alternateLinks, path } from '@/lib/routes'
  * Yetki kararı burada değil API'de: bu sayfa yalnız hangi ekranı çizeceğine
  * karar veriyor. `isHost` istemciden gelen bir şey olsaydı bile açılacak bir
  * kapı yok — host uçları JWT rol claim'ine bakıyor.
+ *
+ * `t` alt bileşenlere PROP olarak iniyor. Hepsi sunucu bileşeni, yani fonksiyon
+ * geçmek serbest; her birinin ayrı ayrı `await getTranslator(lang)` çağırması
+ * (React `cache` sayesinde bedelsiz olsa da) `lang`'i de taşımayı gerektirirdi.
  */
 
-export function generateMetadata(): Metadata {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}): Promise<Metadata> {
+  const { lang } = await params
+  const t = await getTranslator(lang)
+
   return {
     // Başlık oturumdan BAĞIMSIZ: `generateMetadata` içinde oturum okumak her
     // ziyarette fazladan bir API turu ederdi ve sekme başlığı bunu hak etmiyor.
@@ -52,7 +63,14 @@ type ExperiencePreview = {
   completeness: number
 }
 
-/** Blok 5'te `GET /api/host/experiences` bunu dolduracak (docs/PLAN.md). */
+/**
+ * Blok 5'te `GET /api/host/experiences` bunu dolduracak (docs/PLAN.md).
+ *
+ * Başlıklar SÖZLÜKTE DEĞİL, bilinçli: bunlar host'un yazdığı içeriği taklit
+ * ediyor ve içerik çevirisi veritabanında yaşıyor (docs/I18N.md §1). Sözlüğe
+ * konsalardı örnek veri, arayüz metniyle aynı kefeye girer ve gerçek veriye
+ * geçildiğinde çeviri dosyasında öksüz anahtarlar kalırdı.
+ */
 const sampleExperiences = [
   {
     title: 'Kadıköy’de Sokak Lezzetleri Turu',
@@ -80,7 +98,7 @@ const setupSteps = [
   { title: 'host.steps.media.title', body: 'host.steps.media.body' },
   { title: 'host.steps.pricing.title', body: 'host.steps.pricing.body' },
   { title: 'host.steps.publish.title', body: 'host.steps.publish.body' },
-] as const satisfies readonly { title: HostMessageKey; body: HostMessageKey }[]
+] as const satisfies readonly { title: MessageKey; body: MessageKey }[]
 
 /**
  * `traveler` = giriş yapmış ama henüz host değil. Bir rol adı değil, bu ekranın
@@ -90,6 +108,7 @@ type Viewer = 'anonymous' | 'traveler' | 'host'
 
 export default async function BecomeHostPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
+  const t = await getTranslator(lang)
   const viewer = await resolveViewer()
 
   const isHost = viewer === 'host'
@@ -117,9 +136,9 @@ export default async function BecomeHostPage({ params }: { params: Promise<{ lan
           ) : null}
         </div>
 
-        {isHost ? <HostStatus /> : <ActivateCard viewer={viewer} lang={lang} />}
+        {isHost ? <HostStatus t={t} /> : <ActivateCard viewer={viewer} lang={lang} t={t} />}
 
-        <ListingsSection isHost={isHost} />
+        <ListingsSection isHost={isHost} lang={lang} t={t} />
 
         <section className="mt-14" aria-labelledby="host-adimlar">
           <h2 id="host-adimlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
@@ -195,7 +214,7 @@ async function resolveViewer(): Promise<Viewer> {
 }
 
 /** Host olduktan sonra "Host ol" düğmesinin yerini alan bilgi. */
-function HostStatus() {
+function HostStatus({ t }: { t: Translate }) {
   return (
     <p className="glass glass-edge mt-8 inline-flex items-center rounded-[var(--radius-glass-sm)] px-4 py-2 text-sm font-medium">
       {t('host.panel.status')}
@@ -208,7 +227,7 @@ function HostStatus() {
  * (`host.invite.noApproval`) — oturumsuz kullanıcıya "önce giriş yap, sonra
  * anlatırız" demek, arz tarafını kapıda kaybetmenin en kısa yolu.
  */
-function ActivateCard({ viewer, lang }: { viewer: Viewer; lang: string }) {
+function ActivateCard({ viewer, lang, t }: { viewer: Viewer; lang: string; t: Translate }) {
   return (
     <section className="mt-8">
       <div className="glass glass-edge glass-thick rounded-[var(--radius-glass-lg)] p-6 sm:p-8">
@@ -220,7 +239,10 @@ function ActivateCard({ viewer, lang }: { viewer: Viewer; lang: string }) {
             hata çıkınca kartın zıplamasını önlüyor), üstüne bir de `mt-*` koymak
             metinle düğme arasını uçurumlaştırırdı. */}
         {viewer === 'traveler' ? (
-          <ActivateHostForm lang={lang} />
+          <ActivateHostForm
+            lang={lang}
+            labels={{ cta: t('host.invite.cta'), pending: t('host.invite.pending') }}
+          />
         ) : (
           <>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-fg-muted">
@@ -245,12 +267,12 @@ function ActivateCard({ viewer, lang }: { viewer: Viewer; lang: string }) {
  * demek, henüz tek satırı olmayan birine sahip olmadığı bir şeyi göstermek
  * olurdu. Aynı liste, dürüst çerçeve.
  */
-function ListingsSection({ isHost }: { isHost: boolean }) {
+function ListingsSection({ isHost, lang, t }: { isHost: boolean; lang: string; t: Translate }) {
   return (
     <section className="mt-10" aria-labelledby="host-ilanlar">
       <h2 id="host-ilanlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
         {isHost
-          ? t('host.listings.heading', { sayi: formatNumber(sampleExperiences.length) })
+          ? t('host.listings.heading', { sayi: sampleExperiences.length })
           : t('host.listings.previewHeading')}
       </h2>
 
@@ -260,19 +282,20 @@ function ListingsSection({ isHost }: { isHost: boolean }) {
             <article className="glass glass-edge flex flex-wrap items-center justify-between gap-4 rounded-[var(--radius-glass)] p-5">
               <div className="min-w-0">
                 <div className="mb-1 flex items-center gap-2">
-                  <StatusPill status={item.status} />
+                  <StatusPill status={item.status} t={t} />
                   <span className="text-xs text-fg-muted">
+                    {/* `n` çoğulu seçen değer: İngilizce'de "1 step" / "5 steps". */}
                     {t('host.listings.progress', {
-                      tamam: formatNumber(item.completeness),
-                      toplam: formatNumber(SAMPLE_TOTAL_STEPS),
+                      tamam: item.completeness,
+                      n: SAMPLE_TOTAL_STEPS,
                     })}
                   </span>
                 </div>
                 <h3 className="truncate font-semibold">{item.title}</h3>
                 <p className="mt-1 text-sm text-fg-muted">
                   {t('host.listings.summary', {
-                    fiyat: formatPrice(item.price, item.currency),
-                    kisi: formatNumber(item.capacity),
+                    fiyat: formatMoney(lang, item.price, item.currency),
+                    n: item.capacity,
                   })}
                 </p>
               </div>
@@ -292,7 +315,7 @@ function ListingsSection({ isHost }: { isHost: boolean }) {
   )
 }
 
-function StatusPill({ status }: { status: ExperiencePreview['status'] }) {
+function StatusPill({ status, t }: { status: ExperiencePreview['status']; t: Translate }) {
   const published = status === 'published'
 
   return (

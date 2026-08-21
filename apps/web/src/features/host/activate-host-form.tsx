@@ -2,8 +2,8 @@
 
 import { useActionState } from 'react'
 import { GlassButton } from '@/components/ui/glass-button'
+import { UI_LANGUAGE_FIELD } from '@/features/i18n/locale'
 import { activateHostAction, type HostFormState } from './actions'
-import { t } from './messages'
 
 /**
  * "Host ol" düğmesi — `profile-form.tsx` ile aynı kalıp: `useActionState`,
@@ -15,13 +15,21 @@ import { t } from './messages'
  *
  * Başarı için ayrı bir mesaj YOK: rol yazıldığı an sayfa panele dönüyor,
  * kullanıcının gördüğü değişikliğin kendisi onay.
+ *
+ * Düğme metni PROP, hata metni ise sunucu eyleminden HAZIR geliyor — sözlük
+ * `server-only` ve bu bileşen tarayıcıda çalışıyor.
  */
 
 const INITIAL: HostFormState = { error: null, at: 0 }
 
 const ERROR_ID = 'host-aktivasyon-hata'
 
-export function ActivateHostForm({ lang }: { lang: string }) {
+export type ActivateHostFormLabels = {
+  cta: string
+  pending: string
+}
+
+export function ActivateHostForm({ lang, labels }: { lang: string; labels: ActivateHostFormLabels }) {
   const [state, formAction, pending] = useActionState<HostFormState, FormData>(
     activateHostAction,
     INITIAL,
@@ -29,8 +37,9 @@ export function ActivateHostForm({ lang }: { lang: string }) {
 
   return (
     <form action={formAction}>
-      {/* Yönlendirme hedefinin dili; eylem bunu `isRoutableLanguage` ile doğruluyor. */}
-      <input type="hidden" name="dil" value={lang} />
+      {/* Yönlendirme hedefinin ve hata metninin dili; eylem bunu `uiLocaleOf`
+          ile kapalı kümeye daraltıyor. */}
+      <input type="hidden" name={UI_LANGUAGE_FIELD} value={lang} />
 
       {/*
         Hata kutusu BOŞKEN DE DOM'da: sonradan eklenen alert düğümünü bazı ekran
@@ -47,7 +56,7 @@ export function ActivateHostForm({ lang }: { lang: string }) {
         disabled={pending}
         aria-describedby={ERROR_ID}
       >
-        {pending ? t('host.invite.pending') : t('host.invite.cta')}
+        {pending ? labels.pending : labels.cta}
       </GlassButton>
     </form>
   )

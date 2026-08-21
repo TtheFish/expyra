@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { interpolate } from '@/features/i18n/format'
 import {
   contentLanguages,
   localNameOf,
@@ -19,15 +20,35 @@ import { isRoutableLanguage, switchLanguage } from '@/lib/routes'
  * host Korece deneyim yazabilir. Tek liste gösterirsek kullanıcı 49 dilin
  * hepsinde arayüz bekler ve seçtiğinde hiçbir şey değişmeyince bozuk sanır.
  *
- * Seçim şimdilik yalnızca kaydediliyor: arayüz çevirisi Faz 8.1'de geliyor.
- * Bunu panelde açıkça yazıyoruz — sessizce hiçbir şey yapmayan bir kontrol,
- * çalışmayan bir kontroldür.
+ * **Metin PROP'tan geliyor** (bkz. `site-header.tsx`): sözlük `server-only`,
+ * bu bileşen tarayıcıda. Bir istisna var ve tek: `labels.trigger` HAZIR METİN
+ * değil ŞABLON. Kullanıcı arayüz çevirisi olmayan bir içerik dili seçtiğinde
+ * sayfa yenilenmiyor — etiketin o anki dili yazması gerekiyor ve bunu ancak
+ * istemci doldurabiliyor.
  */
 
 const COOKIE_NAME = 'expyra_lang'
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
-export function LanguagePicker({ current }: { current: string }) {
+export type LanguagePickerLabels = {
+  /** `{dil}` yer tutuculu ŞABLON — istemcide doldurulan tek metin. */
+  trigger: string
+  dialog: string
+  searchLabel: string
+  searchPlaceholder: string
+  uiGroup: string
+  contentGroup: string
+  contentHint: string
+  empty: string
+}
+
+export function LanguagePicker({
+  current,
+  labels,
+}: {
+  current: string
+  labels: LanguagePickerLabels
+}) {
   const [selected, setSelected] = useState(current)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -112,7 +133,11 @@ export function LanguagePicker({ current }: { current: string }) {
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={`Dil: ${currentLanguage?.nativeName ?? selected}. Değiştir.`}
+        /* Locale olarak `selected` geçiyor: şablonda sayı yok, ama bir gün
+           eklenirse kullanıcının seçtiği dilin rakamlarıyla biçimlenmeli. */
+        aria-label={interpolate(selected, labels.trigger, {
+          dil: currentLanguage?.nativeName ?? selected,
+        })}
         className="glass glass-edge glass-interactive inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-glass-sm)] px-3 text-sm font-medium text-nav-link"
       >
         <span aria-hidden="true">🌐</span>
@@ -123,7 +148,7 @@ export function LanguagePicker({ current }: { current: string }) {
         <div
           id={panelId}
           role="dialog"
-          aria-label="Dil seçimi"
+          aria-label={labels.dialog}
           /* Panel opak — arkasında video akarken 49 satırlık liste okunmaz. */
           style={{ backgroundColor: 'color-mix(in oklch, var(--bg) 97%, transparent)' }}
           /*
@@ -136,7 +161,7 @@ export function LanguagePicker({ current }: { current: string }) {
           className="glass glass-edge fixed inset-x-4 top-[4.25rem] z-30 flex max-h-[26rem] flex-col rounded-[var(--radius-glass)] p-3 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[22rem]"
         >
           <label className="sr-only" htmlFor={`${panelId}-ara`}>
-            Dil ara
+            {labels.searchLabel}
           </label>
           <input
             ref={searchRef}
@@ -144,14 +169,14 @@ export function LanguagePicker({ current }: { current: string }) {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Dil ara"
+            placeholder={labels.searchPlaceholder}
             autoComplete="off"
             className="mb-2 w-full rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:outline-2 focus-visible:outline-brand-400"
           />
 
           <div className="min-h-0 flex-1 overflow-y-auto">
             {uiMatches.length > 0 ? (
-              <Group title="Arayüz dilleri">
+              <Group title={labels.uiGroup}>
                 {uiMatches.map((language) => (
                   <LanguageRow
                     key={language.code}
@@ -166,8 +191,8 @@ export function LanguagePicker({ current }: { current: string }) {
 
             {contentMatches.length > 0 ? (
               <Group
-                title="Diğer diller"
-                hint="Arayüz çevirisi henüz yok — deneyim içeriği bu dillerde yayınlanabilir."
+                title={labels.contentGroup}
+                hint={labels.contentHint}
               >
                 {contentMatches.map((language) => (
                   <LanguageRow
@@ -183,7 +208,7 @@ export function LanguagePicker({ current }: { current: string }) {
 
             {uiMatches.length === 0 && contentMatches.length === 0 ? (
               <p className="px-2 py-6 text-center text-sm text-fg-muted">
-                Bu aramaya uyan dil yok.
+                {labels.empty}
               </p>
             ) : null}
           </div>

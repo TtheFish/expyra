@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import { SiteFooter } from '@/components/brand/site-footer'
 import { SiteHeader } from '@/components/brand/site-header'
 import { GlassSurface } from '@/components/ui/glass-surface'
-import { t } from '@/features/auth/account-messages'
 import {
   ApiError,
   DISPLAY_NAME_MAX_LENGTH,
@@ -13,6 +12,7 @@ import {
 import { ProfileForm, type LanguageOption } from '@/features/auth/profile-form'
 import { RETURN_TO_PARAM } from '@/features/auth/return-to'
 import { getSession } from '@/features/auth/session'
+import { getTranslator } from '@/features/i18n/translator'
 import { contentLanguages, localNameOf } from '@/lib/languages'
 import { alternateLinks, path } from '@/lib/routes'
 
@@ -28,7 +28,14 @@ import { alternateLinks, path } from '@/lib/routes'
  * ister ve bu blokta yok. Düzenlenebilir gibi göstermek yerine nedenini yazıyoruz.
  */
 
-export function generateMetadata(): Metadata {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}): Promise<Metadata> {
+  const { lang } = await params
+  const t = await getTranslator(lang)
+
   return {
     title: `${t('account.title')} · Expyra`,
     alternates: { languages: alternateLinks('account') },
@@ -39,6 +46,7 @@ export function generateMetadata(): Metadata {
 
 export default async function AccountPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
+  const t = await getTranslator(lang)
   const session = await getSession()
 
   // `redirect` NEXT_REDIRECT fırlatıyor; bu yüzden hiçbir `try` bloğunun içinde
@@ -77,6 +85,17 @@ export default async function AccountPage({ params }: { params: Promise<{ lang: 
             preferredLanguage={user.preferredLanguage}
             languages={languageOptions(lang, user.preferredLanguage)}
             displayNameMaxLength={DISPLAY_NAME_MAX_LENGTH}
+            lang={lang}
+            labels={{
+              nameLabel: t('account.name.label'),
+              nameHelp: t('account.name.help'),
+              namePlaceholder: t('account.name.placeholder'),
+              languageLabel: t('account.language.label'),
+              languageHelp: t('account.language.help'),
+              languageNone: t('account.language.none'),
+              save: t('account.save'),
+              saving: t('account.saving'),
+            }}
           />
         </GlassSurface>
       </main>

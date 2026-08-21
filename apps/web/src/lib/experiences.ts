@@ -59,8 +59,14 @@ export const experiences: Experience[] = [
 /**
  * Küçük harfe çevirme dile bağlı: Türkçe'de `I → ı`, `İ → i`.
  * "İstanbul" araması varsayılan (invariant) küçültmeyle "i̇stanbul" olur ve
- * kendi şehrini bulamaz. Aynı tuzak `ticket-pdf.ts` içinde büyük harf yönünde
- * not edilmiş. Faz 8'de locale kullanıcıdan gelecek — şimdilik arayüz dili.
+ * kendi şehrini bulamaz.
+ *
+ * **Arayüz diline BAĞLANMIYOR, bilinçli.** Görüntüleme biçimleri (tarih, para)
+ * sayfanın diline bağlandı; bu ise bir ARAMA katlaması. `/en` altında `'en'`
+ * ile katlansaydı İngilizce arayüzden "İstanbul" aramak sonuç vermezdi — oysa
+ * aranan veri Türkçe. Doğru locale burada okuyanın değil, VERİNİN dili; o da
+ * Blok 5'te `Experience.OriginalLanguage` ile gelecek (docs/I18N.md §2).
+ * Prototip veri Türkçe olduğu için katlama şimdilik Türkçe kuralında.
  */
 const fold = (value: string) => value.toLocaleLowerCase('tr-TR').trim()
 
@@ -141,19 +147,20 @@ export function parseSearchDate(value: string | undefined): string | undefined {
   return parsed.toISOString().slice(0, 10) === value ? value : undefined
 }
 
-/** Salt tarih; UTC'de biçimleniyor — yerel saate çevrilirse bir gün geri kayar. */
-export function formatSearchDate(value: string, locale = 'tr-TR'): string {
+/**
+ * Salt tarih; UTC'de biçimleniyor — yerel saate çevrilirse bir gün geri kayar.
+ *
+ * Locale ARTIK VARSAYILANSIZ ve ilk parametre (`features/i18n/format.ts` ile
+ * aynı imza kuralı). Varsayılanı `'tr-TR'` bırakmak, `/en/explore` sayfasında
+ * özet satırının "1 Eylül 2026" yazmasıydı ve bunu kimse çeviri hatası saymaz.
+ * İmzada zorunlu olunca unutmak derleme hatası oluyor.
+ *
+ * `format.ts`'teki `formatDateTime` kullanılmıyor çünkü buradaki `timeZone:
+ * 'UTC'` seçeneği isteğe bağlı bir süsleme değil, doğruluğun şartı.
+ */
+export function formatSearchDate(locale: string, value: string): string {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: 'long',
     timeZone: 'UTC',
   }).format(new Date(`${value}T00:00:00Z`))
-}
-
-/** Fiyat biçimi tek yerde: Faz 8'de locale ve görüntüleme para birimi buraya gelir. */
-export function formatPrice(amount: number, currency: string, locale = 'tr-TR'): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount)
 }

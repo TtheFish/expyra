@@ -2,8 +2,8 @@
 
 import { useActionState } from 'react'
 import { GlassButton } from '@/components/ui/glass-button'
+import { UI_LANGUAGE_FIELD } from '@/features/i18n/locale'
 import { requestCodeAction, type AuthFormState } from './actions'
-import { t } from './messages'
 import { RETURN_TO_PARAM } from './return-to'
 
 /**
@@ -11,6 +11,9 @@ import { RETURN_TO_PARAM } from './return-to'
  *
  * `autoFocus` YOK — mobilde açılan klavye kartın üstündeki "Şifre yok" gerekçesini
  * örter ve kullanıcı neye giriş yaptığını okuyamadan yazmaya başlar.
+ *
+ * Metin PROP olarak geliyor (sözlük `server-only`); hata metnini ise sunucu
+ * eylemi HAZIR döndürüyor — bu yüzden formda dilin de gitmesi gerekiyor.
  */
 
 const INITIAL: AuthFormState = { error: null, at: 0 }
@@ -18,7 +21,23 @@ const INITIAL: AuthFormState = { error: null, at: 0 }
 const HELP_ID = 'eposta-yardim'
 const ERROR_ID = 'eposta-hata'
 
-export function EmailStep({ returnTo, lang }: { returnTo: string; lang: string }) {
+export type EmailStepLabels = {
+  label: string
+  help: string
+  placeholder: string
+  submit: string
+  working: string
+}
+
+export function EmailStep({
+  returnTo,
+  lang,
+  labels,
+}: {
+  returnTo: string
+  lang: string
+  labels: EmailStepLabels
+}) {
   const [state, formAction, pending] = useActionState<AuthFormState, FormData>(
     requestCodeAction,
     INITIAL,
@@ -27,14 +46,20 @@ export function EmailStep({ returnTo, lang }: { returnTo: string; lang: string }
   return (
     <form action={formAction} className="auth-form">
       <input type="hidden" name={RETURN_TO_PARAM} value={returnTo} />
-      {/* Kod postasının dili: kullanıcının bulunduğu sayfadan geliyor, tarayıcı
-          tercihinden değil (bkz. requestCodeAction). */}
-      <input type="hidden" name="dil" value={lang} />
+      {/*
+        Sayfanın dili. İKİ işi birden görüyor ve ikisi de aynı gerekçeye dayanıyor
+        — kullanıcı o dili görmeyi zaten seçmiş:
+
+        1. Kod postasının dili (bkz. `requestCodeAction`).
+        2. Sunucu eyleminin döndürdüğü hata metninin dili — eylem hangi sayfadan
+           çağrıldığını başka türlü bilemiyor.
+      */}
+      <input type="hidden" name={UI_LANGUAGE_FIELD} value={lang} />
 
       <div>
         {/* Görünür etiket: placeholder etiket yerine geçmez, odakta kaybolur. */}
         <label className="auth-label" htmlFor="eposta">
-          {t('auth.email.label')}
+          {labels.label}
         </label>
 
         <input
@@ -49,14 +74,14 @@ export function EmailStep({ returnTo, lang }: { returnTo: string; lang: string }
           autoCapitalize="off"
           required
           maxLength={254}
-          placeholder={t('auth.email.placeholder')}
+          placeholder={labels.placeholder}
           disabled={pending}
           aria-describedby={`${HELP_ID} ${ERROR_ID}`}
           aria-invalid={state.error !== null}
         />
 
         <p id={HELP_ID} className="auth-help">
-          {t('auth.email.help')}
+          {labels.help}
         </p>
       </div>
 
@@ -71,7 +96,7 @@ export function EmailStep({ returnTo, lang }: { returnTo: string; lang: string }
       </p>
 
       <GlassButton type="submit" variant="primary" size="lg" className="w-full" disabled={pending}>
-        {pending ? t('auth.common.working') : t('auth.common.continue')}
+        {pending ? labels.working : labels.submit}
       </GlassButton>
     </form>
   )

@@ -1,32 +1,41 @@
 import type { Metadata } from 'next'
 import { BrandLogo } from '@/components/brand/brand-logo'
 import { GlassButton } from '@/components/ui/glass-button'
+import type { SimpleMessageKey, Translate } from '@/features/i18n/dictionary'
+import { getTranslator } from '@/features/i18n/translator'
 import { alternateLinks, path } from '@/lib/routes'
 
-export function generateMetadata(): Metadata {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}): Promise<Metadata> {
+  const { lang } = await params
+  const t = await getTranslator(lang)
+
   return {
-    title: 'Nasıl çalışır? · Expyra',
+    // Sayfanın adı üst menüdekiyle AYNI anahtardan: aynı sayfa iki yerde farklı
+    // adla görünürse, çeviri eklendiğinde kimsenin fark etmediği bir
+    // tutarsızlık olur (aynı gerekçe `site-footer.tsx` içinde de yazılı).
+    title: `${t('nav.howItWorks')} · Expyra`,
     alternates: { languages: alternateLinks('howItWorks') },
   }
 }
 
-const steps = [
-  {
-    title: 'Keşfet',
-    body: 'Şehrindeki yerel deneyimlere göz at. Küçük gruplar, gerçek hostlar.',
-  },
-  {
-    title: 'Rezerve et',
-    body: 'Tarih seç, yerini ayırt. Biletin anında cebinde.',
-  },
-  {
-    title: 'Katıl',
-    body: 'Girişte host QR kodunu okutur. Deneyimin başlar.',
-  },
+/**
+ * Adımlar metin DEĞİL anahtar tutuyor: metin sözlükte, sıra burada. Anahtarlar
+ * `SimpleMessageKey` — yer tutucusuz ve çoğulsuz küme, yani `t(key)` tek
+ * parametreyle çağrılabiliyor ve yanlış anahtar derlemede kırılıyor.
+ */
+const steps: ReadonlyArray<{ title: SimpleMessageKey; body: SimpleMessageKey }> = [
+  { title: 'howItWorks.step.discover.title', body: 'howItWorks.step.discover.body' },
+  { title: 'howItWorks.step.book.title', body: 'howItWorks.step.book.body' },
+  { title: 'howItWorks.step.join.title', body: 'howItWorks.step.join.body' },
 ]
 
 export default async function HowItWorksPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
+  const t = await getTranslator(lang)
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -34,41 +43,62 @@ export default async function HowItWorksPage({ params }: { params: Promise<{ lan
         <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
           <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
           <GlassButton variant="ghost" size="sm" href={path(lang, 'home')} className="text-nav-link">
-            Geri
+            {t('howItWorks.back')}
           </GlassButton>
         </div>
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 py-16">
         <h1 className="text-on-media text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-          Nasıl çalışır?
+          {t('nav.howItWorks')}
         </h1>
-        <p className="text-on-media mt-3 max-w-lg text-white/85">
-          Üç adımda bitiyor.
-        </p>
+        <p className="text-on-media mt-3 max-w-lg text-white/85">{t('howItWorks.lede')}</p>
 
         <ol className="mt-12 space-y-4">
           {steps.map((step, index) => (
-            <li key={step.title}>
-              <div className="glass glass-edge flex gap-5 p-6">
-                <span className="font-mono text-sm text-fg-muted">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <div>
-                  <h2 className="font-semibold">{step.title}</h2>
-                  <p className="mt-1 text-sm text-fg-muted">{step.body}</p>
-                </div>
-              </div>
-            </li>
+            <Step key={step.title} number={index + 1} step={step} lang={lang} t={t} />
           ))}
         </ol>
 
         <div className="mt-10">
           <GlassButton variant="primary" size="md" href={path(lang, 'explore')}>
-            Keşfe dön
+            {t('howItWorks.backToExplore')}
           </GlassButton>
         </div>
       </main>
     </div>
+  )
+}
+
+function Step({
+  number,
+  step,
+  lang,
+  t,
+}: {
+  number: number
+  step: { title: SimpleMessageKey; body: SimpleMessageKey }
+  lang: string
+  t: Translate
+}) {
+  return (
+    <li>
+      <div className="glass glass-edge flex gap-5 p-6">
+        {/*
+          Sıra numarası `Intl` ile biçimleniyor, `String(n).padStart(2, '0')`
+          ile değil: rakamların kendisi dile bağlı (Arapça arayüzde "٠١"
+          beklenir) ve `minimumIntegerDigits` sıfır dolgusunu o dilin
+          rakamlarıyla yapıyor. Sunum amaçlı olduğu için ekran okuyucudan
+          gizli — sıra zaten <ol> ile taşınıyor.
+        */}
+        <span className="font-mono text-sm text-fg-muted" aria-hidden="true">
+          {new Intl.NumberFormat(lang, { minimumIntegerDigits: 2 }).format(number)}
+        </span>
+        <div>
+          <h2 className="font-semibold">{t(step.title)}</h2>
+          <p className="mt-1 text-sm text-fg-muted">{t(step.body)}</p>
+        </div>
+      </div>
+    </li>
   )
 }

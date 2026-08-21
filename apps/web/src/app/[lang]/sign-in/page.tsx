@@ -5,8 +5,8 @@ import { GlassButton } from '@/components/ui/glass-button'
 import { getChallenge, secondsUntil } from '@/features/auth/challenge'
 import { CodeStep } from '@/features/auth/code-step'
 import { EmailStep } from '@/features/auth/email-step'
-import { t } from '@/features/auth/messages'
 import { RETURN_TO_PARAM, safeReturnTo } from '@/features/auth/return-to'
+import { getTranslator } from '@/features/i18n/translator'
 import { alternateLinks, path } from '@/lib/routes'
 
 /**
@@ -23,9 +23,16 @@ import { alternateLinks, path } from '@/lib/routes'
  * ("bu e-posta zaten kayıtlı").
  */
 
-export function generateMetadata(): Metadata {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}): Promise<Metadata> {
+  const { lang } = await params
+  const t = await getTranslator(lang)
+
   return {
-    title: 'Giriş · Expyra',
+    title: `${t('auth.meta.title')} · Expyra`,
     alternates: { languages: alternateLinks('signIn') },
   }
 }
@@ -38,6 +45,7 @@ export default async function SignInPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const [{ lang }, query] = await Promise.all([params, searchParams])
+  const t = await getTranslator(lang)
 
   const returnTo = safeReturnTo(query[RETURN_TO_PARAM])
   const challenge = await getChallenge()
@@ -48,7 +56,7 @@ export default async function SignInPage({
         <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
           <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
           <GlassButton variant="ghost" size="sm" href={path(lang, 'home')} className="text-nav-link">
-            Geri
+            {t('auth.back')}
           </GlassButton>
         </div>
       </header>
@@ -58,9 +66,15 @@ export default async function SignInPage({
           <AuthCard
             title={t('auth.title')}
             lede={
+              /*
+                Adres cümlenin İÇİNE değil SONUNA konuyor: metin iki nokta üst
+                üste ile bitiyor ve adres ayrı bir öğe. Yer tutucuyla doldurmak
+                `<strong>` sarmalayıcısını çeviriye taşırdı; cümleyi ikiye bölmek
+                ise "cümle birleştirme yok" kuralını çiğnerdi. Bu üçüncü yol her
+                dilde çalışıyor çünkü çevirmenin gördüğü metin tam bir cümle.
+              */
               <>
-                {t('auth.code.lede')}{' '}
-                <strong className="auth-email">{challenge.email}</strong>
+                {t('auth.code.lede')} <strong className="auth-email">{challenge.email}</strong>
               </>
             }
           >
@@ -69,11 +83,30 @@ export default async function SignInPage({
               resendAvailableAtUtc={challenge.resendAvailableAtUtc}
               initialRemainingSeconds={secondsUntil(challenge.resendAvailableAtUtc)}
               returnTo={returnTo}
+              lang={lang}
+              labels={{
+                label: t('auth.code.label'),
+                hint: t('auth.code.hint'),
+                submit: t('auth.common.continue'),
+                working: t('auth.common.working'),
+                resend: t('auth.code.resend'),
+                changeEmail: t('auth.code.changeEmail'),
+              }}
             />
           </AuthCard>
         ) : (
           <AuthCard title={t('auth.title')} lede={t('auth.email.lede')}>
-            <EmailStep returnTo={returnTo} lang={lang} />
+            <EmailStep
+              returnTo={returnTo}
+              lang={lang}
+              labels={{
+                label: t('auth.email.label'),
+                help: t('auth.email.help'),
+                placeholder: t('auth.email.placeholder'),
+                submit: t('auth.common.continue'),
+                working: t('auth.common.working'),
+              }}
+            />
           </AuthCard>
         )}
       </main>

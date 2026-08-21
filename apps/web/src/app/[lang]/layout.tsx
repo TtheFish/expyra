@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { notFound } from 'next/navigation'
 import { SiteChrome } from '@/components/brand/site-chrome'
+import { getTranslator } from '@/features/i18n/translator'
 import { findLanguage } from '@/lib/languages'
 import { isRoutableLanguage, routableLanguages } from '@/lib/routes'
 import '../globals.css'
@@ -16,9 +17,24 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
-export const metadata: Metadata = {
-  title: 'Expyra',
-  description: 'Yerel deneyimleri keşfet, rezervasyon yap.',
+/**
+ * Statik `metadata` yerine `generateMetadata`: açıklama sayfanın dilinde
+ * yazılmalı. `<html lang="en">` içindeki Türkçe bir `meta description` yalnız
+ * arama sonucunda değil, paylaşılan her bağlantı önizlemesinde görünür.
+ * Marka adı çevrilmiyor.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}): Promise<Metadata> {
+  const { lang } = await params
+  const t = await getTranslator(lang)
+
+  return {
+    title: 'Expyra',
+    description: t('meta.description'),
+  }
 }
 
 export const viewport: Viewport = {

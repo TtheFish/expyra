@@ -9,8 +9,10 @@ import languagesFile from '../../../../docs/languages.json'
  * olmadan da çalışmalı. Build zamanında çözülüyor, yani dosya kaybolursa
  * derleme kırılır — çalışma anında sessizce boş liste dönmez.
  *
- * Faz 8.1'de arayüz çevirisi gelince kullanıcının seçimi gerçek çeviriye
- * bağlanacak; o zamana kadar seçim yalnızca tercih olarak saklanıyor.
+ * Bu liste İÇERİK dilleri (49). Arayüz dilleri ayrı ve çok daha dar küme —
+ * `features/i18n/` sözlüğü hangi dilleri taşıyorsa o (bugün tr + en).
+ * Ayrım docs/I18N.md §1: host Korece yazabilir, arayüzü Korece'ye çevirmek
+ * bizim iş yükümüz.
  */
 
 export type Language = {

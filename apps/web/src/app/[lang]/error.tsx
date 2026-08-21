@@ -3,7 +3,8 @@
 import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { GlassButton } from '@/components/ui/glass-button'
-import { defaultRouteLanguage, isRoutableLanguage, path } from '@/lib/routes'
+import { boundaryLocaleOf, boundaryMessages } from '@/features/i18n/boundary'
+import { path } from '@/lib/routes'
 
 /**
  * Beklenmeyen hata sınırı — bu dil segmentinin altındaki her sayfayı sarar.
@@ -18,15 +19,11 @@ import { defaultRouteLanguage, isRoutableLanguage, path } from '@/lib/routes'
  *
  * Hata YUTULMUYOR (CLAUDE.md #1): `console.error` ile görünür kalıyor. Faz 20'de
  * burası hata takip servisine bağlanacak.
+ *
+ * Metin `features/i18n/boundary`'den: hata sınırları Client Component olmak
+ * ZORUNDA (Next 16 sözleşmesi) ve sunucu ebeveynleri yok, yani sözlük buraya
+ * prop olarak inemiyor. Gerekçe ve bedeli o dosyada.
  */
-
-const messages = {
-  title: 'Bir şeyler ters gitti',
-  lede: 'Bu sayfayı yükleyemedik. Sorun bizde olabilir — genellikle tekrar denemek yetiyor.',
-  retry: 'Tekrar dene',
-  home: 'Ana sayfaya dön',
-  reference: 'Destek kodu',
-} as const
 
 type ErrorBoundaryProps = {
   error: Error & { digest?: string }
@@ -42,14 +39,12 @@ type ErrorBoundaryProps = {
 }
 
 export default function ErrorBoundary({ error, reset, unstable_retry }: ErrorBoundaryProps) {
-  const pathname = usePathname()
+  const lang = boundaryLocaleOf(usePathname())
+  const messages = boundaryMessages[lang].error
 
   useEffect(() => {
     console.error('page.render.failed', error)
   }, [error])
-
-  const segment = pathname.split('/')[1] ?? ''
-  const lang = isRoutableLanguage(segment) ? segment : defaultRouteLanguage
 
   return (
     <main className="relative z-10 mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-4 py-16">

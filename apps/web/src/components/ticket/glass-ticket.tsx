@@ -2,7 +2,6 @@
 
 import { useRef, type PointerEvent } from 'react'
 import type { Ticket } from '@/lib/ticket'
-import { formatLocalDateTime, formatMoney } from '@/lib/ticket'
 
 /**
  * QR bilet.
@@ -17,15 +16,40 @@ import { formatLocalDateTime, formatMoney } from '@/lib/ticket'
  * yalnız kod yorumunda söylemek yetmez: ekranı gören kişi biletinin geçerli
  * olduğunu sanar ve bunu kapıda öğrenir. İbare Blok 12'de (imzalı token +
  * doğrulama sayfası + check-in) kalkacak.
+ *
+ * **Metin ve biçimlenmiş değerler PROP.** Sözlük `server-only`, bu bileşen
+ * tarayıcıda (eğim efekti için). Biletin üzerindeki hiçbir değer istemcide
+ * değişmiyor, dolayısıyla şablon değil HAZIR metin iniyor — tutar, saat ve
+ * kişi sayısı sunucuda sayfanın diliyle biçimleniyor (`my-experiences/page.tsx`).
  */
+
+export type GlassTicketLabels = {
+  demoBadge: string
+  demoNote: string
+  guests: string
+  amount: string
+  status: string
+  statusValid: string
+  statusUsed: string
+  /** "{sehir} saatiyle" — şehir sunucuda yerleşiyor. */
+  timeZoneNote: string
+}
+
+export type GlassTicketValues = {
+  guests: string
+  amount: string
+  startsAt: string
+}
 
 type Props = {
   ticket: Ticket
   /** Sunucuda üretilmiş QR (SVG string). */
   qrMarkup: string
+  labels: GlassTicketLabels
+  values: GlassTicketValues
 }
 
-export function GlassTicket({ ticket, qrMarkup }: Props) {
+export function GlassTicket({ ticket, qrMarkup, labels, values }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const isUsed = ticket.status === 'used'
 
@@ -68,7 +92,7 @@ export function GlassTicket({ ticket, qrMarkup }: Props) {
           süs değil bilgi: ekran okuyucu da duymalı.
         */}
         <p className="absolute right-4 top-4 z-[3] rounded-full border border-white/25 bg-[rgb(12_14_20_/_0.62)] px-2.5 py-1 text-[0.625rem] font-semibold uppercase tracking-[0.14em] text-white">
-          Demo bilet
+          {labels.demoBadge}
         </p>
 
         {/* --- Üst: deneyim kimliği ------------------------------------- */}
@@ -82,6 +106,7 @@ export function GlassTicket({ ticket, qrMarkup }: Props) {
           aria-hidden="true"
         />
 
+        {/* Konum, başlık ve host adı host'un yazdığı İÇERİK — çevrilmiyor. */}
         <div className="relative z-[2] px-6 pb-5 pt-4">
           <p className="text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-fg-muted">
             {ticket.location}
@@ -93,30 +118,26 @@ export function GlassTicket({ ticket, qrMarkup }: Props) {
 
           <dl className="mt-4 grid grid-cols-3 gap-3 text-sm">
             <div>
-              <dt className="text-[0.6875rem] text-fg-muted">Kişi</dt>
-              <dd className="font-semibold">{ticket.guests}</dd>
+              <dt className="text-[0.6875rem] text-fg-muted">{labels.guests}</dt>
+              <dd className="font-semibold">{values.guests}</dd>
             </div>
             <div>
-              <dt className="text-[0.6875rem] text-fg-muted">Tutar</dt>
-              <dd className="font-semibold">
-                {formatMoney(ticket.totalAmount, ticket.currency)}
-              </dd>
+              <dt className="text-[0.6875rem] text-fg-muted">{labels.amount}</dt>
+              <dd className="font-semibold">{values.amount}</dd>
             </div>
             <div>
-              <dt className="text-[0.6875rem] text-fg-muted">Durum</dt>
+              <dt className="text-[0.6875rem] text-fg-muted">{labels.status}</dt>
               <dd className={`font-semibold ${isUsed ? 'text-fg-muted' : 'text-brand-500'}`}>
-                {isUsed ? 'Kullanıldı' : 'Geçerli'}
+                {isUsed ? labels.statusUsed : labels.statusValid}
               </dd>
             </div>
           </dl>
 
-          <p className="mt-4 text-sm font-medium">{formatLocalDateTime(ticket)}</p>
+          <p className="mt-4 text-sm font-medium">{values.startsAt}</p>
           {/* IANA kimliği (`Europe/Prague`) sistemler arası eşleşme için var,
               okunmak için değil. Biletin en kritik alanı saat — yanlış anlaşılması
               kaçırılmış deneyim demek. */}
-          <p className="text-[0.6875rem] text-fg-muted">
-            {ticket.location.split(',')[0]} saatiyle
-          </p>
+          <p className="text-[0.6875rem] text-fg-muted">{labels.timeZoneNote}</p>
         </div>
 
         {/* --- Perforasyon: koçan ayrımı --------------------------------- */}
@@ -152,12 +173,10 @@ export function GlassTicket({ ticket, qrMarkup }: Props) {
             olacağı yazıyor.
           */}
           <p className="mx-auto mt-2 max-w-[15rem] text-center text-[0.6875rem] leading-relaxed text-fg-muted">
-            Örnek bilet: QR henüz imzalanmıyor ve girişte doğrulanamıyor.
+            {labels.demoNote}
           </p>
 
-          {isUsed && (
-            <span className="ticket-stamp text-sm">Kullanıldı</span>
-          )}
+          {isUsed && <span className="ticket-stamp text-sm">{labels.statusUsed}</span>}
         </div>
       </div>
     </div>

@@ -2,13 +2,14 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { GlassButton } from '@/components/ui/glass-button'
+import { formatNumber } from '@/features/i18n/format'
+import { UI_LANGUAGE_FIELD } from '@/features/i18n/locale'
 import {
   resendCodeAction,
   restartFlowAction,
   verifyCodeAction,
   type AuthFormState,
 } from './actions'
-import { formatNumber, t } from './messages'
 import { OtpInput } from './otp-input'
 import { RETURN_TO_PARAM } from './return-to'
 
@@ -21,12 +22,25 @@ import { RETURN_TO_PARAM } from './return-to'
  *
  * `challengeId` bu bileşene HİÇ gelmiyor; sunucu eylemi onu `httpOnly` çerezden
  * okuyor. Ekranda yalnız kullanıcının kendi adresi var.
+ *
+ * `lang` prop'u iki yere gidiyor: gizli alan (sunucu eyleminin hata metnini
+ * hangi dilde yazacağı) ve geri sayımın sayı biçimi. Sayıyı `String(n)` ile
+ * basmak Arapça arayüzde ASCII rakam demek.
  */
 
 const INITIAL: AuthFormState = { error: null, at: 0 }
 
 const HELP_ID = 'kod-yardim'
 const ERROR_ID = 'kod-hata'
+
+export type CodeStepLabels = {
+  label: string
+  hint: string
+  submit: string
+  working: string
+  resend: string
+  changeEmail: string
+}
 
 type CodeStepProps = {
   codeLength: number
@@ -38,6 +52,8 @@ type CodeStepProps = {
    */
   initialRemainingSeconds: number
   returnTo: string
+  lang: string
+  labels: CodeStepLabels
 }
 
 export function CodeStep({
@@ -45,6 +61,8 @@ export function CodeStep({
   resendAvailableAtUtc,
   initialRemainingSeconds,
   returnTo,
+  lang,
+  labels,
 }: CodeStepProps) {
   const [verifyState, verifyAction, verifyPending] = useActionState<AuthFormState, FormData>(
     verifyCodeAction,
@@ -65,10 +83,13 @@ export function CodeStep({
   return (
     <form action={verifyAction} className="auth-form">
       <input type="hidden" name={RETURN_TO_PARAM} value={returnTo} />
+      {/* Sunucu eylemlerinin cevabını hangi dilde yazacağı; üç eylem de aynı
+          formdan besleniyor (bkz. `email-step.tsx`). */}
+      <input type="hidden" name={UI_LANGUAGE_FIELD} value={lang} />
 
       <div>
         <label className="auth-label" htmlFor="kod">
-          {t('auth.code.label')}
+          {labels.label}
         </label>
 
         {/*
@@ -86,7 +107,7 @@ export function CodeStep({
         />
 
         <p id={HELP_ID} className="auth-help">
-          {t('auth.code.hint')}
+          {labels.hint}
         </p>
       </div>
 
@@ -96,7 +117,7 @@ export function CodeStep({
 
       {/* Otomatik gönderim tek başına yeterli sayılmaz: görünür submit her zaman var. */}
       <GlassButton type="submit" variant="primary" size="lg" className="w-full" disabled={busy}>
-        {busy ? t('auth.common.working') : t('auth.common.continue')}
+        {busy ? labels.working : labels.submit}
       </GlassButton>
 
       <div className="auth-actions">
@@ -110,11 +131,11 @@ export function CodeStep({
           formNoValidate
           className="auth-link-button"
           disabled={busy || remaining > 0}
-          aria-label={t('auth.code.resend')}
+          aria-label={labels.resend}
         >
-          <span>{t('auth.code.resend')}</span>
+          <span>{labels.resend}</span>
           {remaining > 0 ? (
-            <span aria-hidden="true"> ({formatNumber(remaining)})</span>
+            <span aria-hidden="true"> ({formatNumber(lang, remaining)})</span>
           ) : null}
         </button>
 
@@ -125,7 +146,7 @@ export function CodeStep({
           className="auth-link-button"
           disabled={busy}
         >
-          {t('auth.code.changeEmail')}
+          {labels.changeEmail}
         </button>
       </div>
     </form>

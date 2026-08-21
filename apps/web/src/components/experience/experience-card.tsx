@@ -1,7 +1,26 @@
-import { formatPrice, type Experience } from '@/lib/experiences'
+import type { Translate } from '@/features/i18n/dictionary'
+import { formatMoney, formatNumber } from '@/features/i18n/format'
+import type { Experience } from '@/lib/experiences'
 
-/** Deneyim kartı. Ana sayfa ve arama sonuçları aynı kartı kullanır. */
-export function ExperienceCard({ item }: { item: Experience }) {
+/**
+ * Deneyim kartı. Ana sayfa ve arama sonuçları aynı kartı kullanır.
+ *
+ * `t` ve `lang` PROP: kart bir listede tekrarlanıyor, her kopyanın kendi
+ * `getTranslator` çağrısını yapması (React `cache` sayesinde bedelsiz olsa da)
+ * bileşeni gereksizce async yapardı. Aynı kalıp `become-a-host` sayfasında.
+ *
+ * Kart üzerindeki BAŞLIK, ŞEHİR ve ÜLKE çevrilmiyor — onlar host'un yazdığı
+ * içerik, arayüz metni değil (docs/I18N.md §1). Çevrilen tek şey etiketler.
+ */
+export function ExperienceCard({
+  item,
+  lang,
+  t,
+}: {
+  item: Experience
+  lang: string
+  t: Translate
+}) {
   return (
     /*
       `glass-interactive` YOK — hover'da yükselip basılınca çöken bir yüzey
@@ -22,21 +41,36 @@ export function ExperienceCard({ item }: { item: Experience }) {
 
       <div className="p-5">
         <div className="mb-2 flex items-center justify-between gap-3">
+          {/* Şehir/ülke sırası da anahtarın içinde: her dilde aynı değil. */}
           <span className="text-xs font-medium text-fg-muted">
-            {item.city}, {item.country}
+            {t('experience.place', { sehir: item.city, ulke: item.country })}
           </span>
-          <span className="text-xs font-medium text-fg-muted">★ {item.rating}</span>
+          {/* Puan metin olarak tutuluyor; sayı biçimi dile bağlı ("4,9" / "4.9"). */}
+          <span className="text-xs font-medium text-fg-muted">
+            {t('experience.rating', { puan: formatNumber(lang, Number(item.rating)) })}
+          </span>
         </div>
 
         <h3 className="text-base font-semibold leading-snug">{item.title}</h3>
 
         <div className="mt-4 flex items-baseline justify-between">
           <span className="text-lg font-semibold">
-            {formatPrice(item.price, item.currency)}
-            <span className="ml-1 text-xs font-normal text-fg-muted">/ kişi</span>
+            {formatMoney(lang, item.price, item.currency)}
+            <span className="ml-1 text-xs font-normal text-fg-muted">
+              {t('experience.perPerson')}
+            </span>
           </span>
+          {/*
+            Süre önce KENDİ anahtarında çekimleniyor, sonra `{sure}` olarak
+            satıra yerleşiyor: bir metin tek çoğul sayacı taşıyabiliyor, burada
+            ise iki sayım var (saat ve kişi). İngilizce'de "1 hour"/"2 hours" ve
+            "1 person"/"8 people" ayrımı ancak böyle korunuyor.
+          */}
           <span className="text-xs text-fg-muted">
-            {item.durationHours} saat · en fazla {item.maxGuests} kişi
+            {t('experience.meta', {
+              sure: t('experience.duration', { n: item.durationHours }),
+              n: item.maxGuests,
+            })}
           </span>
         </div>
       </div>

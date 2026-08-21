@@ -1,5 +1,8 @@
 'use client'
 
+import { boundaryMessages } from '@/features/i18n/boundary'
+import { defaultUiLocale } from '@/features/i18n/locale'
+
 /**
  * Son savunma hattı: kök layout'un (`app/[lang]/layout.tsx`) kendisi render
  * edilemediğinde devreye girer. O layout patladığında `<html>`/`<body>`,
@@ -20,14 +23,14 @@
  * `<title>` bileşeniyle veriliyor.
  */
 
-const messages = {
-  documentTitle: 'Bir şeyler ters gitti · Expyra',
-  title: 'Bir şeyler ters gitti',
-  lede: 'Uygulama beklenmedik biçimde durdu. Sayfayı yeniden yüklemek çoğu zaman yetiyor.',
-  retry: 'Yeniden dene',
-  home: 'Ana sayfaya dön',
-  reference: 'Destek kodu',
-} as const
+/**
+ * Metin sözlükten DEĞİL, `features/i18n/boundary`'den — ve yalnız VARSAYILAN
+ * dilde. Bu ekran kök layout'un yerine geçiyor, yani dili belirleyen yer hiç
+ * çalışmamış: `params` yok ve `usePathname` buraya düşüldüğünde güvenilecek son
+ * şey. Tabloyu paylaşmanın faydası dördüncü bir Türkçe metin kopyası
+ * bırakmamak; dil SEÇİMİ burada mümkün değil.
+ */
+const messages = boundaryMessages[defaultUiLocale].globalError
 
 /** Satır içi, çünkü bu sayfa hiçbir stil dosyasına güvenemiyor. */
 const css = `
@@ -87,9 +90,11 @@ type GlobalErrorProps = {
 
 export default function GlobalError({ error, reset, unstable_retry }: GlobalErrorProps) {
   // Kök layout dili belirleyen yer; o çalışmadığı için dil bilinmiyor.
-  // Varsayılan arayüz dili yazılıyor (docs/I18N.md §5) — arayüz zaten Türkçe.
+  // `lang` özniteliği ile METİN artık aynı kaynaktan geliyor: ikisi de varsayılan
+  // arayüz dili. Sabit `"tr"` yazmak, varsayılan bir gün değiştiğinde ekran
+  // okuyucunun metni yanlış fonetikle okuması demekti (WCAG 3.1.1).
   return (
-    <html lang="tr">
+    <html lang={defaultUiLocale}>
       <body>
         <title>{messages.documentTitle}</title>
         <style dangerouslySetInnerHTML={{ __html: css }} />

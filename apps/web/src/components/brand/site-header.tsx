@@ -4,18 +4,30 @@ import { LanguagePicker } from '@/components/i18n/language-picker'
 import { GlassButton } from '@/components/ui/glass-button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { AccountMenu } from '@/features/auth/account-menu'
-import { t } from '@/features/auth/account-messages'
 import { ApiError, fetchCurrentUser, type CurrentUser } from '@/features/auth/api'
 import { SIGN_OUT_PATH } from '@/features/auth/return-to'
 import { getSession } from '@/features/auth/session'
+import { getTemplate, getTranslator } from '@/features/i18n/translator'
 import { path } from '@/lib/routes'
 
 /**
  * Ortak üst çubuk. Her sayfaya kopyalanmıştı; lokalize URL'lere geçerken
  * linklerin tek yerde durması şart oldu — yoksa yeni bir dil eklendiğinde
  * her sayfayı tek tek gezmek gerekir.
+ *
+ * **Metin sunucuda çözülüyor, istemciye PROP olarak iniyor.** Üç istemci
+ * bileşeni var (dil seçici, tema düğmesi, hesap menüsü) ve hiçbiri sözlüğe
+ * dokunmuyor: sözlük `server-only` ve tarayıcıya inen tek şey o bileşenin
+ * gerçekten kullandığı birkaç dizge. Alternatif — istemcide bir çeviri
+ * context'i — aktif dilin TÜM anahtarlarını, kullanıcının hiç açmayacağı
+ * sayfalarınkiler dahil, her sayfada indirtirdi (docs/I18N.md §5).
  */
-export function SiteHeader({ lang }: { lang: string }) {
+export async function SiteHeader({ lang }: { lang: string }) {
+  const [t, triggerTemplate] = await Promise.all([
+    getTranslator(lang),
+    getTemplate(lang, 'language.trigger'),
+  ])
+
   return (
     /* z-30: nav'daki açılır paneller (dil seçici, hesap menüsü) main'in üstünde
        çizilmeli. Header ve main aynı z-10'daysa DOM'da sonra gelen main kazanır. */
@@ -23,9 +35,9 @@ export function SiteHeader({ lang }: { lang: string }) {
       <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
         <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
 
-        <nav className="hidden items-center gap-1 sm:flex" aria-label="Ana menü">
+        <nav className="hidden items-center gap-1 sm:flex" aria-label={t('nav.primaryLabel')}>
           <GlassButton variant="ghost" size="sm" href={path(lang, 'explore')} className="text-nav-link">
-            Keşfet
+            {t('nav.explore')}
           </GlassButton>
           <GlassButton
             variant="ghost"
@@ -33,7 +45,7 @@ export function SiteHeader({ lang }: { lang: string }) {
             href={path(lang, 'myExperiences')}
             className="text-nav-link"
           >
-            Deneyimlerim
+            {t('nav.myExperiences')}
           </GlassButton>
           <GlassButton
             variant="ghost"
@@ -41,13 +53,28 @@ export function SiteHeader({ lang }: { lang: string }) {
             href={path(lang, 'becomeHost')}
             className="text-nav-link"
           >
-            Host ol
+            {t('nav.becomeHost')}
           </GlassButton>
         </nav>
 
         <div className="flex items-center gap-2">
-          <LanguagePicker current={lang} />
-          <ThemeToggle />
+          <LanguagePicker
+            current={lang}
+            labels={{
+              // Şablon olarak gidiyor, hazır metin olarak değil: içerik dili
+              // seçildiğinde sayfa yenilenmiyor, etiket o anki dili yazmalı.
+              // Tarayıcıya inen tek şablon bu (bkz. `getTemplate`).
+              trigger: triggerTemplate,
+              dialog: t('language.dialogLabel'),
+              searchLabel: t('language.search.label'),
+              searchPlaceholder: t('language.search.placeholder'),
+              uiGroup: t('language.group.ui'),
+              contentGroup: t('language.group.content'),
+              contentHint: t('language.group.contentHint'),
+              empty: t('language.empty'),
+            }}
+          />
+          <ThemeToggle labels={{ toLight: t('theme.toLight'), toDark: t('theme.toDark') }} />
 
           {/*
             Oturum okuma AYRI bir dinamik sınırda.
@@ -65,7 +92,7 @@ export function SiteHeader({ lang }: { lang: string }) {
             anahtar açıldığı gün statik kabuk + dinamik delik ayrımı kendiliğinden
             oluşur, sayfaları tek tek gezmek gerekmez.
           */}
-          <Suspense fallback={<AccountSlotFallback />}>
+          <Suspense fallback={<AccountSlotFallback label={t('account.loading')} />}>
             <AccountSlot lang={lang} />
           </Suspense>
         </div>
@@ -80,13 +107,13 @@ export function SiteHeader({ lang }: { lang: string }) {
  * yüklemesinde "çıkış mı yaptım?" dedirtir. Genişlik iki sonuca da yakın
  * tutuldu, kontroller yerinden oynamasın.
  */
-function AccountSlotFallback() {
+function AccountSlotFallback({ label }: { label: string }) {
   /* `aria-live` YOK: her sayfa geçişinde tekrarlanan bir "yükleniyor" duyurusu
      ekran okuyucu kullanıcısı için gürültüden ibaret. Metin yalnız imleç oraya
      düşerse okunsun diye var. */
   return (
     <span className="glass glass-edge inline-flex h-9 w-24 items-center rounded-[var(--radius-glass-sm)] opacity-60">
-      <span className="sr-only">{t('account.loading')}</span>
+      <span className="sr-only">{label}</span>
     </span>
   )
 }
@@ -105,33 +132,44 @@ function AccountSlotFallback() {
  *   kod isterdi; hata `console.error` ile görünür kalıyor (CLAUDE.md #1).
  */
 async function AccountSlot({ lang }: { lang: string }) {
+  const t = await getTranslator(lang)
+
   const session = await getSession()
   if (!session) {
-    return <SignInButton lang={lang} />
+    return <SignInButton lang={lang} label={t('account.signIn')} />
   }
 
   const user = await loadViewer(session.accessToken)
   if (user === 'signedOut') {
-    return <SignInButton lang={lang} />
+    return <SignInButton lang={lang} label={t('account.signIn')} />
   }
 
   const label = user?.displayName ?? user?.email ?? t('account.menu.fallbackLabel')
+  const email = user?.email ?? null
 
   return (
     <AccountMenu
       label={label}
-      email={user?.email ?? null}
       initial={initialOf(label, lang)}
       accountHref={path(lang, 'account')}
       signOutPath={SIGN_OUT_PATH}
+      labels={{
+        // Yer tutucular SUNUCUDA doluyor: ad ve adres render anında biliniyor,
+        // istemciye şablon göndermenin bir faydası yok.
+        trigger: t('account.menu.trigger', { ad: label }),
+        title: t('account.menu.title'),
+        signedInAs: email === null ? null : t('account.menu.signedInAs', { eposta: email }),
+        account: t('account.menu.account'),
+        signOut: t('account.menu.signOut'),
+      }}
     />
   )
 }
 
-function SignInButton({ lang }: { lang: string }) {
+function SignInButton({ lang, label }: { lang: string; label: string }) {
   return (
     <GlassButton variant="primary" size="sm" href={path(lang, 'signIn')}>
-      {t('account.signIn')}
+      {label}
     </GlassButton>
   )
 }
