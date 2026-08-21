@@ -16,7 +16,7 @@ Yerel deneyim rezervasyon platformu. Monorepo: .NET 10 API + Next.js 16 web +
 pnpm check          # PR öncesi tam doğrulama (CI'ın aynısı)
 pnpm api            # API'yi çalıştır
 pnpm web            # web'i çalıştır
-pnpm db:up          # local postgres hazırla
+pnpm db:up          # local postgres hazırla (kurulum: docs/DATABASE.md)
 pnpm api:migrate    # migration uygula
 ```
 
