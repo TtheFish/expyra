@@ -5,10 +5,15 @@ import { GlassButton } from '@/components/ui/glass-button'
 import { ApiError, fetchCurrentUser } from '@/features/auth/api'
 import { RETURN_TO_PARAM } from '@/features/auth/return-to'
 import { getSession } from '@/features/auth/session'
-import type { MessageKey, Translate } from '@/features/i18n/dictionary'
-import { formatMoney } from '@/features/i18n/format'
-import { getTranslator } from '@/features/i18n/translator'
 import { ActivateHostForm } from '@/features/host/activate-host-form'
+import {
+  HostExperienceAccessError,
+  fetchHostExperiences,
+  hostExperiencePath,
+  type HostExperience,
+} from '@/features/host/experiences-api'
+import type { MessageKey, Translate } from '@/features/i18n/dictionary'
+import { getTranslator } from '@/features/i18n/translator'
 import { alternateLinks, path } from '@/lib/routes'
 
 /**
@@ -18,7 +23,7 @@ import { alternateLinks, path } from '@/lib/routes'
  * |---|---|
  * | Oturumsuz | Vaat + "Host olmak için giriş yap" (dönüş adresiyle) |
  * | Oturum var, rol yok | Vaat + gerçek "Host ol" düğmesi |
- * | Host | Panel: ilanlar + adımlar + durum bilgisi |
+ * | Host | Panel: GERÇEK ilanlar + "Yeni deneyim" + "Düzenle" |
  *
  * **Sayfa oturumsuz da açılıyor** ve bu bilinçli (`proxy.ts`'te de yazılı):
  * VISION §8'e göre projenin en büyük riski arz tarafı, yani tam olarak bu
@@ -26,15 +31,17 @@ import { alternateLinks, path } from '@/lib/routes'
  * kapıyı kapatmak olurdu.
  *
  * **Onay süreci yok** (VISION §9): "Host ol" bir başvuru değil, anahtar teslimi.
- * Ekranda "başvurun alındı" gibi bir ara durum bu yüzden HİÇ yok.
  *
- * Yetki kararı burada değil API'de: bu sayfa yalnız hangi ekranı çizeceğine
- * karar veriyor. `isHost` istemciden gelen bir şey olsaydı bile açılacak bir
- * kapı yok — host uçları JWT rol claim'ine bakıyor.
+ * ## Blok 5: örnek veri öldü
  *
- * `t` alt bileşenlere PROP olarak iniyor. Hepsi sunucu bileşeni, yani fonksiyon
- * geçmek serbest; her birinin ayrı ayrı `await getTranslator(lang)` çağırması
- * (React `cache` sayesinde bedelsiz olsa da) `lang`'i de taşımayı gerektirirdi.
+ * Buradaki liste `sampleExperiences` sabitinden geliyordu; artık
+ * `GET /api/host/experiences`'ten geliyor ve "Düzenle" gerçek bir sayfaya gidiyor.
+ * Bunun bir yan etkisi var ve bilinçli: **host olmayan kullanıcıya artık liste
+ * gösterilmiyor.** Önceden aynı örnek satırlar "panelin böyle görünecek" başlığıyla
+ * ona da çiziliyordu; sahte veri gidince o vitrinin dürüst karşılığı sahte bir
+ * liste değil, aşağıdaki "nasıl başlarım" adımları.
+ *
+ * `t` alt bileşenlere PROP olarak iniyor; hepsi sunucu bileşeni.
  */
 
 export async function generateMetadata({
@@ -48,50 +55,10 @@ export async function generateMetadata({
   return {
     // Başlık oturumdan BAĞIMSIZ: `generateMetadata` içinde oturum okumak her
     // ziyarette fazladan bir API turu ederdi ve sekme başlığı bunu hak etmiyor.
-    // Arama motorunun gördüğü de zaten oturumsuz görünüm.
     title: `${t('host.meta.title')} · Expyra`,
     alternates: { languages: alternateLinks('becomeHost') },
   }
 }
-
-type ExperiencePreview = {
-  title: string
-  status: 'draft' | 'published'
-  price: number
-  currency: string
-  capacity: number
-  completeness: number
-}
-
-/**
- * Blok 5'te `GET /api/host/experiences` bunu dolduracak (docs/PLAN.md).
- *
- * Başlıklar SÖZLÜKTE DEĞİL, bilinçli: bunlar host'un yazdığı içeriği taklit
- * ediyor ve içerik çevirisi veritabanında yaşıyor (docs/I18N.md §1). Sözlüğe
- * konsalardı örnek veri, arayüz metniyle aynı kefeye girer ve gerçek veriye
- * geçildiğinde çeviri dosyasında öksüz anahtarlar kalırdı.
- */
-const sampleExperiences = [
-  {
-    title: 'Kadıköy’de Sokak Lezzetleri Turu',
-    status: 'draft',
-    price: 38,
-    currency: 'EUR',
-    capacity: 8,
-    completeness: 3,
-  },
-  {
-    title: 'Boğaz’da Gün Batımı Yelkeni',
-    status: 'published',
-    price: 48,
-    currency: 'EUR',
-    capacity: 8,
-    completeness: 5,
-  },
-] as const satisfies readonly ExperiencePreview[]
-
-/** Örnek verinin payda değeri; gerçek ilerleme Blok 5'te sunucudan gelecek. */
-const SAMPLE_TOTAL_STEPS = 5
 
 const setupSteps = [
   { title: 'host.steps.describe.title', body: 'host.steps.describe.body' },
@@ -106,12 +73,25 @@ const setupSteps = [
  */
 type Viewer = 'anonymous' | 'traveler' | 'host'
 
+type Panel = {
+  viewer: Viewer
+  /**
+   * Host'un ilanları. `null` = liste OKUNAMADI (host olmayan için de `null`).
+   *
+   * Boş dizi ile `null` ayrımı kritik: biri "henüz ilanın yok", diğeri "şu an
+   * gösteremiyoruz". İkisini birleştirmek, bir API kesintisinde host'a ilanlarının
+   * silindiğini düşündürürdü (CLAUDE.md #1).
+   */
+  experiences: HostExperience[] | null
+}
+
 export default async function BecomeHostPage({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
   const t = await getTranslator(lang)
-  const viewer = await resolveViewer()
+  const panel = await resolvePanel()
 
-  const isHost = viewer === 'host'
+  const isHost = panel.viewer === 'host'
+  const hasListings = (panel.experiences?.length ?? 0) > 0
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -128,37 +108,47 @@ export default async function BecomeHostPage({ params }: { params: Promise<{ lan
             </p>
           </div>
 
-          {/* Blok 5'te `/host/deneyim/yeni` sihirbazına bağlanacak. */}
           {isHost ? (
-            <GlassButton variant="primary" size="md" disabled title={t('host.soon')}>
+            <GlassButton variant="primary" size="md" href={path(lang, 'hostExperienceNew')}>
               {t('host.panel.new')}
             </GlassButton>
           ) : null}
         </div>
 
-        {isHost ? <HostStatus t={t} /> : <ActivateCard viewer={viewer} lang={lang} t={t} />}
+        {isHost ? (
+          <HostStatus t={t} />
+        ) : (
+          <ActivateCard viewer={panel.viewer} lang={lang} t={t} />
+        )}
 
-        <ListingsSection isHost={isHost} lang={lang} t={t} />
+        {isHost ? <ListingsSection experiences={panel.experiences} lang={lang} t={t} /> : null}
 
-        <section className="mt-14" aria-labelledby="host-adimlar">
-          <h2 id="host-adimlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
-            {t('host.steps.heading')}
-          </h2>
+        {/*
+          "Nasıl başlarım" ilanı olan host'a gösterilmiyor: o adımları çoktan
+          geçmiş biri için bu bölüm gürültü. Oturumsuz ziyaretçi ve henüz tek
+          satırı olmayan host için ise ekranın en işe yarar parçası.
+        */}
+        {hasListings ? null : (
+          <section className="mt-14" aria-labelledby="host-adimlar">
+            <h2 id="host-adimlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
+              {t('host.steps.heading')}
+            </h2>
 
-          <ol className="grid gap-4 sm:grid-cols-2">
-            {setupSteps.map((step, index) => (
-              <li key={step.title}>
-                <div className="glass glass-edge h-full rounded-[var(--radius-glass)] p-5">
-                  <span className="font-mono text-xs text-fg-muted">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <h3 className="mt-2 font-semibold">{t(step.title)}</h3>
-                  <p className="mt-1 text-sm leading-relaxed text-fg-muted">{t(step.body)}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+            <ol className="grid gap-4 sm:grid-cols-2">
+              {setupSteps.map((step, index) => (
+                <li key={step.title}>
+                  <div className="glass glass-edge h-full rounded-[var(--radius-glass)] p-5">
+                    <span className="font-mono text-xs text-fg-muted">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <h3 className="mt-2 font-semibold">{t(step.title)}</h3>
+                    <p className="mt-1 text-sm leading-relaxed text-fg-muted">{t(step.body)}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
 
         <section className="mt-14">
           <div className="glass glass-edge glass-thick rounded-[var(--radius-glass-lg)] p-8 text-center">
@@ -182,34 +172,61 @@ export default async function BecomeHostPage({ params }: { params: Promise<{ lan
 }
 
 /**
- * Hangi ekranı çizeceğimizin kararı. `site-header.tsx`'teki `AccountSlot` ile
- * AYNI üç durum ayrımı — ve aynı gerekçeyle:
+ * Hangi ekranı çizeceğimizin ve listenin nereden geleceğinin kararı.
+ * `site-header.tsx`'teki `AccountSlot` ile AYNI üç durum ayrımı:
  *
  * - Çerez yok → oturumsuz.
- * - Çerez var, profil 401 → çerez bayat, gerçekten çıkış yapılmış → oturumsuz.
- * - Çerez var, profil başka nedenle okunamadı (5xx, ağ) → `traveler`. Yani host
- *   olan biri API kesintisinde davet ekranını görebilir; katlanılabilir çünkü
- *   "Host ol" İDEMPOTENT (ikinci çağrı da 200) — basarsa zararsız, üstüne taze
- *   token alır. Ters yön (rol yokken paneli göstermek) ise kullanıcıyı
- *   çalışmayan düğmelerle baş başa bırakırdı. Hata `console.error` ile görünür
- *   kalıyor (CLAUDE.md #1).
+ * - Çerez var, profil 401 → çerez bayat → oturumsuz.
+ * - Çerez var, profil başka nedenle okunamadı (5xx, ağ) → `traveler`. Host olan
+ *   biri API kesintisinde davet ekranını görebilir; katlanılabilir çünkü
+ *   "Host ol" İDEMPOTENT — basarsa zararsız, üstüne taze token alır. Ters yön
+ *   (rol yokken paneli göstermek) kullanıcıyı çalışmayan düğmelerle bırakırdı.
  */
-async function resolveViewer(): Promise<Viewer> {
+async function resolvePanel(): Promise<Panel> {
   const session = await getSession()
-  if (!session) return 'anonymous'
+  if (!session) return { viewer: 'anonymous', experiences: null }
 
   // Access çerezi düşmüş ama refresh duruyor: proxy yenilemeyi denemiş ve API'ye
   // ulaşamamış olabilir. Oturumu ölü SAYMIYORUZ.
-  if (!session.accessToken) return 'traveler'
+  if (!session.accessToken) return { viewer: 'traveler', experiences: null }
 
+  const accessToken = session.accessToken
+
+  let viewer: Viewer
   try {
-    const user = await fetchCurrentUser(session.accessToken)
-    return user.isHost ? 'host' : 'traveler'
+    const user = await fetchCurrentUser(accessToken)
+    viewer = user.isHost ? 'host' : 'traveler'
   } catch (error) {
-    if (error instanceof ApiError && error.status === 401) return 'anonymous'
+    if (error instanceof ApiError && error.status === 401) {
+      return { viewer: 'anonymous', experiences: null }
+    }
 
     console.error('host.viewer.failed', error)
-    return 'traveler'
+    return { viewer: 'traveler', experiences: null }
+  }
+
+  if (viewer !== 'host') {
+    return { viewer, experiences: null }
+  }
+
+  try {
+    return { viewer: 'host', experiences: await fetchHostExperiences(accessToken) }
+  } catch (error) {
+    /*
+      403 burada BEKLENEN bir durum: `/me` veritabanına bakıyor ve "host" diyor
+      ama elimizdeki access token rol claim'i eklenmeden ÖNCE üretilmiş olabilir
+      (token ömrü 15 dk). Doğru cevap hata ekranı değil, davet ekranı — "Host ol"
+      idempotent ve basıldığında taze token yazıyor, yani kullanıcı tek tıkla
+      paneline geçiyor. Bu, Blok 2'nin "host oldum ama kullanamıyorum" riskinin
+      kalan yarısının kapandığı yer.
+    */
+    if (error instanceof HostExperienceAccessError) {
+      return { viewer: error.reason === 'notHost' ? 'traveler' : 'anonymous', experiences: null }
+    }
+
+    // 5xx / ağ: liste YOK değil, OKUNAMADI. Ekranda ikisi ayrı cümle.
+    console.error('host.listings.failed', error)
+    return { viewer: 'host', experiences: null }
   }
 }
 
@@ -261,62 +278,104 @@ function ActivateCard({ viewer, lang, t }: { viewer: Viewer; lang: string; t: Tr
 }
 
 /**
- * İlan listesi — Blok 5'e kadar ÖRNEK VERİ, her iki başlıkta da yazılı.
+ * İlan listesi — artık gerçek veri.
  *
- * Host olmayan kullanıcıya da gösteriliyor ama başlığı farklı: "İlanlarım"
- * demek, henüz tek satırı olmayan birine sahip olmadığı bir şeyi göstermek
- * olurdu. Aynı liste, dürüst çerçeve.
+ * Üç ayrı durum ve üçü de ayrı cümle:
+ * - `null` → liste okunamadı. "İlanın yok" DEMİYORUZ.
+ * - boş dizi → gerçekten hiç ilan yok. Boş durum bir hata değil, bir davet:
+ *   host paneli ilk kez açan biri burada ne yapacağını okuyor ve tek tıkla
+ *   sihirbaza giriyor.
+ * - dolu → satırlar.
  */
-function ListingsSection({ isHost, lang, t }: { isHost: boolean; lang: string; t: Translate }) {
+function ListingsSection({
+  experiences,
+  lang,
+  t,
+}: {
+  experiences: HostExperience[] | null
+  lang: string
+  t: Translate
+}) {
+  if (experiences === null) {
+    return (
+      <section className="mt-10" aria-labelledby="host-ilanlar">
+        <h2 id="host-ilanlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
+          {t('host.listings.errorHeading')}
+        </h2>
+        <div className="glass glass-edge rounded-[var(--radius-glass)] p-5 text-sm text-fg-muted">
+          {t('host.listings.error')}
+        </div>
+      </section>
+    )
+  }
+
+  if (experiences.length === 0) {
+    return (
+      <section className="mt-10" aria-labelledby="host-ilanlar">
+        <h2 id="host-ilanlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
+          {t('host.listings.empty.heading')}
+        </h2>
+
+        <div className="glass glass-edge glass-thick rounded-[var(--radius-glass-lg)] p-6 sm:p-8">
+          <p className="text-base font-semibold">{t('host.listings.empty.title')}</p>
+          <p className="mt-2 max-w-lg text-sm leading-relaxed text-fg-muted">
+            {t('host.listings.empty.body')}
+          </p>
+          <div className="mt-5">
+            <GlassButton variant="primary" size="lg" href={path(lang, 'hostExperienceNew')}>
+              {t('host.listings.empty.cta')}
+            </GlassButton>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="mt-10" aria-labelledby="host-ilanlar">
       <h2 id="host-ilanlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
-        {isHost
-          ? t('host.listings.heading', { sayi: sampleExperiences.length })
-          : t('host.listings.previewHeading')}
+        {t('host.listings.heading', { sayi: experiences.length })}
       </h2>
 
       <ul className="grid gap-4">
-        {sampleExperiences.map((item) => (
-          <li key={item.title}>
+        {experiences.map((experience) => (
+          <li key={experience.id}>
             <article className="glass glass-edge flex flex-wrap items-center justify-between gap-4 rounded-[var(--radius-glass)] p-5">
               <div className="min-w-0">
                 <div className="mb-1 flex items-center gap-2">
-                  <StatusPill status={item.status} t={t} />
+                  <StatusPill status={experience.status} t={t} />
                   <span className="text-xs text-fg-muted">
-                    {/* `n` çoğulu seçen değer: İngilizce'de "1 step" / "5 steps". */}
-                    {t('host.listings.progress', {
-                      tamam: item.completeness,
-                      n: SAMPLE_TOTAL_STEPS,
-                    })}
+                    {experience.missingPublishRequirements.length === 0
+                      ? t('host.listings.ready')
+                      : t('host.listings.missing', {
+                          n: experience.missingPublishRequirements.length,
+                        })}
                   </span>
                 </div>
-                <h3 className="truncate font-semibold">{item.title}</h3>
-                <p className="mt-1 text-sm text-fg-muted">
-                  {t('host.listings.summary', {
-                    fiyat: formatMoney(lang, item.price, item.currency),
-                    n: item.capacity,
-                  })}
-                </p>
+
+                {/*
+                  Başlık host'un İÇERİĞİ, arayüz metni değil: `lang` özniteliği
+                  ilanın dilinde olmalı ki ekran okuyucu Türkçe bir başlığı
+                  İngilizce fonetikle okumasın (WCAG 3.1.2).
+                */}
+                <h3 lang={experience.originalLanguage} className="truncate font-semibold">
+                  {titleOf(experience) ?? t('host.experience.untitled')}
+                </h3>
               </div>
 
-              <GlassButton size="sm" disabled title={t('host.soon')}>
+              <GlassButton size="sm" href={hostExperiencePath(lang, experience.id)}>
                 {t('host.listings.edit')}
               </GlassButton>
             </article>
           </li>
         ))}
       </ul>
-
-      <p className="mt-3 text-xs text-fg-muted">
-        {isHost ? t('host.listings.note') : t('host.listings.previewNote')}
-      </p>
     </section>
   )
 }
 
-function StatusPill({ status, t }: { status: ExperiencePreview['status']; t: Translate }) {
-  const published = status === 'published'
+function StatusPill({ status, t }: { status: HostExperience['status']; t: Translate }) {
+  const published = status === 'Published'
 
   return (
     <span
@@ -326,8 +385,24 @@ function StatusPill({ status, t }: { status: ExperiencePreview['status']; t: Tra
           : 'bg-[rgb(var(--glass-tint)_/_0.25)] text-fg-muted'
       }`}
     >
-      {published ? t('host.listings.status.published') : t('host.listings.status.draft')}
+      {published
+        ? t('host.listings.status.published')
+        : status === 'Archived'
+          ? t('host.listings.status.archived')
+          : t('host.listings.status.draft')}
     </span>
+  )
+}
+
+/**
+ * Panelde gösterilecek ad: ORİJİNAL dildeki başlık. Fallback zinciri burada
+ * çalışmıyor ve çalışmamalı — bu ekran host'un kendi ilanı, gezginin gördüğü
+ * çeviri değil (docs/I18N.md §2 zincirinin muhatabı misafir tarafı).
+ */
+function titleOf(experience: HostExperience): string | null {
+  return (
+    experience.translations.find((item) => item.language === experience.originalLanguage)?.title ??
+    null
   )
 }
 

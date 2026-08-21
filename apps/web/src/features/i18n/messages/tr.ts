@@ -83,8 +83,25 @@ export const tr = {
   'home.hero.titleAccent': 'keşfetmenin yeni yolu',
   'home.hero.lede':
     'Şehri en iyi bilenlerden. Küçük gruplar, gerçek insanlar, unutulmayan birkaç saat.',
-  /** Yalnız ekran okuyucuya: kart ızgarasının ne olduğunu söyleyen başlık. */
-  'home.samples.heading': 'Örnek deneyimler',
+  /**
+   * Vitrin başlığı. Eskiden `home.samples.heading` ("Örnek deneyimler") ve yalnız
+   * ekran okuyucuya görünüyordu — altındaki üç kart uydurma veriydi. Kartlar
+   * gerçek ilan olunca hem ad hem görünürlük değişti: "örnek" demek artık yalan.
+   */
+  'home.showcase.heading': 'Yayındaki deneyimler',
+  'home.showcase.more': 'Tüm deneyimleri gör',
+  /**
+   * Vitrin OKUNAMADI — "hiç deneyim yok" DEĞİL. İki durumun ayrı cümlesi olması
+   * şart: kesintiyi bir ürün durumu gibi göstermek, hatayı görünmez kılar
+   * (CLAUDE.md #1).
+   */
+  'home.showcase.unavailable':
+    'Deneyimleri şu an listeleyemedik. Bir süre sonra tekrar dene — ilanlar yerinde duruyor.',
+  /** Gerçekten hiç yayında ilan yok. Çıkış yolu ARZ tarafında (VISION §8). */
+  'home.showcase.empty.title': 'Henüz yayında bir deneyim yok',
+  'home.showcase.empty.body':
+    'Burada ilk deneyimi sen açabilirsin. Bildiğin bir şeyi anlat, küçük bir grupla paylaş.',
+  'home.showcase.empty.cta': 'Host ol',
 
   // --- Arama çubuğu ----------------------------------------------------------
   'search.destination.label': 'Nereye?',
@@ -151,20 +168,41 @@ export const tr = {
   'search.guests.summary.both': '{yetiskin}, {cocuk}',
 
   // --- Deneyim kartı ---------------------------------------------------------
-  'experience.place': '{sehir}, {ulke}',
-  'experience.rating': '★ {puan}',
-  'experience.perPerson': '/ kişi',
   /**
-   * Süre AYRI anahtar, çünkü bir metinde tek çoğul sayacı olabiliyor (yazım
-   * kuralı 2) ve burada iki sayım var: saat ve kişi. Süre önce kendi başına
-   * çekimlenip `{sure}` olarak yerleştiriliyor — İngilizce'de "1 hour" /
-   * "2 hours" ayrımı böyle korunuyor.
+   * Şehir ve ülke. Ülke adı ICU'dan (`Intl.DisplayNames`) geliyor: API şehir
+   * satırında yalnız ülke KODU dönüyor.
+   *
+   * **`experience.rating` ve `experience.perPerson` SİLİNDİ.** İkisi de prototip
+   * verinin sabitleriydi (`★ 4.9`, `48 € / kişi`). Fiyat Blok 7'de, puan Blok
+   * 14'te geliyor; o güne kadar uydurma bir sayı göstermek boş bırakmaktan kötü.
    */
-  'experience.duration': { one: '{n} saat', other: '{n} saat' },
+  'experience.place': '{sehir}, {ulke}',
+  /**
+   * Süre AYRI anahtarlarda, çünkü bir metinde tek çoğul sayacı olabiliyor (yazım
+   * kuralı 2). Kartta iki sayım var (süre ve kişi), sürenin kendisinde de iki
+   * (saat ve dakika) — her biri kendi anahtarında çekimlenip yer tutucu olarak
+   * yerleşiyor. İngilizce'de "1 hour"/"2 hours" ayrımı ancak böyle korunuyor.
+   */
+  'experience.duration.hours': { one: '{n} saat', other: '{n} saat' },
+  'experience.duration.minutes': { one: '{n} dakika', other: '{n} dakika' },
+  /** Saat ve dakikanın arasına ne gireceğine (boşluk, virgül, "ve") çevirmen karar verir. */
+  'experience.duration.full': '{saat} {dakika}',
+  /**
+   * Süresi girilmemiş ilan. Yayın doğrulaması süreyi şart koşmuyor (dört koşul:
+   * çeviri, şehir, kategori, kapasite), yani bu durum gerçekten oluşabiliyor.
+   * "0 saat" yazmak bozuk veriyi doğru gibi gösterirdi.
+   */
+  'experience.duration.unknown': 'Süre belirtilmemiş',
   'experience.meta': {
     one: '{sure} · en fazla {n} kişi',
     other: '{sure} · en fazla {n} kişi',
   },
+  /**
+   * Kartta yedeğe düşülmüş metnin rozeti — yalnız EKRAN OKUYUCUYA. Gözle
+   * görünen kısım dilin adı ("Çekçe"); tam cümle görsel olarak yer kaplamadan
+   * aynı bilgiyi veriyor.
+   */
+  'experience.card.language': 'Bu ilan {dil} yazılmış',
 
   // --- Arama sonucu ----------------------------------------------------------
   'explore.heading.all': 'Tüm deneyimler',
@@ -173,26 +211,52 @@ export const tr = {
   /** Şehir çözülemedi: kullanıcının yazdığı metin tırnak içinde, olduğu gibi. */
   'explore.heading.query': '“{arama}” için sonuçlar',
   /**
-   * Özet satırı TEK anahtar: parçaları JSX'te yan yana eklemek, sıranın
-   * Türkçe'ye sabitlenmesi demekti. Tarihli/tarihsiz iki ayrı anahtar var
-   * çünkü tarih satırın neresine gireceğini de çevirmen seçmeli.
+   * Sayım İKİ ayrı anahtar ve ayrım doğrulukla ilgili: API toplam sayı DÖNMÜYOR
+   * (her sayfada bir `COUNT(*)`, cursor sayfalamanın kaçındığı tam taramayı geri
+   * getirirdi). Sonuçların tamamı ekrandaysa "12 deneyim" doğru; sayfalama varsa
+   * yalnızca "bu sayfada 24 deneyim" doğru.
    *
-   * Misafir sayısı yer tutucu (`{misafir}`): ikinci bir çoğul sayacı aynı
-   * metne sığmıyor, kendi anahtarında çekimlenip buraya yerleşiyor.
+   * Misafir sayısı ve tarih ARTIK BU SATIRDA YOK: ikisi de sonucu daraltmıyor ve
+   * özet satırında görünmeleri "hesaba katıldı" izlenimi verirdi. İkisi aşağıdaki
+   * uyarıya taşındı (`explore.summary.dated` ve `explore.summary.guests` silindi).
    */
-  'explore.summary': { one: '{n} deneyim · {misafir}', other: '{n} deneyim · {misafir}' },
-  'explore.summary.dated': {
-    one: '{n} deneyim · {misafir} · {tarih}',
-    other: '{n} deneyim · {misafir} · {tarih}',
-  },
-  'explore.summary.guests': { one: '{n} kişi', other: '{n} kişi' },
-  'explore.dateNotice':
-    'Seçtiğin tarih sonuçları henüz daraltmıyor: deneyimlerin takvimi sisteme girmedi. Aşağıdaki liste tüm tarihleri kapsıyor.',
+  'explore.summary': { one: '{n} deneyim', other: '{n} deneyim' },
+  'explore.summary.page': { one: 'Bu sayfada {n} deneyim', other: 'Bu sayfada {n} deneyim' },
+  /**
+   * Sonucu daraltmayan seçimlerin TEK cümlesi. Parçalar `Intl.ListFormat` ile
+   * birleşiyor ("a ve b" / "a and b" ayrımı dilin işi), o yüzden filtre adları
+   * cümlenin gerektirdiği hâlde yazılıyor — Türkçe'de belirtme hâli
+   * ("tarihi", "sayısını"), İngilizce'de yalın.
+   *
+   * Tarih uyarısı Blok 4'ten geliyor ve KALDI; yanına misafir sayısı eklendi:
+   * prototipteki kapasite süzmesi gerçek veriyle birlikte gitti (sunucuda böyle
+   * bir filtre yok — Blok 8) ve sessizce yok saymak yerine söyleniyor.
+   */
+  'explore.filtersNotice':
+    'Sonuçları yalnızca şehre göre süzüyoruz — {filtreler} henüz hesaba katmıyoruz.',
+  'explore.filter.date': 'seçtiğin tarihi',
+  'explore.filter.guests': 'misafir sayısını',
+
+  /** Sayfa gezinmesi: cursor tek yönlü, o yüzden "önceki" yok, "başa dön" var. */
+  'explore.pager.label': 'Sonuç sayfaları',
+  'explore.pager.next': 'Sonraki sayfa',
+  'explore.pager.first': 'İlk sayfaya dön',
+
+  /**
+   * Adres çubuğundaki sayfa bağlantısı bozuk. Sessizce ilk sayfayı göstermek,
+   * sayfalayan bir istemciyi sonsuz döngüye sokan davranış (API'de de 400).
+   */
+  'explore.pageLink.title': 'Bu sayfa bağlantısı okunamadı',
+  'explore.pageLink.body':
+    'Adresteki sayfa işareti bozulmuş görünüyor. Aramaya baştan başla — sonuçlar yerinde duruyor.',
+
   'explore.empty.title': 'Burada henüz deneyim yok',
-  /** "Yaz" değil "seç": şehir alanı artık bir seçici. */
+  /** "Yaz" değil "seç": şehir alanı artık bir seçici. Misafir sayısı süzmediği için o öneri kalktı. */
   'explore.empty.body':
-    'Aramanı genişletmeyi dene: listeden başka bir şehir seç ya da misafir sayısını azalt. Yeni şehirler ekleniyor.',
+    'Listeden başka bir şehir seçmeyi dene. Yeni şehirler ve yeni deneyimler sürekli ekleniyor.',
   'explore.empty.cta': 'Tüm deneyimleri gör',
+  /** İkinci çıkış yolu ARZ tarafında: bu şehirde ilan olmamasının çözümü oradaki ilk host. */
+  'explore.empty.hostCta': 'Bu şehirde ilk host sen ol',
 
   /**
    * Adres çubuğundaki şehir kayıt defterinde yok. "Sonuç bulunamadı" DEĞİL —
@@ -202,6 +266,44 @@ export const tr = {
   'explore.cityMissing.body':
     'Adresteki şehir kayıtlarımızda yok; bağlantı eskimiş olabilir. Yukarıdaki alandan listeden bir şehir seç.',
   'explore.cityMissing.cta': 'Tüm deneyimleri gör',
+
+  // --- Deneyim detayı --------------------------------------------------------
+  /**
+   * Paylaşım önizlemesinde açıklama yoksa kullanılan cümle. Uydurma bir tanıtım
+   * değil, yalnızca doğrulanabilir olan: şehir.
+   */
+  'experience.detail.meta.fallback': '{sehir} şehrinde bir yerel deneyim.',
+  /**
+   * Fallback rozeti (docs/I18N.md §2: *"Fallback devreye girdiğinde arayüz bunu
+   * gizlemez: 'Bu açıklama Türkçe' yazar"*). Dil ADI `Intl.DisplayNames`'ten
+   * geliyor — 49 dilin adını 49 dile çeviren bir tablo tutmuyoruz.
+   */
+  'experience.detail.text.fallback': 'Bu açıklama {dil}',
+  'experience.detail.duration.label': 'Süre',
+  'experience.detail.capacity.label': 'Grup büyüklüğü',
+  'experience.detail.capacity.value': { one: 'En fazla {n} kişi', other: 'En fazla {n} kişi' },
+  'experience.detail.about': 'Bu deneyim hakkında',
+  /** Açıklama boş olabilir: yayın doğrulaması çeviri SATIRINI şart koşuyor, dolu olmasını değil. */
+  'experience.detail.noDescription': 'Host henüz bir açıklama yazmadı.',
+  'experience.detail.spoken.heading': 'Deneyim sırasında konuşulan diller',
+  /**
+   * docs/I18N.md §3 karıştırmasının arayüzdeki karşılığı: host ilanını İngilizce
+   * yazıp turu yalnız Çekçe anlatabilir ve gezgin için kritik olan ikincisidir.
+   * Bu cümle olmadan iki liste aynı şey sanılır.
+   */
+  'experience.detail.spoken.help':
+    'Host deneyimi bu dillerde anlatıyor. İlan metninin yazıldığı dil ayrı bir şey.',
+  'experience.detail.spoken.none': 'Host konuştuğu dilleri henüz yazmadı.',
+  'experience.detail.tags.heading': 'Etiketler',
+  /**
+   * Takvim Blok 7, rezervasyon Blok 9. Sessiz bir boşluk "bu sayfa yarım"
+   * dedirtirdi; iç terim de kullanılmıyor (yazım kuralı 4).
+   */
+  'experience.detail.booking.title': 'Tarih ve fiyat henüz yok',
+  'experience.detail.booking.body':
+    'Bu deneyimin takvimi ve fiyatı girildiğinde rezervasyon buradan açılacak.',
+  'experience.detail.cityLink': '{sehir} şehrindeki tüm deneyimler',
+  'experience.detail.back': 'Keşfet’e dön',
 
   // --- Nasıl çalışır ---------------------------------------------------------
   /** Sayfanın adı `nav.howItWorks`'ten geliyor — aynı sayfa, aynı ad. */
@@ -351,27 +453,31 @@ export const tr = {
   'host.panel.status': 'Hesabın host olarak açık.',
   'host.panel.new': 'Yeni deneyim',
 
-  /** Devre dışı düğmelerin `title`'ı. Neden kapalı olduğunu söylüyor, faz numarası vermiyor. */
-  'host.soon': 'Deneyim yayınlama yakında açılıyor',
-
   'host.listings.heading': 'İlanlarım · {sayi}',
-  /** Host OLMAYAN kullanıcıya "İlanlarım" yazmak yalan olurdu; aynı liste, dürüst başlık. */
-  'host.listings.previewHeading': 'Panelin böyle görünecek',
-  'host.listings.note':
-    'Bu liste örnek veriyle gösteriliyor. Kendi ilanların, deneyim yayınlama açıldığında burada listelenecek.',
-  'host.listings.previewNote':
-    'Bu liste örnek veriyle gösteriliyor — host olduğunda kendi ilanların burada listelenir.',
-  'host.listings.summary': {
-    one: '{fiyat} · en fazla {n} kişi',
-    other: '{fiyat} · en fazla {n} kişi',
-  },
-  'host.listings.progress': {
-    one: '{tamam}/{n} adım tamam',
-    other: '{tamam}/{n} adım tamam',
-  },
   'host.listings.edit': 'Düzenle',
   'host.listings.status.draft': 'Taslak',
   'host.listings.status.published': 'Yayında',
+  /** Arşiv bir silme değil: satır duruyor, yalnız aramada çıkmıyor. Metin de öyle diyor. */
+  'host.listings.status.archived': 'Arşivde',
+
+  /** Yayına engel kalmadı. Sayı yazmıyoruz: "0 eksik" bir bilgi değil, bir çıkarım. */
+  'host.listings.ready': 'Yayına hazır',
+  'host.listings.missing': { one: '{n} eksik alan', other: '{n} eksik alan' },
+
+  // Boş durum: host paneli ilk kez açan kişi. Bir hata değil, bir davet.
+  'host.listings.empty.heading': 'İlanlarım',
+  'host.listings.empty.title': 'Henüz bir ilanın yok',
+  'host.listings.empty.body':
+    'İlk taslağını aç. Yayınlamadan önce istediğin kadar üstünde çalışabilirsin — taslakları senden başkası görmez.',
+  'host.listings.empty.cta': 'İlk deneyimini yaz',
+
+  /**
+   * Liste OKUNAMADI — "ilanın yok" ile aynı şey değil. İkisini tek cümleye
+   * indirmek, bir kesintide host'a ilanlarının silindiğini düşündürürdü.
+   */
+  'host.listings.errorHeading': 'İlanlarım',
+  'host.listings.error':
+    'İlanların şu an yüklenemedi. Silinmediler — biraz sonra sayfayı yenile.',
 
   'host.steps.heading': 'Nasıl başlarım?',
   'host.steps.describe.title': 'Deneyimini anlat',
@@ -386,9 +492,14 @@ export const tr = {
   'host.steps.publish.title': 'Yayınla',
   'host.steps.publish.body': 'Onay beklemiyorsun. Yayınla dediğinde ilanın aramada çıkar.',
 
-  'host.contact.title': 'Deneyim yayınlama yakında açılıyor',
+  /**
+   * Blok 5 ile birlikte "yakında açılıyor" ARTIK DOĞRU DEĞİL: ilan yazılıyor ve
+   * yayınlanıyor. Metin, hâlâ doğru olan vaade çekildi — ilk hostlarla tek tek
+   * ilgileniyoruz.
+   */
+  'host.contact.title': 'Takıldığın yerde bize yaz',
   'host.contact.body':
-    'Şu an ilk hostları tek tek topluyoruz. Ne anlatmak istediğini biliyorsan bize yaz — açıldığında ilanını birlikte hazırlarız.',
+    'İlk hostlarla tek tek ilgileniyoruz. İlanını hazırlarken bir şey tıkanırsa ya da emin olamadığın bir karar varsa yaz; birlikte bakarız.',
   'host.contact.cta': 'Bize yaz',
   'host.contact.howItWorks': 'Nasıl çalışır?',
 
@@ -398,4 +509,194 @@ export const tr = {
    * söyleniyor; ikisi farklı şeyler.
    */
   'host.error.blocked': 'Bu hesap askıya alındı, host olamazsın. destek@expyra.com',
+
+  // --- Deneyim sihirbazı -----------------------------------------------------
+
+  /** Sihirbazın girişi: geri alınamayan tek kararın sorulduğu ekran. */
+  'host.experience.new.meta.title': 'Yeni deneyim',
+  'host.experience.new.title': 'Yeni bir deneyim aç',
+  'host.experience.new.lede':
+    'Önce tek bir şey soruyoruz: ilanı hangi dilde yazacaksın. Gerisini taslağın içinde, istediğin sırayla dolduracaksın.',
+  'host.experience.new.language.label': 'İlanı hangi dilde yazacaksın?',
+  /**
+   * Geri alınamazlık AÇIKÇA yazılı. Kullanıcı bunu sonradan, alanı aradığında
+   * öğrenmemeli — "değiştiremezsin" cümlesini kaydettikten sonra görmek, kararı
+   * bilinçsiz vermiş olmak demek.
+   */
+  'host.experience.new.language.help':
+    'Bu dil sonradan değiştirilemez: ilanın adresi ondan türüyor ve başka dil yazılmamışsa gezgin bu metni görüyor. Başka dilleri sonra ekleyebilirsin.',
+  'host.experience.new.submit': 'Taslağı aç',
+  'host.experience.new.pending': 'Açılıyor…',
+
+  'host.experience.new.next.heading': 'Sırada ne var?',
+  'host.experience.new.next.text': 'Başlık ve açıklama — dilediğin kadar dilde.',
+  'host.experience.new.next.basics': 'Süre ve kaç kişi alacağın.',
+  'host.experience.new.next.place': 'Şehir, kategori ve turda konuştuğun diller.',
+  'host.experience.new.next.publish': 'Hazır olduğunda yayınla. Onay beklemiyorsun.',
+
+  'host.experience.edit.meta.title': 'Deneyimi düzenle',
+  'host.experience.edit.lede':
+    'Her bölüm ayrı kaydediliyor. İstediğin yerde bırakabilirsin; taslağın seni bekler.',
+  /** Orijinal dilde başlık henüz yazılmamış ilan. Boş bırakmak satırı kimliksiz bırakırdı. */
+  'host.experience.untitled': 'İsimsiz taslak',
+  'host.experience.back': '← Host paneline dön',
+
+  'host.experience.save': 'Kaydet',
+  'host.experience.saving': 'Kaydediliyor…',
+  'host.experience.saved': 'Kaydedildi.',
+
+  'host.experience.section.text': 'Başlık ve açıklama',
+  'host.experience.section.textHelp':
+    'Gezgin bunu okuyup karar veriyor. Ne yapacağınızı, nerede buluşacağınızı ve senin bu işle bağını anlat.',
+  'host.experience.section.basics': 'Süre ve kapasite',
+  'host.experience.section.basicsHelp':
+    'Bir seansın ne kadar sürdüğü ve aynı anda kaç kişi alabildiğin. Takvim ve fiyat sonra geliyor.',
+  'host.experience.section.place': 'Şehir',
+  'host.experience.section.placeHelp':
+    'Deneyimin geçtiği şehir. Saat dilimi bundan türüyor — seansların saati buna göre gösterilecek.',
+  'host.experience.section.category': 'Kategori',
+  'host.experience.section.categoryHelp':
+    'Gezgin aramada bununla filtreliyor. En yakın olanı seç; birden fazla seçilemiyor.',
+  'host.experience.section.languages': 'Konuşulan diller ve etiketler',
+  'host.experience.section.languagesHelp':
+    'Turu hangi dillerde anlatıyorsun? Bu, ilanı hangi dilde yazdığından ayrı bir şey.',
+  'host.experience.section.status': 'Yayın',
+  'host.experience.section.statusHelp':
+    'Yayınlamak için gerekenler aşağıda. Onay süreci yok — eksik kalmadıysa ilanın anında aramada çıkar.',
+
+  // Çeviri sekmeleri
+  'host.experience.translations.tabsLabel': 'İlan metninin dilleri',
+  /** Orijinal dil: yayın koşulu. Rozetin işi, hangi sekmenin şart olduğunu söylemek. */
+  'host.experience.translations.required': 'zorunlu',
+  'host.experience.translations.optional': 'isteğe bağlı',
+  'host.experience.translations.add.label': 'Başka bir dilde yaz',
+  'host.experience.translations.add.submit': 'Aç',
+  /**
+   * Makine çevirisi rozeti (docs/I18N.md §2). Bu blokta hiç görünmüyor; alan
+   * Blok 10 için hazır ve rozet şimdiden var ki o gün otomatik çeviri, host'un
+   * yazdığı metin gibi görünmesin.
+   */
+  'host.experience.translations.machine':
+    'Bu metin otomatik çevrildi. Düzeltip kaydedersen senin yazdığın metin olur.',
+
+  'host.experience.title.label': 'Başlık',
+  'host.experience.title.placeholder': 'Kadıköy’de sokak lezzetleri turu',
+  'host.experience.title.help':
+    'Kısa ve somut. Gezgin listede önce bunu görüyor; ilanın adresi de bundan türüyor.',
+  'host.experience.description.label': 'Açıklama',
+  'host.experience.description.placeholder':
+    'Nerede buluşuyorsunuz, ne yapıyorsunuz, ne yemeli, ne giymeli…',
+  'host.experience.description.help':
+    'Yayınlamak için şart değil ama gezgin kararını burada veriyor. Programı sırayla anlat.',
+
+  'host.experience.duration.label': 'Süre (dakika)',
+  'host.experience.duration.help':
+    'Bir seansın toplam süresi. Örnek: 90 dakika, 180 dakika. En fazla yedi gün.',
+  'host.experience.capacity.label': 'Kapasite (kişi)',
+  'host.experience.capacity.help':
+    'Aynı seansta en fazla kaç kişi. Yayınlamak için en az bir kişi olmalı.',
+
+  'host.experience.city.label': 'Deneyim hangi şehirde?',
+  'host.experience.city.placeholder': 'Şehir ara',
+  /**
+   * Seçili şehrin ADI gösterilemiyor: API'de kimlikten şehre giden bir uç yok
+   * (`features/places/api.ts`). Uydurmak yerine elimizdeki doğru bilgi yazılıyor.
+   */
+  'host.experience.place.saved': 'Şehir seçili · saat dilimi {saat}',
+  'host.experience.place.empty': 'Henüz şehir seçilmedi.',
+  'host.experience.place.locked':
+    'Bir kez yayınlanmış ilanın şehri değiştirilemez: seansların saati ve rezervasyonların yeri buna bağlı. Başka bir şehir için yeni bir ilan aç.',
+
+  'host.experience.category.label': 'Kategori',
+  'host.experience.category.none': 'Seçilmedi',
+  'host.experience.category.help': 'Deneyimin ağırlıklı olarak neye dair olduğu.',
+
+  'host.experience.spoken.label': 'Deneyim sırasında konuştuğun diller',
+  /**
+   * docs/I18N.md §3'ün tam karşılığı: ilan metninin dili ile turda konuşulan dil
+   * ayrı şeyler ve gezgin için kritik olan ikincisi. Cümle bunu açıkça söylüyor.
+   */
+  'host.experience.spoken.help':
+    'İlanı hangi dilde yazdığından bağımsız: turu hangi dillerde anlatıyorsan onları işaretle. En fazla on dil.',
+  'host.experience.tags.label': 'Etiketler',
+  'host.experience.tags.placeholder': 'sokak lezzetleri, yürüyüş, küçük grup',
+  'host.experience.tags.help':
+    'Virgülle ayır. En fazla on etiket. Aramada eşleşmeye yardım ediyorlar.',
+
+  'host.experience.missing.heading': 'Yayınlamak için gerekenler',
+  'host.experience.ready': 'Hepsi tamam. İlanı yayınlayabilirsin.',
+  /**
+   * Yayın koşullarının kullanıcıya görünen adları. Sunucu KOD gönderiyor
+   * (`ExperiencePublishRequirement`), cümle değil — bu satırlar o kodların
+   * karşılığı ve hem kontrol listesinde hem de 409 mesajında AYNI metin.
+   *
+   * Kısa isim öbeği, emir cümlesi değil: `Intl.ListFormat` ile birleştirilip
+   * "başlık, şehir ve kategori" gibi tek bir cümlenin içine giriyorlar.
+   */
+  'host.experience.missing.translation': 'ilanın yazıldığı dilde başlık',
+  'host.experience.missing.city': 'şehir',
+  'host.experience.missing.category': 'kategori',
+  'host.experience.missing.capacity': 'kapasite',
+  /** Sunucu tanımadığımız bir koşul eklerse: gizlemiyoruz, "bir şey daha var" diyoruz. */
+  'host.experience.missing.unknown': 'tamamlanmamış bir alan',
+
+  'host.experience.publish': 'Yayınla',
+  'host.experience.republish': 'Yeniden yayınla',
+  'host.experience.publishing': 'Yayınlanıyor…',
+  'host.experience.published': 'İlanın yayında.',
+  'host.experience.archive': 'Arşivle',
+  'host.experience.archiving': 'Arşivleniyor…',
+  'host.experience.archived': 'İlan arşivlendi.',
+  'host.experience.status.publishedNote':
+    'İlanın aramada çıkıyor. Arşivlersen görünmez olur, silinmez — istediğin zaman geri yayınlarsın.',
+  'host.experience.status.privateNote': 'Yayınlanana kadar bu ilanı senden başkası görmüyor.',
+
+  // Hatalar. Hiçbiri API'nin metnini göstermiyor: o metnin dili kullanıcının
+  // dili olmak zorunda değil (features/auth/api.ts kararı).
+  'host.experience.error.notFound': 'Bu ilan bulunamadı. Panelden yeniden aç.',
+  'host.experience.error.invalid': 'Bu bölüm kaydedilemedi. Alanları kontrol edip tekrar dene.',
+  'host.experience.error.language':
+    'Bu dilde ilan yazılamıyor. Listeden başka bir dil seç.',
+  'host.experience.error.title': 'Başlık zorunlu ve en fazla 120 karakter olabilir.',
+  'host.experience.error.description': 'Açıklama en fazla 4000 karakter olabilir.',
+  'host.experience.error.duration': 'Süreyi dakika olarak yaz: en az 1, en fazla 10080.',
+  'host.experience.error.capacity': 'Kapasiteyi kişi olarak yaz: en az 1, en fazla 500.',
+  'host.experience.error.city': 'Şehri listeden seç — yazdığın metin tek başına yeterli değil.',
+  'host.experience.error.category': 'Listeden bir kategori seç.',
+  'host.experience.error.spokenLanguages': 'En fazla on dil işaretleyebilirsin.',
+  'host.experience.error.tags': 'Etiketler boş olamaz; en fazla on tane ve her biri kısa olmalı.',
+  /**
+   * İki ayrı 409'un tek cevabı: yayınlanmış ilanın şehri değişmiyor, ve yayındaki
+   * ilan yayın koşullarını ihlal edecek şekilde kaydedilemiyor. Çözüm ikisinde de
+   * aynı, o yüzden cümle de aynı.
+   */
+  'host.experience.error.publishedConflict':
+    'Yayındaki bir ilanda bu değişiklik yapılamıyor. Önce arşivle, sonra düzenle.',
+  'host.experience.error.publishBlocked': 'Yayınlanamadı. Eksik olanlar: {eksikler}.',
+  /** Eksik listesi okunamadı; sessiz kalmak yerine ne yapılacağını söylüyoruz. */
+  'host.experience.error.publishBlockedUnknown':
+    'Yayınlanamadı: ilan henüz tamam değil. Yukarıdaki listeyi kontrol et.',
+
+  // --- Kategoriler -----------------------------------------------------------
+  /**
+   * Kategori ADI veritabanında YOK, burada (docs/I18N.md §1, docs/categories.json):
+   * ad bizim yazdığımız arayüz metni, host'un içeriği değil. API yalnız slug dönüyor.
+   *
+   * `docs/categories.json`'a satır eklemek buraya ve `en.ts`'e de satır eklemeyi
+   * gerektiriyor; eksikliği DERLEMEDE yakalanamıyor (slug listesi çalışma anında
+   * veritabanından geliyor), bu yüzden eşlemesi olmayan slug ekranda ham hâliyle
+   * görünüyor ve konsola yazılıyor.
+   */
+  'category.food-drink': 'Yeme içme',
+  'category.art-culture': 'Sanat ve kültür',
+  'category.history-heritage': 'Tarih ve miras',
+  'category.nature-outdoors': 'Doğa ve açık hava',
+  'category.water-sea': 'Su ve deniz',
+  'category.sports-adventure': 'Spor ve macera',
+  'category.crafts-workshops': 'El sanatları ve atölyeler',
+  'category.music-nightlife': 'Müzik ve gece hayatı',
+  'category.wellness': 'İyi yaşam',
+  'category.photography': 'Fotoğrafçılık',
+  'category.tours-walks': 'Turlar ve yürüyüşler',
+  'category.local-life': 'Yerel hayat',
 } as const

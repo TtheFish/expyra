@@ -4,14 +4,30 @@ import { SiteHeader } from '@/components/brand/site-header'
 import { ExperienceCard } from '@/components/experience/experience-card'
 import { ExperienceSearch } from '@/components/search/experience-search'
 import { GlassButton } from '@/components/ui/glass-button'
+import { fetchExperiences, type GuestExperienceSummary } from '@/features/experiences/api'
 import { getTranslator } from '@/features/i18n/translator'
-import { experiences } from '@/lib/experiences'
 import { alternateLinks, path } from '@/lib/routes'
 
 /**
- * GEÇİCİ ANA SAYFA — tasarım sisteminin canlı vitrini.
- * Faz 4'te gerçek ana sayfa ile değişecek.
+ * Ana sayfa. Vitrin artık GERÇEK VERİ — `lib/experiences.ts`'teki üç sabit satır
+ * (İstanbul/Prag/Lizbon) bu blokta öldü.
+ *
+ * ## Vitrin kesintide sayfayı düşürmüyor — ve bu bir hata yutma değil
+ *
+ * `/kesfet` API'ye ulaşamazsa patlıyor, çünkü orada sorgunun cevabı SAYFANIN
+ * KENDİSİ. Burada değil: ana sayfanın işi başlık, arama çubuğu ve "nasıl çalışır"
+ * yolu; vitrin bir tat. Kesintide bütün sayfayı 500'e düşürmek, çalışmaya devam
+ * eden bir aramayı da kullanıcının elinden alırdı (aynı gerekçe `site-header.tsx`
+ * içindeki `loadViewer` üzerinde yazılı).
+ *
+ * Yutma OLMAMASININ şartı ikisi birden: hata `console.error` ile görünür kalıyor
+ * VE ekranda "okunamadı" ile "hiç yok" AYRI cümleler. Boş liste dönüp susmak,
+ * kesintiyi sessizce bir ürün durumuna ("henüz deneyim yok") çevirirdi — CLAUDE.md
+ * #1'in yasakladığı şey tam olarak bu.
  */
+
+/** Vitrinde kaç kart: 3 sütunlu ızgarada iki tam sıra. */
+const SHOWCASE_SIZE = 6
 
 export function generateMetadata(): Metadata {
   return { alternates: { languages: alternateLinks('home') } }
@@ -20,6 +36,7 @@ export function generateMetadata(): Metadata {
 export default async function Home({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params
   const t = await getTranslator(lang)
+  const showcase = await loadShowcase(lang)
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -55,20 +72,65 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           </div>
         </section>
 
-        <section id="ornek-deneyimler" aria-labelledby="ornek-deneyimler-baslik">
-          <h2 id="ornek-deneyimler-baslik" className="sr-only">
-            {t('home.samples.heading')}
+        <section aria-labelledby="vitrin-basligi">
+          {/* Başlık ARTIK GÖRÜNÜR: altındaki kartlar örnek değil, gerçek ilanlar. */}
+          <h2
+            id="vitrin-basligi"
+            className="text-on-media text-lg font-semibold text-white sm:text-xl"
+          >
+            {t('home.showcase.heading')}
           </h2>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {experiences.map((item) => (
-              <ExperienceCard key={item.slug} item={item} lang={lang} t={t} />
-            ))}
-          </div>
+          {showcase === null ? (
+            /* Okunamadı ≠ yok. Cümle bunu söylüyor ve hata konsolda duruyor. */
+            <p className="glass glass-edge mt-4 rounded-[var(--radius-glass-sm)] px-4 py-3 text-sm text-fg-muted">
+              {t('home.showcase.unavailable')}
+            </p>
+          ) : showcase.length === 0 ? (
+            /*
+              Gerçekten hiç yayında ilan yok. Misafire "burada bir şey yok" demek
+              yetmez — VISION §8'e göre projenin en büyük riski ARZ tarafı, yani bu
+              ekranı gören kişinin bir kısmı aslında host adayı. Çıkış yolu ona.
+            */
+            <div className="glass glass-edge glass-thick mt-4 rounded-[var(--radius-glass-lg)] p-8 text-center">
+              <p className="text-base font-semibold">{t('home.showcase.empty.title')}</p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">
+                {t('home.showcase.empty.body')}
+              </p>
+              <div className="mt-5">
+                <GlassButton variant="primary" href={path(lang, 'becomeHost')}>
+                  {t('home.showcase.empty.cta')}
+                </GlassButton>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {showcase.map((item) => (
+                  <ExperienceCard key={item.slug} item={item} lang={lang} t={t} />
+                ))}
+              </div>
+
+              <div className="mt-6 text-center">
+                <GlassButton href={path(lang, 'explore')}>{t('home.showcase.more')}</GlassButton>
+              </div>
+            </>
+          )}
         </section>
       </main>
 
       <SiteFooter lang={lang} />
     </div>
   )
+}
+
+/** `null` = okunamadı, `[]` = gerçekten yok. İkisi ekranda ayrı cümleler. */
+async function loadShowcase(lang: string): Promise<GuestExperienceSummary[] | null> {
+  try {
+    const page = await fetchExperiences({ lang })
+    return page.items.slice(0, SHOWCASE_SIZE)
+  } catch (error) {
+    console.error('experiences.showcase.failed', error)
+    return null
+  }
 }

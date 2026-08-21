@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Expyra.Application.Common.Interfaces;
 using Expyra.Domain.Catalog;
 using Expyra.Domain.Common;
+using Expyra.Domain.Experiences;
 using Expyra.Domain.Identity;
 using Expyra.Domain.Languages;
 using Expyra.Domain.Places;
@@ -38,6 +39,14 @@ public sealed class AppDbContext(
     public DbSet<Currency> Currencies => Set<Currency>();
 
     public DbSet<Category> Categories => Set<Category>();
+
+    public DbSet<Experience> Experiences => Set<Experience>();
+
+    public DbSet<ExperienceTranslation> ExperienceTranslations => Set<ExperienceTranslation>();
+
+    public DbSet<ExperienceSpokenLanguage> ExperienceSpokenLanguages => Set<ExperienceSpokenLanguage>();
+
+    public DbSet<ExperienceTag> ExperienceTags => Set<ExperienceTag>();
 
     public DbSet<User> Users => Set<User>();
 

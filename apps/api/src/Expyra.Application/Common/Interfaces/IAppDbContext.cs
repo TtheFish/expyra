@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Expyra.Domain.Catalog;
+using Expyra.Domain.Experiences;
 using Expyra.Domain.Identity;
 using Expyra.Domain.Languages;
 using Expyra.Domain.Places;
@@ -32,6 +33,27 @@ public interface IAppDbContext
 
     /// <summary>Deneyim kategorileri. Yalnız slug tutar; adlar Blok 3'ün sözlüğünde.</summary>
     DbSet<Category> Categories { get; }
+
+    /// <summary>
+    /// Deneyim ilanları. <b>Başlık ve açıklama BURADA DEĞİL</b> — bkz.
+    /// <see cref="ExperienceTranslations"/> (docs/I18N.md §2).
+    /// </summary>
+    DbSet<Experience> Experiences { get; }
+
+    /// <summary>
+    /// İlan metinleri, dil başına bir satır. Bileşik anahtar → <c>FindForUpdateAsync</c>
+    /// bu tiple ÇALIŞMAZ; kilit <c>experience</c> satırında alınır.
+    /// </summary>
+    DbSet<ExperienceTranslation> ExperienceTranslations { get; }
+
+    /// <summary>
+    /// Deneyim sırasında KONUŞULAN diller — ilan metninin dili değil (docs/I18N.md §3).
+    /// Dizi değil join tablosu: sebebi <see cref="ExperienceSpokenLanguage"/>'da.
+    /// </summary>
+    DbSet<ExperienceSpokenLanguage> ExperienceSpokenLanguages { get; }
+
+    /// <summary>Host'un yazdığı serbest etiketler. Kategori değil — o kapalı liste.</summary>
+    DbSet<ExperienceTag> ExperienceTags { get; }
 
     /// <summary>Kullanıcı hesapları. Tablo adı app_user — "user" Postgres'te ayrılmış kelime.</summary>
     DbSet<User> Users { get; }

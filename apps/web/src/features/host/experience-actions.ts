@@ -1,0 +1,642 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { RedirectType, redirect } from 'next/navigation'
+import { ApiError } from '@/features/auth/api'
+import { RETURN_TO_PARAM } from '@/features/auth/return-to'
+import { getSession } from '@/features/auth/session'
+import type { SimpleMessageKey, Translate } from '@/features/i18n/dictionary'
+import { UI_LANGUAGE_FIELD, uiLocaleOf, type UiLocale } from '@/features/i18n/locale'
+import { getTranslator } from '@/features/i18n/translator'
+import { resolveCity } from '@/features/places/api'
+import { path } from '@/lib/routes'
+import {
+  CAPACITY_FIELD,
+  CATEGORY_FIELD,
+  CITY_FIELD,
+  DESCRIPTION_FIELD,
+  DURATION_FIELD,
+  EXPERIENCE_ID_FIELD,
+  SECTION_FIELD,
+  SPOKEN_LANGUAGE_FIELD,
+  TAGS_FIELD,
+  TEXT_LANGUAGE_FIELD,
+  TITLE_FIELD,
+  type ExperienceSection,
+} from './experience-fields'
+import {
+  HostExperienceAccessError,
+  archiveExperience,
+  createExperience,
+  fetchHostExperience,
+  hostExperiencePath,
+  publishExperience,
+  requirementMessageKey,
+  setExperienceTranslation,
+  updateExperience,
+  type HostExperiencePatch,
+} from './experiences-api'
+
+/**
+ * Deneyim sihirbazının sunucu eylemleri.
+ *
+ * `useActionState` sözleşmesi giriş ve hesap akışlarıyla aynı: eylem HAZIR METİN
+ * döner, anahtar değil. Hangi API hatasının hangi cümleye karşılık geldiği bir
+ * sunucu bilgisi ve burada kalıyor (`features/auth/actions.ts` kararı).
+ *
+ * **Metnin dili formdan geliyor** (`arayuz-dili`), çünkü sunucu eylemi hangi
+ * sayfadan çağrıldığını bilmiyor: `params` yalnız render sırasında var ve
+ * `expyra_lang` çerezi İÇERİK dili tercihini tutuyor (`ja` olabilir). Değer
+ * `uiLocaleOf` ile kapalı kümeye daraltılıyor.
+ *
+ * ## Formda kimlik yok, kaynak kimliği var
+ *
+ * Hiçbir formda kullanıcı/host kimliği alanı YOK (CLAUDE.md #3): API rolü ve
+ * sahipliği token'ın `sub`'undan çözüyor. Formlarda taşınan `deneyim` alanı bir
+ * KAYNAK kimliği — başkasının ilanının id'si yazılsa bile API 404 dönüyor (403
+ * değil, enumeration olmasın diye) ve o 404 aşağıda "bulunamadı"ya çevriliyor.
+ *
+ * ## Bölüm bölüm kaydetme
+ *
+ * Düzenleme ekranı tek bir dev form değil; her bölüm kendi formu ve kendi
+ * `PATCH`'i. Bunu mümkün kılan şey ucun gerçek bir delta olması: verilmeyen alan
+ * DEĞİŞMİYOR. Tek form olsaydı, "kapasiteyi düzelt" niyetiyle gönderilen istek
+ * şehir alanını da taşımak zorunda kalır ve seçici boş bırakıldığında şehri
+ * sessizce silerdi.
+ */
+
+/**
+ * Bir bölüm formunun cevabı. Hesap formundaki `ProfileFormState` ile aynı şekil ve
+ * aynı gerekçe: burada başarı da GÖRÜNÜR bir sonuç — kullanıcı aynı sayfada
+ * kalıyor ve "kaydedildi mi" sorusunun cevabını görmek zorunda.
+ *
+ * `at` sunucu saatinden: aynı hata ikinci kez döndüğünde de yeni bir durum olsun.
+ */
+export type ExperienceFormState = {
+  error: string | null
+  success: string | null
+  at: number
+}
+
+/**
+ * Yeni taslak. Tek alan: ilanın yazılacağı dil.
+ *
+ * Başlık burada SORULMUYOR ve bu bilinçli: `POST` yalnız `originalLanguage`
+ * kabul ediyor, başlık ayrı bir uca (`PUT .../translations/{lang}`) gidiyor. İkisini
+ * tek eylemde zincirlemek, ilki başarılı ikincisi başarısız olduğunda ekranda
+ * hata gösterirken sunucuda adsız bir taslak bırakırdı — kullanıcı "kaydedilmedi"
+ * sanıp yeniden denediğinde ikinci taslak doğardı. Başlık, düzenleme ekranının
+ * ilk bölümünde ve orada zaten çeviri sekmelerinin bir parçası.
+ */
+export async function createExperienceAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(lang)
+  const here = path(lang, 'hostExperienceNew')
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, here), RedirectType.replace)
+  }
+
+  const language = readField(formData, TEXT_LANGUAGE_FIELD)
+  if (!language) {
+    return fail(t, 'host.experience.error.language')
+  }
+
+  let createdId: string | null = null
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    const created = await createExperience(accessToken, language)
+    createdId = created.id
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else if (error instanceof ApiError && error.status === 400) {
+      // Tek 400 kaynağı dil alanı: ya biçim bozuk ya da o dilde içerik girişi kapalı.
+      return fail(t, 'host.experience.error.language')
+    } else {
+      // Bilinmeyen hata YUTULMAZ (CLAUDE.md #1).
+      throw error
+    }
+  }
+
+  // `redirect` NEXT_REDIRECT fırlatıyor: `try` bloğunun DIŞINDA olmak zorunda,
+  // aksi halde kendi catch'imiz yönlendirmeyi yutar.
+  if (access) {
+    redirect(accessHref(lang, access, here), RedirectType.replace)
+  }
+
+  if (!createdId) {
+    // Buraya gelinemez: yukarıdaki dallardan biri ya döner ya yönlendirir. Sessiz
+    // bir `return` yerine gürültülü patlama — kullanıcıya boş bir form göstermek
+    // kaydın olup olmadığını belirsiz bırakırdı.
+    throw new Error('host.experience.create: kimlik dönmedi.')
+  }
+
+  // Panel ilan sayısını gösteriyor; yalnız bu yolu tazelemek listeyi bayat bırakırdı.
+  revalidatePath('/', 'layout')
+
+  // `push`: kullanıcı geri tuşuyla "yeni deneyim" ekranına dönebilmeli — taslak
+  // zaten açıldı, ikinci kez göndermesi ikinci bir taslak açardı ama bu onun
+  // bilinçli kararı olur; `replace` ile geçmişi silmek gezinmeyi tuhaflaştırırdı.
+  redirect(hostExperiencePath(lang, createdId), RedirectType.push)
+}
+
+/**
+ * Dil-bağımsız alanlar. Hangi alanların gönderildiğini `bolum` işareti söylüyor;
+ * gövdeye yalnız o alanlar yazılıyor, gerisi `undefined` kalıyor ve JSON'a hiç
+ * girmiyor — yani sunucuda "dokunma" olarak okunuyor.
+ */
+export async function updateExperienceAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(lang)
+
+  const experienceId = readField(formData, EXPERIENCE_ID_FIELD)
+  if (!experienceId) {
+    return fail(t, 'host.experience.error.notFound')
+  }
+
+  const here = hostExperiencePath(lang, experienceId)
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, here), RedirectType.replace)
+  }
+
+  const section = sectionOf(formData.get(SECTION_FIELD))
+  if (!section) {
+    // İşareti olmayan form bir hata; sessizce "hiçbir şeyi güncelleme"ye çevirmek
+    // kullanıcıya "kaydedildi" derdi (CLAUDE.md #1).
+    console.error('host.experience.section.unknown', formData.get(SECTION_FIELD))
+    return fail(t, 'host.experience.error.invalid')
+  }
+
+  let patch: HostExperiencePatch
+  try {
+    patch = await buildPatch(section, formData)
+  } catch (error) {
+    if (error instanceof SectionInputError) {
+      return fail(t, error.messageKey)
+    }
+    throw error
+  }
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await updateExperience(accessToken, experienceId, patch)
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return writeFailure(t, error)
+    }
+  }
+
+  if (access) {
+    redirect(accessHref(lang, access, here), RedirectType.replace)
+  }
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.experience.saved'))
+}
+
+/**
+ * Bir dildeki başlık ve açıklama (upsert).
+ *
+ * `OriginalLanguage` zorunlu, diğer diller opsiyonel (docs/I18N.md §2) — ama bu
+ * kural burada DEĞİL, yayın kapısında uygulanıyor. Bu uç her dil için aynı: host
+ * isterse önce İngilizce yazıp Türkçe'yi sonra tamamlar.
+ */
+export async function setTranslationAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(lang)
+
+  const experienceId = readField(formData, EXPERIENCE_ID_FIELD)
+  if (!experienceId) {
+    return fail(t, 'host.experience.error.notFound')
+  }
+
+  const here = hostExperiencePath(lang, experienceId)
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, here), RedirectType.replace)
+  }
+
+  const textLanguage = readField(formData, TEXT_LANGUAGE_FIELD)
+  if (!textLanguage) {
+    return fail(t, 'host.experience.error.language')
+  }
+
+  const title = readField(formData, TITLE_FIELD)
+  if (!title) {
+    return fail(t, 'host.experience.error.title')
+  }
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await setExperienceTranslation(accessToken, experienceId, textLanguage, {
+      title,
+      // Açıklama İSTEĞE BAĞLI (validator da öyle): boş gönderim satırı silmiyor,
+      // yalnız açıklamayı boşaltıyor.
+      description: readField(formData, DESCRIPTION_FIELD),
+    })
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return writeFailure(t, error)
+    }
+  }
+
+  if (access) {
+    redirect(accessHref(lang, access, here), RedirectType.replace)
+  }
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.experience.saved'))
+}
+
+/**
+ * Yayına alır.
+ *
+ * **Doğrulama sunucuda ve düğme kapatılmıyor.** Eksik ilanda "Yayınla" düğmesini
+ * `disabled` yapmak akla yakın ama iki şeyi bozuyor: devre dışı bir düğme odak
+ * almadığı için ekran okuyucu kullanıcısı NEDEN kapalı olduğunu okuyamıyor, ve
+ * arayüzün kendi hesabı sunucununkinden ayrılabiliyor. Bunun yerine düğme hep
+ * açık, kural tek yerde (sunucu), ve 409 geldiğinde eksikler `role="alert"`
+ * içinde duyuruluyor. Sayfa ayrıca eksikleri baştan bir kontrol listesi olarak
+ * gösteriyor — yani düğmeye basmadan da görülüyorlar.
+ *
+ * **Eksik listesi 409'un GÖVDESİNDEN okunmuyor.** API'nin ProblemDetails başlığı
+ * Türkçe bir cümle ("eksik alanlar: translation, city") ve iki nedenle
+ * ayrıştırılmıyor: kullanıcının dili Türkçe olmak zorunda değil, ve bir cümlenin
+ * biçimi sözleşme değildir. Bunun yerine ilan yeniden okunuyor ve makine okunur
+ * `missingPublishRequirements` alanı sözlüğe eşleniyor — aynı alan sayfadaki
+ * kontrol listesini de besliyor, yani ekranda yazan ile sunucunun reddettiği
+ * ayrışamıyor.
+ */
+export async function publishExperienceAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(lang)
+
+  const experienceId = readField(formData, EXPERIENCE_ID_FIELD)
+  if (!experienceId) {
+    return fail(t, 'host.experience.error.notFound')
+  }
+
+  const here = hostExperiencePath(lang, experienceId)
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, here), RedirectType.replace)
+  }
+
+  let access: HostExperienceAccessError | null = null
+  let blocked = false
+
+  try {
+    await publishExperience(accessToken, experienceId)
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else if (error instanceof ApiError && error.status === 409) {
+      blocked = true
+    } else {
+      return writeFailure(t, error)
+    }
+  }
+
+  if (access) {
+    redirect(accessHref(lang, access, here), RedirectType.replace)
+  }
+
+  if (blocked) {
+    const message = await blockedMessage(t, lang, accessToken, experienceId)
+    return { error: message, success: null, at: Date.now() }
+  }
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.experience.published'))
+}
+
+/**
+ * Raftan indirir. Doğrulama istemiyor ve idempotent — eksik bir taslak da
+ * arşivlenebiliyor, çünkü arşiv bir silme değil "şu an görünmesin". Geri dönüşü
+ * de var: yayın ucu arşivden yeniden yayına alıyor.
+ */
+export async function archiveExperienceAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(lang)
+
+  const experienceId = readField(formData, EXPERIENCE_ID_FIELD)
+  if (!experienceId) {
+    return fail(t, 'host.experience.error.notFound')
+  }
+
+  const here = hostExperiencePath(lang, experienceId)
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, here), RedirectType.replace)
+  }
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await archiveExperience(accessToken, experienceId)
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return writeFailure(t, error)
+    }
+  }
+
+  if (access) {
+    redirect(accessHref(lang, access, here), RedirectType.replace)
+  }
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.experience.archived'))
+}
+
+// --- Yardımcılar -------------------------------------------------------------
+
+/** Alan bazlı girdi hatası; mesajı eylem gövdesinde kullanıcının diline çevriliyor. */
+class SectionInputError extends Error {
+  readonly messageKey: SimpleMessageKey
+
+  constructor(messageKey: SimpleMessageKey) {
+    super(messageKey)
+    this.name = 'SectionInputError'
+    this.messageKey = messageKey
+  }
+}
+
+/**
+ * Bölümün alanlarını `PATCH` gövdesine çevirir.
+ *
+ * Skalerlerde **boş alan "dokunma" demek**: taslakta süre henüz girilmemişse
+ * (`0`) input boş geliyor ve boş bir gönderim sunucuya 0 yazmaya çalışırdı —
+ * doğrulama onu reddederdi. Boşu hiç göndermemek, "bu adımı sonra tamamlarım"
+ * niyetini doğru karşılıyor.
+ *
+ * Koleksiyonlarda tam tersi: boş küme **gönderiliyor** ve "hepsini kaldır"
+ * demek. İkisi arasındaki farkın kaynağı sunucunun sözleşmesi (`null` dokunma,
+ * `[]` boşalt), arayüzün tercihi değil.
+ */
+async function buildPatch(
+  section: ExperienceSection,
+  formData: FormData,
+): Promise<HostExperiencePatch> {
+  if (section === 'temel') {
+    return {
+      durationMinutes: readCount(formData, DURATION_FIELD, 'host.experience.error.duration'),
+      capacity: readCount(formData, CAPACITY_FIELD, 'host.experience.error.capacity'),
+    }
+  }
+
+  if (section === 'sehir') {
+    const key = readField(formData, CITY_FIELD)
+
+    // Seçici doldurulmadan gönderildi. Sessizce geçmek "kaydedildi" derdi.
+    if (!key) throw new SectionInputError('host.experience.error.city')
+
+    /*
+      Doğal anahtar (`cz-prague`) → uuid. Çevirme İSTEMCİDE yapılamıyor: seçicinin
+      autocomplete ucu uuid taşımıyor (bilinçli — her tuş vuruşunda gereksiz veri).
+      Bulunamayan anahtar burada duruyor: API'ye uydurma bir uuid göndermek 400
+      üretir ve kullanıcı "şehri listeden seç" yerine genel bir hata görürdü.
+    */
+    const city = await resolveCity(key)
+    if (!city) throw new SectionInputError('host.experience.error.city')
+
+    // Saat dilimi GÖNDERİLMİYOR: sunucu onu seçilen şehirden türetiyor. İstemciden
+    // alınsaydı gezginin tarayıcı saati Prag'daki bir turun saatini tanımlardı.
+    return { cityId: city.id }
+  }
+
+  if (section === 'kategori') {
+    const slug = readField(formData, CATEGORY_FIELD)
+    if (!slug) throw new SectionInputError('host.experience.error.category')
+
+    return { categorySlug: slug }
+  }
+
+  return {
+    // `getAll` sırayı koruyor; tekrar eden değeri sunucu zaten teke indiriyor.
+    spokenLanguages: readList(formData, SPOKEN_LANGUAGE_FIELD),
+    tags: readTags(formData),
+  }
+}
+
+const SECTIONS: readonly string[] = ['temel', 'sehir', 'kategori', 'listeler']
+
+function sectionOf(value: unknown): ExperienceSection | null {
+  return typeof value === 'string' && SECTIONS.includes(value)
+    ? (value as ExperienceSection)
+    : null
+}
+
+/**
+ * Boş alan `undefined` (dokunma); dolu ama sayı olmayan alan HATA.
+ *
+ * "Sayı değilse yok say" demek, `abc` yazan kullanıcıya "kaydedildi" demek olurdu.
+ * Üst sınır kontrolü YOK ve olmayacak: tavanlar Domain'de (`Experience.MaxCapacity`,
+ * `MaxDurationMinutes`) ve burada kopyalanırsa bir gün ayrışırlar — sunucu 400
+ * döndüğünde alanın kendi hata metni zaten gösteriliyor.
+ *
+ * **Kapasitede 0'ı sunucu kabul ediyor, arayüz etmiyor** ve bu bir ayrışma değil:
+ * sunucuda 0 "taslakta henüz karar vermedim" demek ve alan zaten 0'dan doğuyor.
+ * Formda 0 yazmak ile alanı boş bırakmak aynı niyet — ikisini ayrı iki yol yapmak,
+ * kullanıcıya hiçbir farkı olmayan bir seçim sundurmak olurdu.
+ */
+function readCount(
+  formData: FormData,
+  field: string,
+  messageKey: SimpleMessageKey,
+): number | undefined {
+  const raw = readField(formData, field)
+  if (raw === null) return undefined
+
+  const value = Number(raw)
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new SectionInputError(messageKey)
+  }
+
+  return value
+}
+
+function readList(formData: FormData, field: string): string[] {
+  return formData
+    .getAll(field)
+    .filter((value): value is string => typeof value === 'string')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
+}
+
+/**
+ * Etiketler tek bir metin alanından geliyor, virgülle ayrılmış.
+ *
+ * Ayrı ayrı input yerine tek alan: etiket sayısı değişken ve satır ekleyip çıkaran
+ * bir kontrol JS kapalıyken çalışmaz. Etiketin İÇİNDE virgül olması ("tarih, sanat"
+ * tek etiket) desteklenmiyor ve bu kayıp bilinçli — etiket bir sözcük öbeği,
+ * cümle değil.
+ */
+function readTags(formData: FormData): string[] {
+  const raw = formData.get(TAGS_FIELD)
+  if (typeof raw !== 'string') return []
+
+  return raw
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
+}
+
+/**
+ * Yayın reddinin gerekçesi. İlan yeniden okunuyor: 409'un gövdesi bir cümle,
+ * `missingPublishRequirements` ise sözleşme.
+ *
+ * Yeniden okuma başarısız olursa (ya da eksik listesi bir yarış yüzünden boş
+ * gelirse) genel bir cümleye düşülüyor — hatayı yutmak değil, ikinci bir hatayı
+ * birincinin üzerine yığmamak: kullanıcının o an çözmesi gereken şey yayın
+ * reddi, listeyi okuyamamamız değil. Okuma hatası `console.error` ile görünür.
+ */
+async function blockedMessage(
+  t: Translate,
+  lang: UiLocale,
+  accessToken: string,
+  experienceId: string,
+): Promise<string> {
+  let codes: string[] = []
+
+  try {
+    const current = await fetchHostExperience(accessToken, experienceId)
+    codes = current?.missingPublishRequirements ?? []
+  } catch (error) {
+    console.error('host.experience.publish.missingLookupFailed', error)
+  }
+
+  if (codes.length === 0) {
+    return t('host.experience.error.publishBlockedUnknown')
+  }
+
+  // Liste ayracı `Intl.ListFormat`'tan: "a, b ve c" (tr) ile "a, b and c" (en)
+  // aynı veri, farklı dil. Elle ", " ile birleştirmek çeviriyi kodda dondururdu.
+  const formatter = new Intl.ListFormat(lang, { style: 'long', type: 'conjunction' })
+  const phrases = codes.map((code) => t(requirementMessageKey(code)))
+
+  return t('host.experience.error.publishBlocked', { eksikler: formatter.format(phrases) })
+}
+
+/**
+ * Yazma uçlarının ortak hata eşlemesi. Eşlenmeyen her şey YENİDEN FIRLATILIYOR
+ * (CLAUDE.md #1): 500'ü "kaydedilemedi" diye göstermek gerçek arızayı kullanıcı
+ * hatası gibi gösterir.
+ */
+function writeFailure(t: Translate, error: unknown): ExperienceFormState {
+  if (error instanceof ApiError) {
+    if (error.status === 404) {
+      return fail(t, 'host.experience.error.notFound')
+    }
+
+    if (error.status === 409) {
+      // İki 409 kaynağı var ve ikisi de aynı cevabı gerektiriyor: yayınlanmış bir
+      // ilanın şehri değiştirilemiyor, ve yayındaki bir ilan yayın koşullarını
+      // ihlal edecek şekilde kaydedilemiyor. Her ikisinin de çözümü önce arşivlemek.
+      return fail(t, 'host.experience.error.publishedConflict')
+    }
+
+    if (error.status === 400) {
+      return fail(t, fieldErrorKey(error))
+    }
+  }
+
+  throw error
+}
+
+/**
+ * 400'ün iki şekli var: `ValidationProblemDetails` (alan adı `errors` sözlüğünde)
+ * ve düz `ProblemDetails` (kayıt defterinde olmayan şehir/kategori/dil). İkincisi
+ * alan adı taşımıyor, o yüzden genel cümleye düşüyor.
+ *
+ * Mesajların kendisi kullanıcıya gösterilmiyor; değerli olan ANAHTAR — hangi
+ * alanın reddedildiğini söylüyor (`ApiError.hasFieldError` kalıbı).
+ */
+function fieldErrorKey(error: ApiError): SimpleMessageKey {
+  if (error.hasFieldError('durationMinutes')) return 'host.experience.error.duration'
+  if (error.hasFieldError('capacity')) return 'host.experience.error.capacity'
+  if (error.hasFieldError('categorySlug')) return 'host.experience.error.category'
+  if (error.hasFieldError('spokenLanguages')) return 'host.experience.error.spokenLanguages'
+  if (error.hasFieldError('tags')) return 'host.experience.error.tags'
+  if (error.hasFieldError('title')) return 'host.experience.error.title'
+  if (error.hasFieldError('description')) return 'host.experience.error.description'
+  if (error.hasFieldError('language')) return 'host.experience.error.language'
+
+  return 'host.experience.error.invalid'
+}
+
+/**
+ * Oturum çerezi. `null` dönerse çağıran GİRİŞ ekranına yönlendiriyor — hata
+ * kutusunda "giriş yapmalısın" yazmak, kullanıcıyı yapabileceği tek şeyin bir
+ * tık uzağında bırakmadan bilgilendirmek olurdu.
+ */
+async function requireAccessToken(): Promise<string | null> {
+  const session = await getSession()
+  return session?.accessToken ?? null
+}
+
+/**
+ * Erişim hatasının varış noktası:
+ * - `signedOut` → giriş, dönüş adresiyle.
+ * - `notHost` → "Host ol" ekranı. Rolü olmayan kullanıcıya hata göstermek yerine
+ *   rolü kazanacağı yere göndermek, tek tıkla çözülebilen bir durumu tek tık
+ *   yapıyor; o ekran ayrıca taze token yazıyor (rol claim'i eski token'da yok).
+ */
+function accessHref(lang: UiLocale, error: HostExperienceAccessError, returnTo: string): string {
+  return error.reason === 'signedOut' ? signInHref(lang, returnTo) : path(lang, 'becomeHost')
+}
+
+function signInHref(lang: UiLocale, returnTo: string): string {
+  const query = new URLSearchParams({ [RETURN_TO_PARAM]: returnTo })
+  return `${path(lang, 'signIn')}?${query.toString()}`
+}
+
+function succeed(message: string): ExperienceFormState {
+  return { error: null, success: message, at: Date.now() }
+}
+
+function fail(t: Translate, key: SimpleMessageKey): ExperienceFormState {
+  return { error: t(key), success: null, at: Date.now() }
+}
+
+function readField(formData: FormData, name: string): string | null {
+  const value = formData.get(name)
+  if (typeof value !== 'string') return null
+
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}

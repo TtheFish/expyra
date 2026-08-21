@@ -82,8 +82,21 @@ Bu makinede bağlantı dizesi bu yüzden `Port=5433`. Başka bir makinede kurulu
 Testler bağlantıyı şu sırayla arar: `EXPYRA_TEST_DB` → `ConnectionStrings__Default`
 → `localhost:5432/expyra_test` varsayılanı.
 
+Bu makinede son basamak yanlış porta gidiyor (yukarıdaki iki kurulum tablosu), yani
+`pnpm check` env değişkeni olmadan 112 integration testi birden kırıyor. Değişken bu
+yüzden **kullanıcı düzeyinde kalıcı** tanımlı; yeni açılan her kabuk onu görür:
+
+```powershell
+setx EXPYRA_TEST_DB "Host=localhost;Port=5433;Database=expyra_test;Username=postgres;Password=postgres"
+```
+
+Varsayılan neden 5433'e çekilmedi: 5433 bu makineye özgü: tek Postgres kurulu bir
+makinede doğru port 5432 ve repodaki varsayılanı buraya göre değiştirmek takımın
+diğer kutusunu kırardı. Makineye özgü olan makinede duruyor.
+
+`setx` yalnızca **yeni** süreçleri etkiler. Açık bir terminalde tek seferlik:
+
 ```bash
-# bu makinede
 $env:EXPYRA_TEST_DB = "Host=localhost;Port=5433;Database=expyra_test;Username=postgres;Password=postgres"
 dotnet test apps/api
 ```

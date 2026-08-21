@@ -48,7 +48,14 @@ export const en = {
   'home.hero.titleAccent': 'the experiences locals keep',
   'home.hero.lede':
     'From people who actually live there. Small groups, real people, a few hours you won’t forget.',
-  'home.samples.heading': 'Sample experiences',
+  'home.showcase.heading': 'Experiences on Expyra',
+  'home.showcase.more': 'See every experience',
+  'home.showcase.unavailable':
+    'We couldn’t list the experiences just now. Try again in a bit — the listings are still there.',
+  'home.showcase.empty.title': 'Nothing is published yet',
+  'home.showcase.empty.body':
+    'You could be the first. Show people something you know, with a small group.',
+  'home.showcase.empty.cta': 'Become a host',
 
   'search.destination.label': 'Where to?',
   'search.destination.placeholder': 'Search for a city',
@@ -85,34 +92,68 @@ export const en = {
   'search.guests.summary.both': '{yetiskin}, {cocuk}',
 
   'experience.place': '{sehir}, {ulke}',
-  'experience.rating': '★ {puan}',
-  'experience.perPerson': '/ person',
-  'experience.duration': { one: '{n} hour', other: '{n} hours' },
+  'experience.duration.hours': { one: '{n} hour', other: '{n} hours' },
+  'experience.duration.minutes': { one: '{n} minute', other: '{n} minutes' },
+  'experience.duration.full': '{saat} {dakika}',
+  'experience.duration.unknown': 'Duration not given',
   'experience.meta': {
     one: '{sure} · up to {n} person',
     other: '{sure} · up to {n} people',
   },
+  'experience.card.language': 'This listing is written in {dil}',
 
   'explore.heading.all': 'All experiences',
   'explore.heading.city': 'Experiences in {sehir}',
   'explore.heading.query': 'Results for “{arama}”',
-  'explore.summary': { one: '{n} experience · {misafir}', other: '{n} experiences · {misafir}' },
-  'explore.summary.dated': {
-    one: '{n} experience · {misafir} · {tarih}',
-    other: '{n} experiences · {misafir} · {tarih}',
+  'explore.summary': { one: '{n} experience', other: '{n} experiences' },
+  'explore.summary.page': {
+    one: '{n} experience on this page',
+    other: '{n} experiences on this page',
   },
-  'explore.summary.guests': { one: '{n} person', other: '{n} people' },
-  'explore.dateNotice':
-    'The date you picked doesn’t narrow anything down yet — the experiences’ calendars aren’t in the system. Everything below covers every date.',
+  // "we don’t take X into account" tek ve çoğul listede aynı çalışıyor; fiil
+  // özneyle değil "we" ile uyuşuyor. Türkçe'deki belirtme hâlinin karşılığı
+  // burada gerekmiyor, o yüzden filtre adları yalın.
+  'explore.filtersNotice':
+    'We narrow results by city only — we don’t take {filtreler} into account yet.',
+  'explore.filter.date': 'the date you picked',
+  'explore.filter.guests': 'the number of guests',
+
+  'explore.pager.label': 'Result pages',
+  'explore.pager.next': 'Next page',
+  'explore.pager.first': 'Back to the first page',
+
+  'explore.pageLink.title': 'We couldn’t read that page link',
+  'explore.pageLink.body':
+    'The page marker in the address looks broken. Start the search again — the results are still there.',
+
   'explore.empty.title': 'No experiences here yet',
   'explore.empty.body':
-    'Try widening the search: pick another city from the list, or fewer guests. New cities go up all the time.',
+    'Try another city from the list. New cities and new experiences go up all the time.',
   'explore.empty.cta': 'See every experience',
+  'explore.empty.hostCta': 'Be the first host here',
 
   'explore.cityMissing.title': 'We don’t know that city',
   'explore.cityMissing.body':
     'The city in the address isn’t in our registry — the link may be out of date. Pick a city from the list in the field above.',
   'explore.cityMissing.cta': 'See every experience',
+
+  'experience.detail.meta.fallback': 'A local experience in {sehir}.',
+  'experience.detail.text.fallback': 'This description is in {dil}',
+  'experience.detail.duration.label': 'Duration',
+  'experience.detail.capacity.label': 'Group size',
+  'experience.detail.capacity.value': { one: 'Up to {n} person', other: 'Up to {n} people' },
+  'experience.detail.about': 'About this experience',
+  'experience.detail.noDescription': 'The host hasn’t written a description yet.',
+  'experience.detail.spoken.heading': 'Languages spoken during the experience',
+  'experience.detail.spoken.help':
+    'The host runs the experience in these languages. The language the listing is written in is a separate thing.',
+  'experience.detail.spoken.none': 'The host hasn’t listed the languages they speak yet.',
+  'experience.detail.tags.heading': 'Tags',
+  'experience.detail.booking.title': 'No dates or price yet',
+  'experience.detail.booking.body':
+    'Once this experience has a calendar and a price, booking opens right here.',
+  'experience.detail.cityLink': 'All experiences in {sehir}',
+  'experience.detail.back': 'Back to Explore',
 
   'howItWorks.lede': 'Three steps and you’re done.',
   'howItWorks.back': 'Back',
@@ -242,25 +283,24 @@ export const en = {
   'host.panel.status': 'Your account is open as a host.',
   'host.panel.new': 'New experience',
 
-  'host.soon': 'Publishing experiences opens soon',
-
   'host.listings.heading': 'My listings · {sayi}',
-  'host.listings.previewHeading': 'This is how your panel will look',
-  'host.listings.note':
-    'This list is sample data. Your own listings will show up here once publishing opens.',
-  'host.listings.previewNote':
-    'This list is sample data — once you become a host, your own listings show up here.',
-  'host.listings.summary': {
-    one: '{fiyat} · up to {n} person',
-    other: '{fiyat} · up to {n} people',
-  },
-  'host.listings.progress': {
-    one: '{tamam} of {n} step done',
-    other: '{tamam} of {n} steps done',
-  },
   'host.listings.edit': 'Edit',
   'host.listings.status.draft': 'Draft',
   'host.listings.status.published': 'Published',
+  'host.listings.status.archived': 'Archived',
+
+  'host.listings.ready': 'Ready to publish',
+  'host.listings.missing': { one: '{n} field missing', other: '{n} fields missing' },
+
+  'host.listings.empty.heading': 'My listings',
+  'host.listings.empty.title': 'You don’t have a listing yet',
+  'host.listings.empty.body':
+    'Open your first draft. You can work on it as long as you like before publishing — nobody else can see a draft.',
+  'host.listings.empty.cta': 'Write your first experience',
+
+  'host.listings.errorHeading': 'My listings',
+  'host.listings.error':
+    'We couldn’t load your listings right now. Nothing was deleted — reload the page in a moment.',
 
   'host.steps.heading': 'How do I start?',
   'host.steps.describe.title': 'Describe your experience',
@@ -276,13 +316,155 @@ export const en = {
   'host.steps.publish.body':
     'Nothing to wait for. The moment you publish, your listing shows up in search.',
 
-  'host.contact.title': 'Publishing experiences opens soon',
+  'host.contact.title': 'Write to us if you get stuck',
   'host.contact.body':
-    'We’re gathering the first hosts one at a time. If you already know what you want to share, write to us — we’ll put your listing together with you when it opens.',
+    'We look after the first hosts one at a time. If something blocks you while you put your listing together, or you’re unsure about a decision, write — we’ll work through it with you.',
   'host.contact.cta': 'Write to us',
   'host.contact.howItWorks': 'How it works',
 
   'host.error.blocked': 'This account is suspended, so it can’t become a host. destek@expyra.com',
+
+  // --- Experience wizard -----------------------------------------------------
+
+  'host.experience.new.meta.title': 'New experience',
+  'host.experience.new.title': 'Start a new experience',
+  'host.experience.new.lede':
+    'We ask one thing first: which language you’ll write the listing in. Everything else you fill in inside the draft, in whatever order you like.',
+  'host.experience.new.language.label': 'Which language will you write in?',
+  'host.experience.new.language.help':
+    'This one can’t be changed later: your listing’s address comes from it, and travellers see this text when no other language is written. You can add other languages afterwards.',
+  'host.experience.new.submit': 'Open the draft',
+  'host.experience.new.pending': 'Opening…',
+
+  'host.experience.new.next.heading': 'What comes next?',
+  'host.experience.new.next.text': 'Title and description — in as many languages as you like.',
+  'host.experience.new.next.basics': 'How long it runs and how many people you take.',
+  'host.experience.new.next.place': 'City, category, and the languages you speak on the day.',
+  'host.experience.new.next.publish': 'Publish when you’re ready. Nothing to wait for.',
+
+  'host.experience.edit.meta.title': 'Edit experience',
+  'host.experience.edit.lede':
+    'Each section saves on its own. Stop wherever you like — your draft waits for you.',
+  'host.experience.untitled': 'Untitled draft',
+  'host.experience.back': '← Back to the host panel',
+
+  'host.experience.save': 'Save',
+  'host.experience.saving': 'Saving…',
+  'host.experience.saved': 'Saved.',
+
+  'host.experience.section.text': 'Title and description',
+  'host.experience.section.textHelp':
+    'This is what travellers read before deciding. Say what you’ll do, where you meet, and what ties you to it.',
+  'host.experience.section.basics': 'Duration and capacity',
+  'host.experience.section.basicsHelp':
+    'How long one session runs and how many people you take at once. Calendar and price come later.',
+  'host.experience.section.place': 'City',
+  'host.experience.section.placeHelp':
+    'Where the experience happens. The time zone comes from this — session times are shown in it.',
+  'host.experience.section.category': 'Category',
+  'host.experience.section.categoryHelp':
+    'Travellers filter by this in search. Pick the closest one; only one can be chosen.',
+  'host.experience.section.languages': 'Spoken languages and tags',
+  'host.experience.section.languagesHelp':
+    'Which languages do you run the experience in? That’s a separate thing from the language you wrote the listing in.',
+  'host.experience.section.status': 'Publishing',
+  'host.experience.section.statusHelp':
+    'What publishing needs is listed below. There’s no approval step — with nothing missing, your listing shows up in search right away.',
+
+  'host.experience.translations.tabsLabel': 'Languages of the listing text',
+  'host.experience.translations.required': 'required',
+  'host.experience.translations.optional': 'optional',
+  'host.experience.translations.add.label': 'Write in another language',
+  'host.experience.translations.add.submit': 'Open',
+  'host.experience.translations.machine':
+    'This text was translated automatically. Edit and save it and it becomes your own text.',
+
+  'host.experience.title.label': 'Title',
+  'host.experience.title.placeholder': 'Street food walk in Kadıköy',
+  'host.experience.title.help':
+    'Short and concrete. It’s the first thing travellers see in the list, and your listing’s address comes from it.',
+  'host.experience.description.label': 'Description',
+  'host.experience.description.placeholder':
+    'Where you meet, what you do, what to eat, what to wear…',
+  'host.experience.description.help':
+    'Not required to publish, but this is where travellers decide. Walk through the day in order.',
+
+  'host.experience.duration.label': 'Duration (minutes)',
+  'host.experience.duration.help':
+    'Total length of one session. For example 90 minutes, or 180. Seven days at most.',
+  'host.experience.capacity.label': 'Capacity (people)',
+  'host.experience.capacity.help':
+    'How many people at most in one session. Publishing needs at least one.',
+
+  'host.experience.city.label': 'Which city is it in?',
+  'host.experience.city.placeholder': 'Search for a city',
+  'host.experience.place.saved': 'City selected · time zone {saat}',
+  'host.experience.place.empty': 'No city chosen yet.',
+  'host.experience.place.locked':
+    'Once a listing has been published its city is fixed: session times and booking locations depend on it. For another city, open a new listing.',
+
+  'host.experience.category.label': 'Category',
+  'host.experience.category.none': 'Not chosen',
+  'host.experience.category.help': 'What the experience is mostly about.',
+
+  'host.experience.spoken.label': 'Languages you speak during the experience',
+  'host.experience.spoken.help':
+    'Independent of the language you wrote the listing in: tick the languages you actually run it in. Ten at most.',
+  'host.experience.tags.label': 'Tags',
+  'host.experience.tags.placeholder': 'street food, walking, small group',
+  'host.experience.tags.help':
+    'Separate with commas. Ten at most. They help your listing match searches.',
+
+  'host.experience.missing.heading': 'What publishing needs',
+  'host.experience.ready': 'All set. You can publish this listing.',
+  'host.experience.missing.translation': 'a title in the language the listing is written in',
+  'host.experience.missing.city': 'a city',
+  'host.experience.missing.category': 'a category',
+  'host.experience.missing.capacity': 'a capacity',
+  'host.experience.missing.unknown': 'an unfinished field',
+
+  'host.experience.publish': 'Publish',
+  'host.experience.republish': 'Publish again',
+  'host.experience.publishing': 'Publishing…',
+  'host.experience.published': 'Your listing is live.',
+  'host.experience.archive': 'Archive',
+  'host.experience.archiving': 'Archiving…',
+  'host.experience.archived': 'Listing archived.',
+  'host.experience.status.publishedNote':
+    'Your listing shows up in search. Archiving hides it without deleting it — you can publish it again whenever you want.',
+  'host.experience.status.privateNote': 'Until you publish it, nobody but you can see this listing.',
+
+  'host.experience.error.notFound': 'We couldn’t find this listing. Open it again from the panel.',
+  'host.experience.error.invalid': 'This section couldn’t be saved. Check the fields and try again.',
+  'host.experience.error.language':
+    'Listings can’t be written in that language. Pick another one from the list.',
+  'host.experience.error.title': 'A title is required, and it can be 120 characters at most.',
+  'host.experience.error.description': 'The description can be 4000 characters at most.',
+  'host.experience.error.duration': 'Write the duration in minutes: at least 1, at most 10080.',
+  'host.experience.error.capacity': 'Write the capacity in people: at least 1, at most 500.',
+  'host.experience.error.city': 'Pick the city from the list — typing the name isn’t enough on its own.',
+  'host.experience.error.category': 'Pick a category from the list.',
+  'host.experience.error.spokenLanguages': 'You can tick ten languages at most.',
+  'host.experience.error.tags': 'Tags can’t be empty; ten at most, and each one short.',
+  'host.experience.error.publishedConflict':
+    'That change can’t be made on a live listing. Archive it first, then edit.',
+  'host.experience.error.publishBlocked': 'Not published. Still missing: {eksikler}.',
+  'host.experience.error.publishBlockedUnknown':
+    'Not published: the listing isn’t complete yet. Check the list above.',
+
+  // --- Categories ------------------------------------------------------------
+  'category.food-drink': 'Food and drink',
+  'category.art-culture': 'Art and culture',
+  'category.history-heritage': 'History and heritage',
+  'category.nature-outdoors': 'Nature and outdoors',
+  'category.water-sea': 'Water and sea',
+  'category.sports-adventure': 'Sport and adventure',
+  'category.crafts-workshops': 'Crafts and workshops',
+  'category.music-nightlife': 'Music and nightlife',
+  'category.wellness': 'Wellness',
+  'category.photography': 'Photography',
+  'category.tours-walks': 'Tours and walks',
+  'category.local-life': 'Local life',
 } as const satisfies Dictionary<'en'>
 
 /**

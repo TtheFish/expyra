@@ -46,6 +46,178 @@ namespace Expyra.Infrastructure.Migrations
                     b.ToTable("category", (string)null);
                 });
 
+            modelBuilder.Entity("Expyra.Domain.Experiences.Experience", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("integer")
+                        .HasColumnName("capacity");
+
+                    b.Property<string>("CategorySlug")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("category_slug");
+
+                    b.Property<Guid?>("CityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("city_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_minutes");
+
+                    b.Property<Guid>("HostId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("host_id");
+
+                    b.Property<string>("OriginalLanguage")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("original_language");
+
+                    b.Property<DateTimeOffset?>("PublishedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at_utc");
+
+                    b.Property<string>("Slug")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("slug")
+                        .UseCollation("C");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Draft")
+                        .HasColumnName("status");
+
+                    b.Property<string>("TimeZoneId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("time_zone_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategorySlug")
+                        .HasDatabaseName("ix_experience_category");
+
+                    b.HasIndex("OriginalLanguage")
+                        .HasDatabaseName("ix_experience_original_language");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ux_experience_slug");
+
+                    b.HasIndex("CityId", "Status")
+                        .HasDatabaseName("ix_experience_city_status");
+
+                    b.HasIndex("HostId", "Status")
+                        .HasDatabaseName("ix_experience_host_status");
+
+                    b.ToTable("experience", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_experience_time_zone_requires_city", "(city_id IS NULL) = (time_zone_id IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Experiences.ExperienceSpokenLanguage", b =>
+                {
+                    b.Property<Guid>("ExperienceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experience_id");
+
+                    b.Property<string>("Language")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("language");
+
+                    b.HasKey("ExperienceId", "Language");
+
+                    b.HasIndex("Language")
+                        .HasDatabaseName("ix_experience_spoken_language_language");
+
+                    b.ToTable("experience_spoken_language", (string)null);
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Experiences.ExperienceTag", b =>
+                {
+                    b.Property<Guid>("ExperienceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experience_id");
+
+                    b.Property<string>("NormalizedTag")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("normalized_tag")
+                        .UseCollation("C");
+
+                    b.Property<string>("DisplayTag")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("display_tag");
+
+                    b.HasKey("ExperienceId", "NormalizedTag");
+
+                    b.ToTable("experience_tag", (string)null);
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Experiences.ExperienceTranslation", b =>
+                {
+                    b.Property<Guid>("ExperienceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experience_id");
+
+                    b.Property<string>("Language")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("language");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("HostWritten")
+                        .HasColumnName("source");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("ExperienceId", "Language");
+
+                    b.HasIndex("Language")
+                        .HasDatabaseName("ix_experience_translation_language");
+
+                    b.ToTable("experience_translation", (string)null);
+                });
+
             modelBuilder.Entity("Expyra.Domain.Identity.ExternalLogin", b =>
                 {
                     b.Property<Guid>("Id")
@@ -961,6 +1133,79 @@ namespace Expyra.Infrastructure.Migrations
                         .HasDatabaseName("ix_app_user_preferred_language");
 
                     b.ToTable("app_user", (string)null);
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Experiences.Experience", b =>
+                {
+                    b.HasOne("Expyra.Domain.Catalog.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategorySlug")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_experience_category");
+
+                    b.HasOne("Expyra.Domain.Places.City", null)
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_experience_city");
+
+                    b.HasOne("Expyra.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("HostId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_experience_host");
+
+                    b.HasOne("Expyra.Domain.Languages.Language", null)
+                        .WithMany()
+                        .HasForeignKey("OriginalLanguage")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_experience_original_language");
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Experiences.ExperienceSpokenLanguage", b =>
+                {
+                    b.HasOne("Expyra.Domain.Experiences.Experience", null)
+                        .WithMany()
+                        .HasForeignKey("ExperienceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_experience_spoken_language_experience");
+
+                    b.HasOne("Expyra.Domain.Languages.Language", null)
+                        .WithMany()
+                        .HasForeignKey("Language")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_experience_spoken_language_language");
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Experiences.ExperienceTag", b =>
+                {
+                    b.HasOne("Expyra.Domain.Experiences.Experience", null)
+                        .WithMany()
+                        .HasForeignKey("ExperienceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_experience_tag_experience");
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Experiences.ExperienceTranslation", b =>
+                {
+                    b.HasOne("Expyra.Domain.Experiences.Experience", null)
+                        .WithMany()
+                        .HasForeignKey("ExperienceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_experience_translation_experience");
+
+                    b.HasOne("Expyra.Domain.Languages.Language", null)
+                        .WithMany()
+                        .HasForeignKey("Language")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_experience_translation_language");
                 });
 
             modelBuilder.Entity("Expyra.Domain.Identity.ExternalLogin", b =>

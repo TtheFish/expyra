@@ -1,12 +1,16 @@
 {
   "note": "Lokalize URL segmentleri. TEK KAYNAK: hem src/lib/routes.ts (istemci/sunucu link üretimi) hem next.config.ts (rewrite + redirect) bu dosyayı okur. İkiye ayrılırsa linkler ile rewrite'lar sessizce uyuşmaz. Tasarım: docs/I18N.md §5.",
   "defaultLanguage": "tr",
+  "multiSegmentNote": "Değerler TEK segment olmak zorunda değil: hostExperienceNew iki segment taşıyor (host/deneyim/yeni), experienceDetail ise bir PARAMETRE taşıyor (deneyim/:slug). next.config.ts'in rewrite/redirect üreticisi ikisini de sorunsuz kuruyor — ':slug' zaten path-to-regexp parametresi, yani '/tr/deneyim/:slug' → '/tr/experience/:slug' rewrite'ı doğru çalışıyor. Parametreli yolun linkini `path()` DEĞİL `features/experiences/api.ts:experiencePath` üretiyor: `path()` şablonu ':slug' ile döndürür, doldurmaz.",
+  "resolvePageNote": "src/lib/routes.ts içindeki resolvePage yolun YALNIZ İLK segmentine bakıyor ve segmenti tam eşleştiriyor. Sonuç: hostExperienceNew ve experienceDetail sayfalarında dil değiştirici sayfayı tanıyamıyor, ana sayfaya düşüyor. Düzeltme iki adım: (1) resolvePage dil segmentinden sonrasının TAMAMINI şablonlarla eşleştirsin (':slug' bir segmenti yakalayan joker), (2) switchLanguage yakalanan parametreyi hedef dilin şablonuna geri yazsın. İkisi bu PR'ın dosyası olmadığı için yapılmadı.",
   "canonical": {
     "home": "",
     "explore": "explore",
     "howItWorks": "how-it-works",
     "myExperiences": "my-experiences",
     "becomeHost": "become-a-host",
+    "experienceDetail": "experience/:slug",
+    "hostExperienceNew": "host/experience/new",
     "signIn": "sign-in",
     "account": "account"
   },
@@ -17,6 +21,8 @@
       "howItWorks": "nasil-calisir",
       "myExperiences": "deneyimlerim",
       "becomeHost": "host-ol",
+      "experienceDetail": "deneyim/:slug",
+      "hostExperienceNew": "host/deneyim/yeni",
       "signIn": "giris",
       "account": "hesap"
     },
@@ -26,6 +32,8 @@
       "howItWorks": "how-it-works",
       "myExperiences": "my-experiences",
       "becomeHost": "become-a-host",
+      "experienceDetail": "experience/:slug",
+      "hostExperienceNew": "host/experience/new",
       "signIn": "sign-in",
       "account": "account"
     }
