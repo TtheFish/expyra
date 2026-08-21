@@ -41,6 +41,7 @@ public sealed record UpdateExperienceCommand(
 
 internal sealed class UpdateExperienceCommandHandler(
     IAppDbContext dbContext,
+    IObjectStorage storage,
     ICurrentUser currentUser)
     : IRequestHandler<UpdateExperienceCommand, HostExperienceResponse>
 {
@@ -101,7 +102,7 @@ internal sealed class UpdateExperienceCommandHandler(
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return await HostExperienceProjection
-            .ToResponseAsync(dbContext, experience, cancellationToken)
+            .ToResponseAsync(dbContext, storage, experience, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -307,7 +308,15 @@ internal sealed class UpdateExperienceCommandHandler(
             .HasOriginalLanguageTranslationAsync(dbContext, experience, cancellationToken)
             .ConfigureAwait(false);
 
-        var missing = ExperiencePublishRules.Missing(experience, hasTranslation);
+        // Kapak da sorgulanıyor: bu koruma "yayındaki ilan zorunlu bir alanı kaybedemez"
+        // diyor ve kapak artık o alanlardan biri. Bugün güncelleme ucu medyaya dokunmuyor,
+        // yani sonuç daima true — ama kuralı burada sabitlemek, medyayı değiştiren bir yol
+        // eklendiğinde korumanın sessizce delinmesini engelliyor.
+        var hasCover = await HostExperienceStore
+            .HasActiveCoverAsync(dbContext, experience.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        var missing = ExperiencePublishRules.Missing(experience, hasTranslation, hasCover);
 
         if (missing.Count > 0)
         {

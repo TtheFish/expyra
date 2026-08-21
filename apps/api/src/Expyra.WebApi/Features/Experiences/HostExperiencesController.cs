@@ -3,9 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Expyra.Application.Features.Experiences;
 using Expyra.Application.Features.Experiences.Commands.ArchiveExperience;
+using Expyra.Application.Features.Experiences.Commands.ConfirmMedia;
 using Expyra.Application.Features.Experiences.Commands.CreateExperience;
+using Expyra.Application.Features.Experiences.Commands.CreateMediaUpload;
+using Expyra.Application.Features.Experiences.Commands.DeleteMedia;
 using Expyra.Application.Features.Experiences.Commands.PublishExperience;
+using Expyra.Application.Features.Experiences.Commands.ReorderMedia;
 using Expyra.Application.Features.Experiences.Commands.SetExperienceTranslation;
+using Expyra.Application.Features.Experiences.Commands.SetMediaCover;
 using Expyra.Application.Features.Experiences.Commands.UpdateExperience;
 using Expyra.Application.Features.Experiences.Queries.GetHostExperiences;
 using Expyra.WebApi.Common;
@@ -175,6 +180,127 @@ public sealed class HostExperiencesController(ISender mediator) : ApiControllerB
         CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new ArchiveExperienceCommand(id), cancellationToken);
+        return Ok(result);
+    }
+    /// <summary>
+    /// Görsel yüklemek için imzalı adres üretir. <b>Bayt bu uçtan geçmiyor</b> — dönen
+    /// adrese tarayıcı doğrudan PUT ediyor (PLAN Blok 6 kabul kriteri 1).
+    /// </summary>
+    /// <remarks>
+    /// İki adımlı akışın birincisi. İkincisi <c>POST .../media/{mediaId}/confirm</c>:
+    /// yükleme bitince çağrılıyor ve doğrulamayı O yapıyor. Tek adım mümkün değil —
+    /// sunucu, tarayıcının yüklemeyi bitirdiğini kendiliğinden öğrenemiyor.
+    /// </remarks>
+    [HttpPost("{id:guid}/media/upload-url")]
+    [ProducesResponseType<MediaUploadResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<MediaUploadResponse>> CreateMediaUpload(
+        Guid id,
+        CreateMediaUploadRequest body,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+
+        // Gövde komuttan ayrı — gerekçe SetTranslationRequest'te.
+        var result = await Mediator.Send(
+            new CreateMediaUploadCommand(id, body.ContentType, body.ByteSize),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <param name="ByteSize">
+    /// Yüklenecek dosyanın boyutu. İmzalanan tavana giriyor: beyandan büyük bir gövde
+    /// depo tarafından reddediliyor.
+    /// </param>
+    public sealed record CreateMediaUploadRequest(string ContentType, long ByteSize);
+
+    /// <summary>
+    /// Yüklemeyi doğrular ve görseli yayına açar. Sihirli baytlar okunuyor: "image/png"
+    /// başlığıyla gönderilmiş bir HTML burada reddediliyor (PLAN Blok 6 kabul kriteri 2).
+    /// İdempotent — doğrulanmış görsel için 200.
+    /// </summary>
+    [HttpPost("{id:guid}/media/{mediaId:guid}/confirm")]
+    [ProducesResponseType<HostExperienceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<HostExperienceResponse>> ConfirmMedia(
+        Guid id,
+        Guid mediaId,
+        CancellationToken cancellationToken)
+    {
+        var result = await Mediator.Send(new ConfirmMediaCommand(id, mediaId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Galeri sırasını toptan yazar. Görsel başına PATCH DEĞİL — gerekçe
+    /// <see cref="ReorderMediaCommand"/>'da.
+    /// </summary>
+    [HttpPut("{id:guid}/media/order")]
+    [ProducesResponseType<HostExperienceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<HostExperienceResponse>> ReorderMedia(
+        Guid id,
+        ReorderMediaRequest body,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+
+        var result = await Mediator.Send(
+            new ReorderMediaCommand(id, body.MediaIds), cancellationToken);
+
+        return Ok(result);
+    }
+
+    public sealed record ReorderMediaRequest(IReadOnlyList<Guid> MediaIds);
+
+    /// <summary>
+    /// Kapağı bu görsele taşır. Kapağı BOŞALTAN uç yok — gerekçe
+    /// <see cref="SetMediaCoverCommand"/>'da.
+    /// </summary>
+    [HttpPut("{id:guid}/media/{mediaId:guid}/cover")]
+    [ProducesResponseType<HostExperienceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<HostExperienceResponse>> SetMediaCover(
+        Guid id,
+        Guid mediaId,
+        CancellationToken cancellationToken)
+    {
+        var result = await Mediator.Send(new SetMediaCoverCommand(id, mediaId), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Görseli siler; depodaki nesne de gidiyor (PLAN Blok 6 kabul kriteri 4).
+    /// Yayındaki ilanın SON görseli silinemez — 409.
+    /// </summary>
+    [HttpDelete("{id:guid}/media/{mediaId:guid}")]
+    [ProducesResponseType<HostExperienceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<HostExperienceResponse>> DeleteMedia(
+        Guid id,
+        Guid mediaId,
+        CancellationToken cancellationToken)
+    {
+        // 204 DEĞİL 200: silme sonrası kapak devredilmiş olabilir ve istemcinin
+        // yeni durumu ayrıca sorgulaması gerekmiyor (diğer host uçlarıyla aynı şekil).
+        var result = await Mediator.Send(new DeleteMediaCommand(id, mediaId), cancellationToken);
         return Ok(result);
     }
 }

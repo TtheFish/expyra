@@ -55,6 +55,12 @@ public interface IAppDbContext
     /// <summary>Host'un yazdığı serbest etiketler. Kategori değil — o kapalı liste.</summary>
     DbSet<ExperienceTag> ExperienceTags { get; }
 
+    /// <summary>
+    /// İlan görselleri. Satır BAYT TAŞIMAZ, yalnız depo anahtarı ve ölçü tutar;
+    /// misafire gösterilenler <see cref="MediaStatus.Active"/> olanlar.
+    /// </summary>
+    DbSet<ExperienceMedia> ExperienceMedia { get; }
+
     /// <summary>Kullanıcı hesapları. Tablo adı app_user — "user" Postgres'te ayrılmış kelime.</summary>
     DbSet<User> Users { get; }
 

@@ -22,6 +22,11 @@ appsettings.Production.json
 # kadar CI kırık kalır.
 **/.mail-drop/
 
+# Dev nesne deposu: kullanıcıların yüklediği GERÇEK fotoğraflar buraya düşüyor
+# (üretimde S3/R2). Aynı gerekçeyle her seviyede yakalanıyor — çalışma dizini
+# API'nin nereden başlatıldığına göre değişiyor.
+**/.object-store/
+
 # .NET
 bin/
 obj/

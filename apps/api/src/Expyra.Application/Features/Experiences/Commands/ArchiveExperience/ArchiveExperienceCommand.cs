@@ -21,6 +21,7 @@ public sealed record ArchiveExperienceCommand(Guid ExperienceId) : IRequest<Host
 
 internal sealed class ArchiveExperienceCommandHandler(
     IAppDbContext dbContext,
+    IObjectStorage storage,
     ICurrentUser currentUser,
     ILogger<ArchiveExperienceCommandHandler> logger)
     : IRequestHandler<ArchiveExperienceCommand, HostExperienceResponse>
@@ -57,7 +58,7 @@ internal sealed class ArchiveExperienceCommandHandler(
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return await HostExperienceProjection
-            .ToResponseAsync(dbContext, experience, cancellationToken)
+            .ToResponseAsync(dbContext, storage, experience, cancellationToken)
             .ConfigureAwait(false);
     }
 }

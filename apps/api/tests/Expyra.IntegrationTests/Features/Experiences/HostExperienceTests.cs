@@ -109,6 +109,9 @@ public sealed class HostExperienceTests(ApiFactory factory)
         });
         await PutTranslationAsync(client, token, draft.Id, "tr", "İzmir Gezisi");
 
+        // Kapak yükleniyor ki kalan TEK eksik kapasite olsun — testin ölçtüğü şey bu.
+        await MediaApi.UploadAsync(client, token, draft.Id);
+
         var before = await GetAsync<HostExperienceResponse[]>(client, token, BasePath);
         before.Single(x => x.Id == draft.Id).MissingPublishRequirements
             .ShouldHaveSingleItem()
@@ -585,7 +588,14 @@ public sealed class HostExperienceTests(ApiFactory factory)
         return await ReadAsync(response);
     }
 
-    /// <summary>Yayın koşullarının HEPSİNİ karşılayan ama henüz yayınlanmamış ilan.</summary>
+    /// <summary>
+    /// Yayın koşullarının HEPSİNİ karşılayan ama henüz yayınlanmamış ilan.
+    ///
+    /// <para>Kapak görseli de burada yükleniyor (PLAN Blok 6 kabul kriteri 3). Blok 6
+    /// öncesinde bu yardımcı kapaksız bir ilan üretiyordu; kural eklenince yayın yapan
+    /// yedi test birden kırıldı ve doğru düzeltme testleri gevşetmek değil, "yayına
+    /// hazır ilan"ın tanımını güncellemekti.</para>
+    /// </summary>
     private async Task<HostExperienceResponse> CreatePublishableAsync(
         HttpClient client, string token, string title)
     {
@@ -600,7 +610,9 @@ public sealed class HostExperienceTests(ApiFactory factory)
             spokenLanguages = new[] { "tr", "en" },
         });
 
-        return await PutTranslationAsync(client, token, draft.Id, "tr", title, "Açıklama metni.");
+        await PutTranslationAsync(client, token, draft.Id, "tr", title, "Açıklama metni.");
+
+        return await MediaApi.UploadAsync(client, token, draft.Id);
     }
 
     private Task<Guid> CityIdAsync(string slug) => factory.QueryAsync(db => db.Cities

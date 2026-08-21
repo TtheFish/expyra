@@ -47,6 +47,17 @@ public sealed class User : BaseAuditableEntity
     public DateTimeOffset? LastLoginAtUtc { get; set; }
 
     /// <summary>
+    /// Profil fotoğrafının depo anahtarı. null = fotoğraf yok, arayüz baş harfe düşüyor.
+    ///
+    /// <para><b>Neden <c>experience_media</c> gibi ayrı tablo değil:</b> kullanıcının
+    /// AYNI ANDA yalnız bir avatarı var — sıralama, kapak seçimi, galeri yok. Tablo
+    /// açmak, hiçbir zaman birden fazla satırı olmayacak bir ilişki kurmak olurdu.
+    /// Doğrulama akışı yine de aynı (<c>ImageProbe</c>); avatarda ölçü saklanmıyor
+    /// çünkü daima sabit kutuda, dairesel kırpılmış çiziliyor.</para>
+    /// </summary>
+    public string? AvatarKey { get; set; }
+
+    /// <summary>
     /// Hesabın SONRADAN kazandığı roller. Postgres <c>text[]</c> olarak saklanır —
     /// <c>status</c> sütunundaki okunabilirlik tercihinin aynısı: psql'de <c>{Host}</c>
     /// diye görünür, sayı tablosuna bakmak gerekmez. jsonb değil dizi, çünkü gerektiği

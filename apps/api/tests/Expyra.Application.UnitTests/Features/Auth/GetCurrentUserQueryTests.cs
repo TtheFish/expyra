@@ -71,7 +71,7 @@ public sealed class GetCurrentUserQueryTests
         currentUser.RequireUserId()
             .Returns(_ => throw new UnauthorizedAccessException("Kimlik doğrulaması gerekli."));
 
-        var handler = new GetCurrentUserQueryHandler(dbContext, currentUser);
+        var handler = new GetCurrentUserQueryHandler(dbContext, Substitute.For<IObjectStorage>(), currentUser);
 
         await Should.ThrowAsync<UnauthorizedAccessException>(async () =>
             await handler.Handle(new GetCurrentUserQuery(), CancellationToken.None));

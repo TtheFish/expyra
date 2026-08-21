@@ -48,6 +48,8 @@ public sealed class AppDbContext(
 
     public DbSet<ExperienceTag> ExperienceTags => Set<ExperienceTag>();
 
+    public DbSet<ExperienceMedia> ExperienceMedia => Set<ExperienceMedia>();
+
     public DbSet<User> Users => Set<User>();
 
     public DbSet<LoginCode> LoginCodes => Set<LoginCode>();

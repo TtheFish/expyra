@@ -27,6 +27,7 @@ public sealed record CreateExperienceCommand(string OriginalLanguage)
 
 internal sealed class CreateExperienceCommandHandler(
     IAppDbContext dbContext,
+    IObjectStorage storage,
     ICurrentUser currentUser,
     ILogger<CreateExperienceCommandHandler> logger)
     : IRequestHandler<CreateExperienceCommand, HostExperienceResponse>
@@ -71,7 +72,7 @@ internal sealed class CreateExperienceCommandHandler(
             experience.Id, hostId, originalLanguage);
 
         return await HostExperienceProjection
-            .ToResponseAsync(dbContext, experience, cancellationToken)
+            .ToResponseAsync(dbContext, storage, experience, cancellationToken)
             .ConfigureAwait(false);
     }
 }

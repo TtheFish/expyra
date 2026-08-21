@@ -33,6 +33,12 @@ namespace Expyra.Application.Features.Experiences;
 /// Boşsa ilan yayınlanabilir. Sihirbaz "Yayınla" düğmesini buna bakarak açıyor; aynı
 /// kural sunucuda da çalıştığı için düğme ile 409 arasında ayrışma olmuyor.
 /// </param>
+/// <param name="Media">
+/// Galeri, <see cref="ExperienceMedia.SortOrder"/> sırasında. <b>Yalnız doğrulanmış
+/// satırlar</b>: imzalı adresi alınmış ama yüklenmemiş bir görsel burada çıksaydı host
+/// panelinde kırık küçük resim olurdu. Yükleme ile kayıt arasındaki geçici durumu
+/// istemci kendi belleğinde tutuyor — kimliği zaten yükleme ucundan aldı.
+/// </param>
 public sealed record HostExperienceResponse(
     Guid Id,
     string? Slug,
@@ -46,10 +52,28 @@ public sealed record HostExperienceResponse(
     IReadOnlyList<string> SpokenLanguages,
     IReadOnlyList<string> Tags,
     IReadOnlyList<HostExperienceTranslationResponse> Translations,
+    IReadOnlyList<HostExperienceMediaResponse> Media,
     IReadOnlyList<string> MissingPublishRequirements,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? UpdatedAtUtc,
     DateTimeOffset? PublishedAtUtc);
+
+/// <param name="Url">
+/// Okuma adresi, HER YANITTA yeniden üretiliyor (<c>IObjectStorage.PublicUrl</c>).
+/// Veritabanında adres değil anahtar duruyor: CDN alan adı değiştiğinde geçmiş
+/// satırların hiçbiri migration istemiyor.
+/// </param>
+/// <param name="Width">
+/// Gerçek piksel genişliği — baytlardan okundu, istemcinin beyanı değil.
+/// <c>next/image</c> düzen kaymasını önlemek için çizimden önce bunu istiyor.
+/// </param>
+public sealed record HostExperienceMediaResponse(
+    Guid Id,
+    Uri Url,
+    int Width,
+    int Height,
+    int SortOrder,
+    bool IsCover);
 
 /// <param name="Source">
 /// <c>"HostWritten" | "Machine"</c> — metin, bkz. <see cref="HostExperienceResponse.Status"/>.
@@ -75,10 +99,11 @@ internal static class HostExperienceProjection
 {
     internal static async Task<HostExperienceResponse> ToResponseAsync(
         IAppDbContext dbContext,
+        IObjectStorage storage,
         Experience experience,
         CancellationToken cancellationToken)
     {
-        var responses = await ToResponsesAsync(dbContext, new[] { experience }, cancellationToken)
+        var responses = await ToResponsesAsync(dbContext, storage, new[] { experience }, cancellationToken)
             .ConfigureAwait(false);
 
         return responses[0];
@@ -86,6 +111,7 @@ internal static class HostExperienceProjection
 
     internal static async Task<IReadOnlyList<HostExperienceResponse>> ToResponsesAsync(
         IAppDbContext dbContext,
+        IObjectStorage storage,
         IReadOnlyList<Experience> experiences,
         CancellationToken cancellationToken)
     {
@@ -118,9 +144,20 @@ internal static class HostExperienceProjection
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // Yalnız Active: Pending satırlar yüklenmemiş olabilir ve panelde kırık
+        // küçük resme dönerdi (Media parametresinin notu).
+        var media = await dbContext.ExperienceMedia
+            .AsNoTracking()
+            .Where(x => ids.Contains(x.ExperienceId) && x.Status == MediaStatus.Active)
+            .OrderBy(x => x.SortOrder)
+            .ThenBy(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
         var translationsById = translations.ToLookup(x => x.ExperienceId);
         var spokenById = spoken.ToLookup(x => x.ExperienceId);
         var tagsById = tags.ToLookup(x => x.ExperienceId);
+        var mediaById = media.ToLookup(x => x.ExperienceId);
 
         // Sıra girdideki sıra: sorgunun OrderBy'ı korunuyor, lookup onu bozmuyor.
         return experiences
@@ -128,7 +165,16 @@ internal static class HostExperienceProjection
                 experience,
                 translationsById[experience.Id].ToList(),
                 spokenById[experience.Id].Select(x => x.Language).ToList(),
-                tagsById[experience.Id].Select(x => x.DisplayTag).ToList()))
+                tagsById[experience.Id].Select(x => x.DisplayTag).ToList(),
+                mediaById[experience.Id]
+                    .Select(x => new HostExperienceMediaResponse(
+                        x.Id,
+                        storage.PublicUrl(x.StorageKey),
+                        x.Width,
+                        x.Height,
+                        x.SortOrder,
+                        x.IsCover))
+                    .ToList()))
             .ToList();
     }
 
@@ -136,7 +182,8 @@ internal static class HostExperienceProjection
         Experience experience,
         IReadOnlyList<ExperienceTranslation> translations,
         IReadOnlyList<string> spokenLanguages,
-        IReadOnlyList<string> tags)
+        IReadOnlyList<string> tags,
+        IReadOnlyList<HostExperienceMediaResponse> media)
     {
         // Yayın kuralı Domain'de ve TEK yerde: yayın ucu da, bu liste de aynı kodu
         // çağırıyor (ExperiencePublishRules sınıf notu).
@@ -163,7 +210,8 @@ internal static class HostExperienceProjection
                     x.Source.ToString(),
                     x.UpdatedAtUtc))
                 .ToList(),
-            ExperiencePublishRules.Missing(experience, hasOriginalTranslation),
+            media,
+            ExperiencePublishRules.Missing(experience, hasOriginalTranslation, media.Any(x => x.IsCover)),
             experience.CreatedAtUtc,
             experience.UpdatedAtUtc,
             experience.PublishedAtUtc);

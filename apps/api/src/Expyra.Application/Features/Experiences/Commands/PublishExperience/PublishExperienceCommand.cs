@@ -30,6 +30,7 @@ public sealed record PublishExperienceCommand(Guid ExperienceId) : IRequest<Host
 
 internal sealed class PublishExperienceCommandHandler(
     IAppDbContext dbContext,
+    IObjectStorage storage,
     ICurrentUser currentUser,
     IDateTimeProvider clock,
     ILogger<PublishExperienceCommandHandler> logger)
@@ -63,7 +64,7 @@ internal sealed class PublishExperienceCommandHandler(
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return await HostExperienceProjection
-            .ToResponseAsync(dbContext, experience, cancellationToken)
+            .ToResponseAsync(dbContext, storage, experience, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -79,10 +80,16 @@ internal sealed class PublishExperienceCommandHandler(
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // PLAN Blok 5 kabul kriteri 1. Kural Domain'de ve saf: host listesindeki
+        // Kural Domain'de SAF duruyor: veritabanı gerektiren iki soruyu ("çeviri var mı",
+        // "kapak var mı") çağıran cevaplıyor, kuralın kendisi değil.
+        var hasCover = await HostExperienceStore
+            .HasActiveCoverAsync(dbContext, experience.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        // PLAN Blok 5 kabul kriteri 1 + Blok 6 kabul kriteri 3. Host listesindeki
         // "eksikler" rozeti de aynı fonksiyondan geçiyor, yani arayüzün gösterdiği
         // eksikler ile sunucunun reddettiği eksikler ayrışamıyor.
-        var missing = ExperiencePublishRules.Missing(experience, originalTitle is not null);
+        var missing = ExperiencePublishRules.Missing(experience, originalTitle is not null, hasCover);
 
         if (missing.Count > 0)
         {

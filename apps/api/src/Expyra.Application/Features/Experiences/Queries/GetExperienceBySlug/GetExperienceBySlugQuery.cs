@@ -26,7 +26,7 @@ namespace Expyra.Application.Features.Experiences.Queries.GetExperienceBySlug;
 public sealed record GetExperienceBySlugQuery(string Slug, string? Language = null)
     : IRequest<GuestExperienceDetailResponse>;
 
-internal sealed class GetExperienceBySlugQueryHandler(IAppDbContext dbContext)
+internal sealed class GetExperienceBySlugQueryHandler(IAppDbContext dbContext, IObjectStorage storage)
     : IRequestHandler<GetExperienceBySlugQuery, GuestExperienceDetailResponse>
 {
     public async Task<GuestExperienceDetailResponse> Handle(
@@ -84,6 +84,11 @@ internal sealed class GetExperienceBySlugQueryHandler(IAppDbContext dbContext)
             .LoadTextsAsync(dbContext, [row], language, withDescription: true, cancellationToken)
             .ConfigureAwait(false);
 
-        return GuestExperienceQuery.ToDetail(row, texts[row.Id], spokenLanguages, tags, language);
+        var images = await GuestExperienceQuery
+            .LoadImagesAsync(dbContext, storage, row.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        return GuestExperienceQuery.ToDetail(
+            row, texts[row.Id], spokenLanguages, tags, images, language);
     }
 }

@@ -3,11 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Expyra.Application.Common.Auth;
 using Expyra.Application.Common.Interfaces;
 using Expyra.Infrastructure.Auth;
 using Expyra.Infrastructure.Email;
 using Expyra.Infrastructure.Persistence;
+using Expyra.Infrastructure.Storage;
 using Expyra.Infrastructure.Time;
 
 namespace Expyra.Infrastructure;
@@ -77,6 +79,32 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Diske yazan sahte nesne deposu. <see cref="AddDevelopmentEmailSender"/> ile aynı
+    /// gerekçelerle ortam kapısının arkasında.
+    ///
+    /// <para>Tek örnek İKİ arayüzle kayıtlı: imza anahtarı örneğin içinde yaşıyor, iki
+    /// ayrı örnek olsaydı yükleme ucu, adresi üreten örneğin imzasını doğrulayamazdı.</para>
+    /// </summary>
+    public static IServiceCollection AddDevelopmentObjectStorage(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.Replace(ServiceDescriptor.Singleton<FileSystemObjectStorage>(sp
+            => new FileSystemObjectStorage(
+                sp.GetRequiredService<StorageOptions>(),
+                sp.GetRequiredService<IDateTimeProvider>(),
+                sp.GetRequiredService<ILogger<FileSystemObjectStorage>>())));
+
+        services.Replace(ServiceDescriptor.Singleton<IObjectStorage>(sp
+            => sp.GetRequiredService<FileSystemObjectStorage>()));
+
+        services.Replace(ServiceDescriptor.Singleton<ILocalUploadSink>(sp
+            => sp.GetRequiredService<FileSystemObjectStorage>()));
+
+        return services;
+    }
+
     private static void AddIdentity(IServiceCollection services, IConfiguration configuration)
     {
         var authOptions = ReadAuthOptions(configuration);
@@ -104,6 +132,9 @@ public static class DependencyInjection
 
         services.AddSingleton(EmailOptions.FromConfiguration(configuration));
         services.AddSingleton<IEmailSender, UnconfiguredEmailSender>();
+
+        services.AddSingleton(StorageOptions.FromConfiguration(configuration));
+        services.AddSingleton<IObjectStorage, UnconfiguredObjectStorage>();
     }
 
     private static AuthOptions ReadAuthOptions(IConfiguration configuration)
@@ -204,5 +235,32 @@ public static class DependencyInjection
             => throw new InvalidOperationException(
                 "Yapılandırılmış bir e-posta göndericisi yok. Development'ta " +
                 "AddDevelopmentEmailSender() çağrılmalı; gerçek gönderici Faz 7.4'te geliyor.");
+    }
+
+    /// <summary>
+    /// Gerçek nesne deposu (S3/R2) hesap açılana kadar yok — PLAN Blok 6 bunu dış
+    /// bağımlılık olarak işaretliyor. <see cref="UnconfiguredEmailSender"/> ile aynı
+    /// gerekçe: sessizce çözülemeyen bir servis yerine ne yapılması gerektiğini söyleyen
+    /// bir istisna.
+    /// </summary>
+    private sealed class UnconfiguredObjectStorage : IObjectStorage
+    {
+        public Task<PresignedUpload> CreateUploadAsync(
+            PresignedUploadRequest request,
+            CancellationToken cancellationToken) => throw Missing();
+
+        public Task<StoredObject?> HeadAsync(string key, CancellationToken cancellationToken)
+            => throw Missing();
+
+        public Task<Stream?> OpenReadAsync(string key, int? maxBytes, CancellationToken cancellationToken)
+            => throw Missing();
+
+        public Task DeleteAsync(string key, CancellationToken cancellationToken) => throw Missing();
+
+        public Uri PublicUrl(string key) => throw Missing();
+
+        private static InvalidOperationException Missing()
+            => new("Yapılandırılmış bir nesne deposu yok. Development'ta "
+                + "AddDevelopmentObjectStorage() çağrılmalı; S3ObjectStorage hesap açılınca geliyor.");
     }
 }

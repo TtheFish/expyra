@@ -59,6 +59,7 @@ public sealed record GetHostExperiencesQuery(string? Status)
 
 internal sealed class GetHostExperiencesQueryHandler(
     IAppDbContext dbContext,
+    IObjectStorage storage,
     ICurrentUser currentUser)
     : IRequestHandler<GetHostExperiencesQuery, IReadOnlyList<HostExperienceResponse>>
 {
@@ -98,7 +99,7 @@ internal sealed class GetHostExperiencesQueryHandler(
         // Çeviri/dil/etiket satırları TEK seferde çekiliyor: liste ne kadar uzun olursa
         // olsun sorgu sayısı sabit (HostExperienceProjection sınıf notu).
         return await HostExperienceProjection
-            .ToResponsesAsync(dbContext, experiences, cancellationToken)
+            .ToResponsesAsync(dbContext, storage, experiences, cancellationToken)
             .ConfigureAwait(false);
     }
 }

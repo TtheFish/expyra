@@ -32,6 +32,15 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
     public ApiFactory() => TestEnvironment.Ensure();
 
+    /// <summary>
+    /// Bu koşuya ait nesne deposu klasörü. Süreç başına bir tane: <c>ApiFactory</c>
+    /// koleksiyon başına yeniden kuruluyor ve her birine ayrı klasör vermek, aynı
+    /// süreçteki iki koleksiyonun birbirinin dosyasını görmemesi dışında bir şey
+    /// kazandırmazdı — zaten anahtarlar deneyim kimliğiyle ayrışıyor.
+    /// </summary>
+    private static readonly string StorageDirectory = Path.Combine(
+        Path.GetTempPath(), "expyra-tests", Guid.CreateVersion7().ToString("N"));
+
     /// <summary>Testin kodu okuduğu TEK yer — API yanıtı kodu asla taşımıyor.</summary>
     public CapturingEmailSender Emails { get; } = new();
 
@@ -77,6 +86,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         // (e-posta 5/saat, IP 20/saat, challenge başına 5 deneme) `login_code`
         // tablosundan okunuyor ve bu testlerde AYNEN çalışmaya devam ediyor.
         builder.UseSetting("Auth:RateLimit:PermitPerMinute", "1000000");
+
+        // Nesne deposu koşuya ÖZEL bir klasöre yazıyor. Varsayılan `.object-store`
+        // kullanılsaydı iki koşu birbirinin dosyalarını görür ve "yükleme yapılmadan
+        // onaylandı" gibi bir hata testte YEŞİL geçerdi.
+        builder.UseSetting("Storage:Directory", StorageDirectory);
 
         builder.ConfigureTestServices(services =>
         {

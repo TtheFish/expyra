@@ -7,6 +7,7 @@ using Expyra.Application.Common.Interfaces;
 using Expyra.Infrastructure;
 using Expyra.Infrastructure.Persistence;
 using Expyra.WebApi.Common;
+using Expyra.WebApi.Features.Dev;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,10 @@ builder.Services.AddInfrastructure(builder.Configuration);
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDevelopmentEmailSender();
+
+    // Nesne deposu da aynı kapının arkasında: gerçek depo (S3/R2) hesap açılana kadar
+    // yok, o gelene kadar dosyalar diske düşüyor.
+    builder.Services.AddDevelopmentObjectStorage();
 }
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
@@ -103,6 +108,13 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Dev deposunun yükleme ve servis uçları. Üretimde HİÇ kurulmuyorlar — tarayıcı
+// doğrudan S3'e yükleyecek, dosyaları CDN servis edecek.
+if (app.Environment.IsDevelopment())
+{
+    app.MapDevelopmentObjectStorage();
+}
 
 // Migration'lar OTOMATİK uygulanmaz. `dotnet ef database update` ile elle çalıştırılır.
 // Eski projede startup'ta DROP DATABASE vardı — bir daha asla.

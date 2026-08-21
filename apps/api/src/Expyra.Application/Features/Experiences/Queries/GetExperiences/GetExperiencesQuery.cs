@@ -51,7 +51,7 @@ public sealed record GetExperiencesQuery(string? City = null, string? Cursor = n
     public const int PageSize = 24;
 }
 
-internal sealed class GetExperiencesQueryHandler(IAppDbContext dbContext)
+internal sealed class GetExperiencesQueryHandler(IAppDbContext dbContext, IObjectStorage storage)
     : IRequestHandler<GetExperiencesQuery, GuestExperiencePageResponse>
 {
     public async Task<GuestExperiencePageResponse> Handle(
@@ -115,8 +115,19 @@ internal sealed class GetExperiencesQueryHandler(IAppDbContext dbContext)
             .LoadTextsAsync(dbContext, page, language, withDescription: false, cancellationToken)
             .ConfigureAwait(false);
 
+        // Kapaklar da sayfanın tamamı için TEK sorguda: metinlerle aynı desen, sorgu
+        // sayısı sayfa uzunluğundan bağımsız.
+        var covers = await GuestExperienceQuery
+            .LoadCoversAsync(dbContext, storage, page, cancellationToken)
+            .ConfigureAwait(false);
+
         var items = page
-            .Select(row => GuestExperienceQuery.ToSummary(row, texts[row.Id], language))
+            .Select(row => GuestExperienceQuery.ToSummary(
+                row,
+                texts[row.Id],
+                // Blok 6 öncesinde yayınlanmış kapaksız satırlar burada null'a düşüyor.
+                covers.TryGetValue(row.Id, out var cover) ? cover : null,
+                language))
             .ToList();
 
         var nextCursor = hasMore

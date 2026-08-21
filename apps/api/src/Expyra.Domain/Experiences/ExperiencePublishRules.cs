@@ -6,10 +6,12 @@ namespace Expyra.Domain.Experiences;
 /// hem yayın ucunda hem de host listesinde AYNI kod çalışıyor — sihirbazın "yayınla"
 /// düğmesini kapatan koşullar ile sunucunun reddettiği koşullar ayrışamıyor.
 ///
-/// <para>Liste PLAN Blok 5 kabul kriteri 1'in TAM karşılığı ve bilerek daha uzun değil:
-/// buraya bir kural daha eklemek (ör. süre girilmiş olmalı) yayın kapısını PLAN'ın
-/// kapattığı kapsamın dışına taşır. Süre alanı doğrulanıyor ama YAZILDIĞI yerde —
-/// <c>UpdateExperienceCommandValidator</c> sıfır ya da negatif süreyi zaten reddediyor.</para>
+/// <para>Liste PLAN'ın açıkça saydığı koşullardan ibaret ve keyfî büyümüyor: Blok 5
+/// kabul kriteri 1 dördünü, Blok 6 kabul kriteri 3 kapak görselini ekliyor. Buraya
+/// PLAN'da yazmayan bir kural koymak (ör. süre girilmiş olmalı) yayın kapısını sessizce
+/// genişletir. <b>Süre hâlâ koşul DEĞİL</b> — alan yazıldığı yerde doğrulanıyor,
+/// <c>UpdateExperienceCommandValidator</c> sıfır ya da negatifi reddediyor, ama hiç
+/// girilmemiş bir taslak yayınlanabiliyor. Bilinen boşluk; kapatmak tek satır.</para>
 /// </summary>
 public static class ExperiencePublishRules
 {
@@ -21,11 +23,19 @@ public static class ExperiencePublishRules
     /// <para>Sıra sabit: aynı eksik küme daima aynı diziyi üretsin, test ve arayüz
     /// sıralamaya güvenebilsin.</para>
     /// </summary>
-    public static IReadOnlyList<string> Missing(Experience experience, bool hasOriginalLanguageTranslation)
+    /// <param name="hasCoverMedia">
+    /// <see cref="MediaStatus.Active"/> ve <see cref="ExperienceMedia.IsCover"/> olan bir
+    /// satır var mı. <c>Pending</c> sayılmaz: imzalı adres alınmış ama yüklenmemiş bir
+    /// görsel, kartta boş bir kutu demek.
+    /// </param>
+    public static IReadOnlyList<string> Missing(
+        Experience experience,
+        bool hasOriginalLanguageTranslation,
+        bool hasCoverMedia)
     {
         ArgumentNullException.ThrowIfNull(experience);
 
-        var missing = new List<string>(4);
+        var missing = new List<string>(5);
 
         // docs/I18N.md §2: OriginalLanguage için çeviri satırı ZORUNLU — fallback
         // zincirinin sonu o satır. Yoksa bazı dillerde ilan tamamen boş görünür.
@@ -51,11 +61,23 @@ public static class ExperiencePublishRules
             missing.Add(ExperiencePublishRequirement.Capacity);
         }
 
+        // PLAN Blok 6 kabul kriteri 3. Görselsiz ilan listede gri bir kutu olarak durur
+        // ve paylaşıldığında önizlemesi boş çıkar; "yayında ama kimse tıklamıyor" tam
+        // olarak böyle doğar. Kapağı zorunlu kılmak, kapıyı geçen her ilanın en azından
+        // görünebilir olmasını garanti ediyor.
+        if (!hasCoverMedia)
+        {
+            missing.Add(ExperiencePublishRequirement.Cover);
+        }
+
         return missing;
     }
 
-    public static bool CanPublish(Experience experience, bool hasOriginalLanguageTranslation)
-        => Missing(experience, hasOriginalLanguageTranslation).Count == 0;
+    public static bool CanPublish(
+        Experience experience,
+        bool hasOriginalLanguageTranslation,
+        bool hasCoverMedia)
+        => Missing(experience, hasOriginalLanguageTranslation, hasCoverMedia).Count == 0;
 }
 
 /// <summary>
@@ -75,4 +97,7 @@ public static class ExperiencePublishRequirement
 
     /// <summary>Kapasite 0 (ya da negatif).</summary>
     public const string Capacity = "capacity";
+
+    /// <summary>Kapak olarak işaretlenmiş, doğrulanmış bir görsel yok.</summary>
+    public const string Cover = "cover";
 }

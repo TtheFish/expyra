@@ -1,0 +1,555 @@
+using System.Net;
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Shouldly;
+using Expyra.Application.Features.Experiences;
+using Expyra.Application.Features.Host.Commands.ActivateHost;
+using Expyra.Domain.Experiences;
+using Expyra.Domain.Media;
+using Expyra.IntegrationTests.Common;
+
+namespace Expyra.IntegrationTests.Features.Experiences;
+
+/// <summary>
+/// Görsel yükleme akışı uçtan uca: imzalı adres → PUT → doğrulama → galeri.
+///
+/// <para>Bu dosyanın asıl doğruladığı şey <b>doğrulamanın gerçekten baytlara bakması</b>
+/// (PLAN Blok 6 kabul kriteri 2). "image/png" diye bildirilen bir HTML dosyası
+/// depodan servis edilirse saklı XSS olur; buradaki testler o kapının kapalı
+/// olduğunu her koşuda yeniden ölçüyor.</para>
+/// </summary>
+[Collection(ApiCollection.Name)]
+public sealed class ExperienceMediaTests(ApiFactory factory)
+{
+    private const string BasePath = "/api/host/experiences";
+    private const string ActivatePath = "/api/host/activate";
+    private const string Category = "food-drink";
+
+    // -----------------------------------------------------------------------
+    // Mutlu yol ve kapak — kabul kriteri 1 ve 3
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task Yukleme_BaytApiUcundanGecmiyor_VeOlcuBayttanOkunuyor()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        var upload = await MediaApi.RequestUploadAsync(client, token, draft.Id, byteSize: 1024);
+
+        // Adres API'nin KENDİ ucuna değil, deponun yükleme ucuna işaret ediyor ve
+        // imzalı. Üretimde burası S3 olacak; akış aynı kalıyor.
+        upload.UploadUrl.PathAndQuery.ShouldStartWith("/api/dev/uploads?token=");
+        upload.Method.ShouldBe("PUT");
+        upload.Headers["Content-Type"].ShouldBe("image/png");
+
+        // Satır imzalı adresle BİRLİKTE doğuyor ve Pending: yüklemesini yarıda bırakan
+        // host geride veritabanının bilmediği bir nesne bırakmasın.
+        var pending = await MediaRowAsync(upload.MediaId);
+        pending.Status.ShouldBe(MediaStatus.Pending);
+        pending.Width.ShouldBe(0);
+
+        var result = await MediaApi.UploadAsync(
+            client, token, draft.Id, MediaApi.Png(1600, 1200, padding: 500));
+
+        var media = result.Media.ShouldHaveSingleItem();
+        media.Width.ShouldBe(1600);
+        media.Height.ShouldBe(1200);
+
+        // İlk doğrulanan görsel kendiliğinden kapak: host hiçbir şey seçmese bile
+        // ilan yayınlanabilir olsun.
+        media.IsCover.ShouldBeTrue();
+        media.SortOrder.ShouldBe(0);
+
+        var row = await MediaRowAsync(media.Id);
+        row.Status.ShouldBe(MediaStatus.Active);
+
+        // Boyut istemcinin BEYANINDAN değil depodan okunuyor: beyan 1024'tü.
+        row.ByteSize.ShouldBe(524);
+    }
+
+    [Fact]
+    public async Task Publish_KapakYok_409()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateCompleteDraftAsync(client, token, "Kapaksız İlan");
+
+        var list = await MediaApi.SendAsync(client, HttpMethod.Get, BasePath, token);
+        var listed = (await list.Content.ReadFromJsonAsync<HostExperienceResponse[]>(AuthApi.Json))!;
+
+        listed.Single(x => x.Id == draft.Id).MissingPublishRequirements
+            .ShouldHaveSingleItem()
+            .ShouldBe(ExperiencePublishRequirement.Cover);
+
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{draft.Id}/publish", token);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await ExperienceRowAsync(draft.Id)).Status.ShouldBe(ExperienceStatus.Draft);
+
+        // Kapak gelince aynı ilan yayınlanabiliyor: engel gerçekten kapaktı.
+        await MediaApi.UploadAsync(client, token, draft.Id);
+
+        var second = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{draft.Id}/publish", token);
+
+        second.StatusCode.ShouldBe(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task PendingGorselKapakSayilmaz()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateCompleteDraftAsync(client, token, "Yarım Yükleme");
+
+        // Adres alındı ama PUT hiç yapılmadı. Pending satır kapak sayılsaydı host,
+        // yükleme ekranını açıp kapatarak görselsiz ilan yayınlayabilirdi.
+        await MediaApi.RequestUploadAsync(client, token, draft.Id, byteSize: 1024);
+
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{draft.Id}/publish", token);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    // -----------------------------------------------------------------------
+    // Doğrulama — kabul kriteri 2
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task Onay_IcerikGorselDegilse_409VeSatirDaNesneDeSiliniyor()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        // "image/png" diye bildirilmiş bir SVG. Depodan servis edilseydi tarayıcı
+        // içindeki script'i çalıştırırdı — saklı XSS.
+        var payload = Encoding.UTF8.GetBytes(
+            "<svg xmlns='http://www.w3.org/2000/svg'><script>alert(1)</script></svg>");
+
+        var upload = await MediaApi.RequestUploadAsync(client, token, draft.Id, payload.Length);
+        (await MediaApi.PutAsync(client, upload, payload, "image/png")).StatusCode
+            .ShouldBe(HttpStatusCode.NoContent);
+
+        var confirm = await MediaApi.ConfirmAsync(client, token, draft.Id, upload.MediaId);
+
+        confirm.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+
+        // Yarım kayıt bırakılmıyor: host'a "yüklendi ama görünmüyor" diye
+        // açıklanamayan bir durum üretilmiyor.
+        (await MediaRowOrNullAsync(upload.MediaId)).ShouldBeNull();
+        (await ObjectExistsAsync(draft.Id, upload.MediaId, "png")).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Onay_BeyanIleGercekBicimAyrisiyorsa_409()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        // Beyan PNG, içerik JPEG. Yalnız "görsel mi" diye bakılsaydı bu geçer ve
+        // depodaki content-type kalıcı olarak yanlış kalırdı.
+        var payload = MediaApi.Jpeg(1600, 1200);
+        var upload = await MediaApi.RequestUploadAsync(client, token, draft.Id, payload.Length);
+        await MediaApi.PutAsync(client, upload, payload, "image/png");
+
+        var confirm = await MediaApi.ConfirmAsync(client, token, draft.Id, upload.MediaId);
+
+        confirm.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await TitleAsync(confirm)).ShouldContain("image/jpeg");
+    }
+
+    [Fact]
+    public async Task Onay_CokKucukGorsel_409()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        var payload = MediaApi.Png(320, 240);
+        var upload = await MediaApi.RequestUploadAsync(client, token, draft.Id, payload.Length);
+        await MediaApi.PutAsync(client, upload, payload, "image/png");
+
+        var confirm = await MediaApi.ConfirmAsync(client, token, draft.Id, upload.MediaId);
+
+        confirm.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await TitleAsync(confirm)).ShouldContain($"{MediaRules.MinWidth}");
+    }
+
+    [Fact]
+    public async Task Onay_YuklemeHicYapilmadiysa_409VeSatirKALIYOR()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        var upload = await MediaApi.RequestUploadAsync(client, token, draft.Id, byteSize: 1024);
+        var confirm = await MediaApi.ConfirmAsync(client, token, draft.Id, upload.MediaId);
+
+        confirm.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+
+        // Satır SİLİNMİYOR — bozuk dosyanın aksine burada düzeltilecek bir şey var:
+        // host yüklemeyi tamamlayıp aynı kimlikle tekrar deneyebilir.
+        (await MediaRowOrNullAsync(upload.MediaId)).ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task Onay_IkinciKez_200Idempotent()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        var result = await MediaApi.UploadAsync(client, token, draft.Id);
+        var mediaId = result.Media.ShouldHaveSingleItem().Id;
+
+        // Ağ tekrarı ya da çift tıklama hata ekranı üretmemeli. Yeniden doğrulamak da
+        // yanlış olurdu: nesne o sırada silinmişse çalışan bir görseli iptal ederdik.
+        var again = await MediaApi.ConfirmAsync(client, token, draft.Id, mediaId);
+
+        again.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await MediaRowAsync(mediaId)).Status.ShouldBe(MediaStatus.Active);
+    }
+
+    // -----------------------------------------------------------------------
+    // İmza — depo tarafı
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task Yukleme_ImzaBozuksa_403()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        var upload = await MediaApi.RequestUploadAsync(client, token, draft.Id, byteSize: 1024);
+        var tampered = upload with
+        {
+            UploadUrl = new Uri(upload.UploadUrl.ToString().Replace("token=", "token=x", StringComparison.Ordinal)),
+        };
+
+        var response = await MediaApi.PutAsync(client, tampered, MediaApi.ValidPng(), "image/png");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task Yukleme_ImzalanandanFarkliIcerikTipi_400()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        var upload = await MediaApi.RequestUploadAsync(client, token, draft.Id, byteSize: 1024);
+
+        // İmza içerik tipini de kapsıyor: istemci adresi alıp başka bir tiple
+        // yükleyemiyor.
+        var response = await MediaApi.PutAsync(client, upload, MediaApi.ValidPng(), "text/html");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Yukleme_BeyanEdilenBoyutuAsarsa_413()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        // Beyan 100 bayt, gövde 5000. Tavan imzaya girdiği için depo reddediyor.
+        var upload = await MediaApi.RequestUploadAsync(client, token, draft.Id, byteSize: 100);
+        var response = await MediaApi.PutAsync(
+            client, upload, MediaApi.Png(1600, 1200, padding: 5000), "image/png");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
+
+        // Yarım nesne kalmıyor: geçici dosyaya yazılıp taşınıyor.
+        (await ObjectExistsAsync(draft.Id, upload.MediaId, "png")).ShouldBeFalse();
+    }
+
+    // -----------------------------------------------------------------------
+    // Galeri yönetimi
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task Siralama_ToptanYaziliyor()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        await MediaApi.UploadAsync(client, token, draft.Id);
+        await MediaApi.UploadAsync(client, token, draft.Id);
+        var result = await MediaApi.UploadAsync(client, token, draft.Id);
+
+        result.Media.Select(x => x.SortOrder).ShouldBe([0, 1, 2]);
+
+        var reversed = result.Media.Select(x => x.Id).Reverse().ToList();
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Put, $"{BasePath}/{draft.Id}/media/order", token,
+            new { mediaIds = reversed });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var reordered = await ReadAsync(response);
+        reordered.Media.Select(x => x.Id).ShouldBe(reversed);
+        reordered.Media.Select(x => x.SortOrder).ShouldBe([0, 1, 2]);
+    }
+
+    [Fact]
+    public async Task Siralama_EksikKimlik_409()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        await MediaApi.UploadAsync(client, token, draft.Id);
+        var result = await MediaApi.UploadAsync(client, token, draft.Id);
+
+        // Eksik listeye izin verilseydi, listede olmayan görsellerin sırası belirsiz
+        // kalır ve istemcinin gördüğü sıra sunucununkinden ayrışırdı.
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Put, $"{BasePath}/{draft.Id}/media/order", token,
+            new { mediaIds = new[] { result.Media[0].Id } });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Kapak_DegistirilebiliyorVeDaimaTekTane()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        await MediaApi.UploadAsync(client, token, draft.Id);
+        var result = await MediaApi.UploadAsync(client, token, draft.Id);
+
+        var second = result.Media.Single(x => !x.IsCover);
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Put, $"{BasePath}/{draft.Id}/media/{second.Id}/cover", token);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var updated = await ReadAsync(response);
+        updated.Media.Count(x => x.IsCover).ShouldBe(1);
+        updated.Media.Single(x => x.IsCover).Id.ShouldBe(second.Id);
+    }
+
+    [Fact]
+    public async Task Silme_NesneDeGidiyor()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        var result = await MediaApi.UploadAsync(client, token, draft.Id);
+        var media = result.Media.ShouldHaveSingleItem();
+
+        (await ObjectExistsAsync(draft.Id, media.Id, "png")).ShouldBeTrue();
+
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Delete, $"{BasePath}/{draft.Id}/media/{media.Id}", token);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await ReadAsync(response)).Media.ShouldBeEmpty();
+
+        // PLAN kabul kriteri 4: satır gidince nesne de gidiyor.
+        (await ObjectExistsAsync(draft.Id, media.Id, "png")).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Silme_KapakSilinirseSiradaki_Devraliyor()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        await MediaApi.UploadAsync(client, token, draft.Id);
+        var result = await MediaApi.UploadAsync(client, token, draft.Id);
+
+        var cover = result.Media.Single(x => x.IsCover);
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Delete, $"{BasePath}/{draft.Id}/media/{cover.Id}", token);
+
+        // Kapağı boş bırakmak, host'a hiçbir şey sormadan ilanı yayınlanamaz hâle
+        // getirmek olurdu.
+        (await ReadAsync(response)).Media.ShouldHaveSingleItem().IsCover.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Silme_YayindakiIlaninSonGorseli_409()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateCompleteDraftAsync(client, token, "Tek Görselli İlan");
+
+        var uploaded = await MediaApi.UploadAsync(client, token, draft.Id);
+        await MediaApi.SendAsync(client, HttpMethod.Post, $"{BasePath}/{draft.Id}/publish", token);
+
+        var media = uploaded.Media.ShouldHaveSingleItem();
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Delete, $"{BasePath}/{draft.Id}/media/{media.Id}", token);
+
+        // Yayındaki ilan görselsiz kalamaz: kapak bir yayın koşulu ve UpdateExperience'ın
+        // koruduğu değişmezin aynısı burada da geçerli.
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+        (await MediaRowOrNullAsync(media.Id)).ShouldNotBeNull();
+    }
+
+    // -----------------------------------------------------------------------
+    // Sınırlar ve yetki
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task Yukleme_TavaniAsarsa_409()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        for (var index = 0; index < MediaRules.MaxPerExperience; index++)
+        {
+            await MediaApi.UploadAsync(client, token, draft.Id);
+        }
+
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{draft.Id}/media/upload-url", token,
+            new { contentType = "image/png", byteSize = 1024 });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Yukleme_IzinVerilmeyenTip_400()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        // SVG kapalı listede yok: içinde script çalışır.
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{draft.Id}/media/upload-url", token,
+            new { contentType = "image/svg+xml", byteSize = 1024 });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Yukleme_BaskasininIlani_404()
+    {
+        var client = factory.CreateClient();
+        var owner = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, owner);
+
+        var stranger = await NewHostTokenAsync(client);
+
+        // 403 DEĞİL 404: 403, "bu id'de bir ilan var" bilgisini sızdırırdı.
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{draft.Id}/media/upload-url", stranger,
+            new { contentType = "image/png", byteSize = 1024 });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Servis_YolGezinmesi_Reddediliyor()
+    {
+        var client = factory.CreateClient();
+
+        // Anahtar dosya yoluna çevriliyor; `..` geçen bir anahtar depo kökünün dışını
+        // okuturdu. Depo bunu beyaz liste ile kesiyor.
+        var response = await client.GetAsync(
+            new Uri("/api/dev/objects/experiences/../../appsettings.json", UriKind.Relative));
+
+        response.StatusCode.ShouldBeOneOf(HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
+    }
+
+    // -----------------------------------------------------------------------
+
+    private async Task<string> NewHostTokenAsync(HttpClient client)
+    {
+        var tokens = await AuthApi.SignInAsync(factory, client, AuthApi.NewEmail());
+        var response = await MediaApi.SendAsync(client, HttpMethod.Post, ActivatePath, tokens.AccessToken);
+
+        var activated = await response.Content.ReadFromJsonAsync<ActivateHostResponse>(AuthApi.Json);
+
+        return activated!.AccessToken;
+    }
+
+    private async Task<HostExperienceResponse> CreateDraftAsync(HttpClient client, string token)
+    {
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Post, BasePath, token, new { originalLanguage = "tr" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+
+        return await ReadAsync(response);
+    }
+
+    /// <summary>Kapak DIŞINDA tüm yayın koşullarını karşılayan taslak.</summary>
+    private async Task<HostExperienceResponse> CreateCompleteDraftAsync(
+        HttpClient client, string token, string title)
+    {
+        var draft = await CreateDraftAsync(client, token);
+
+        await MediaApi.SendAsync(
+            client, HttpMethod.Patch, $"{BasePath}/{draft.Id}", token,
+            new
+            {
+                cityId = await CityIdAsync("izmir"),
+                categorySlug = Category,
+                durationMinutes = 120,
+                capacity = 8,
+            });
+
+        await MediaApi.SendAsync(
+            client, HttpMethod.Put, $"{BasePath}/{draft.Id}/translations/tr", token,
+            new { title, description = "Açıklama." });
+
+        return draft;
+    }
+
+    private Task<Guid> CityIdAsync(string slug) => factory.QueryAsync(db => db.Cities
+        .AsNoTracking().Where(x => x.Slug == slug).Select(x => x.Id).FirstAsync());
+
+    private Task<Experience> ExperienceRowAsync(Guid id) => factory.QueryAsync(db => db.Experiences
+        .AsNoTracking().SingleAsync(x => x.Id == id));
+
+    private Task<ExperienceMedia> MediaRowAsync(Guid id) => factory.QueryAsync(db => db.ExperienceMedia
+        .AsNoTracking().SingleAsync(x => x.Id == id));
+
+    private Task<ExperienceMedia?> MediaRowOrNullAsync(Guid id) => factory.QueryAsync(
+        db => db.ExperienceMedia.AsNoTracking().SingleOrDefaultAsync(x => x.Id == id));
+
+    /// <summary>
+    /// Nesnenin depoda gerçekten durup durmadığı. HTTP yanıtı "ne döndü"yü, bu
+    /// "depoda ne var"ı doğruluyor — silme testleri için tek anlamlı ölçüm.
+    /// </summary>
+    private async Task<bool> ObjectExistsAsync(Guid experienceId, Guid mediaId, string extension)
+    {
+        var key = MediaRules.ExperienceKey(experienceId, mediaId, extension);
+
+        var response = await factory.CreateClient()
+            .GetAsync(new Uri($"/api/dev/objects/{key}", UriKind.Relative));
+
+        return response.StatusCode == HttpStatusCode.OK;
+    }
+
+    private static async Task<HostExperienceResponse> ReadAsync(HttpResponseMessage response)
+        => (await response.Content.ReadFromJsonAsync<HostExperienceResponse>(AuthApi.Json))!;
+
+    private static async Task<string?> TitleAsync(HttpResponseMessage response)
+    {
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+        return document.RootElement.TryGetProperty("title", out var title) ? title.GetString() : null;
+    }
+}

@@ -28,6 +28,7 @@ public sealed record SetExperienceTranslationCommand(
 
 internal sealed class SetExperienceTranslationCommandHandler(
     IAppDbContext dbContext,
+    IObjectStorage storage,
     ICurrentUser currentUser,
     IDateTimeProvider clock)
     : IRequestHandler<SetExperienceTranslationCommand, HostExperienceResponse>
@@ -108,7 +109,7 @@ internal sealed class SetExperienceTranslationCommandHandler(
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return await HostExperienceProjection
-            .ToResponseAsync(dbContext, experience, cancellationToken)
+            .ToResponseAsync(dbContext, storage, experience, cancellationToken)
             .ConfigureAwait(false);
     }
 }

@@ -28,6 +28,7 @@ internal sealed record ProfileEdit(string? DisplayName, string? PreferredLanguag
 
 internal sealed class UpdateProfileCommandHandler(
     IAppDbContext dbContext,
+    IObjectStorage storage,
     ICurrentUser currentUser)
     : IRequestHandler<UpdateProfileCommand, CurrentUserResponse>
 {
@@ -79,9 +80,9 @@ internal sealed class UpdateProfileCommandHandler(
 
         // Şekil /me ile TEK projeksiyondan üretiliyor — istemci iki ayrı gövde
         // ayrıştırmasın. Sorgu bellekteki tek satır üstünde koşuyor: ikinci DB gidişi yok.
-        return GetCurrentUserQueryHandler
-            .Project(new[] { user }.AsQueryable(), userId)
-            .Single();
+        return GetCurrentUserQuery.ToResponse(
+            GetCurrentUserQueryHandler.Project(new[] { user }.AsQueryable(), userId).Single(),
+            storage);
     }
 
     /// <summary>

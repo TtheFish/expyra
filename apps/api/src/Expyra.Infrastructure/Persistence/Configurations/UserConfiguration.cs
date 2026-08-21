@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Expyra.Domain.Experiences;
 using Expyra.Domain.Languages;
 using Expyra.Domain.Users;
 
@@ -46,6 +47,12 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(x => x.LastLoginAtUtc)
             .HasColumnName("last_login_at_utc");
+
+        // Index YOK: bu sütunda filtreleyen sorgu yok, avatar daima kullanıcı satırıyla
+        // birlikte PK üzerinden okunuyor (roles ile aynı gerekçe).
+        builder.Property(x => x.AvatarKey)
+            .HasColumnName("avatar_key")
+            .HasMaxLength(ExperienceMedia.MaxStorageKeyLength);
 
         builder.Property(x => x.PreferredLanguage)
             .HasColumnName("preferred_language")

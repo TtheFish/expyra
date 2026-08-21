@@ -168,7 +168,7 @@ internal static class HostExperienceStore
     }
 
     /// <summary>
-    /// Yayın kuralının veritabanı gerektiren tek parçası. Kalanı saf
+    /// Yayın kuralının veritabanı gerektiren parçalarından biri. Kuralın kendisi saf
     /// (<see cref="ExperiencePublishRules"/>).
     /// </summary>
     internal static Task<bool> HasOriginalLanguageTranslationAsync(
@@ -179,5 +179,22 @@ internal static class HostExperienceStore
             .AsNoTracking()
             .AnyAsync(
                 x => x.ExperienceId == experience.Id && x.Language == experience.OriginalLanguage,
+                cancellationToken);
+
+    /// <summary>
+    /// Yayın kuralının ikinci veritabanı parçası (PLAN Blok 6 kabul kriteri 3).
+    ///
+    /// <para><see cref="MediaStatus.Pending"/> SAYILMAZ: imzalı adresi alınmış ama
+    /// yüklenmemiş bir görsel kapak sayılsaydı, host yükleme ekranını açıp kapatarak
+    /// görselsiz ilan yayınlayabilirdi.</para>
+    /// </summary>
+    internal static Task<bool> HasActiveCoverAsync(
+        IAppDbContext dbContext,
+        Guid experienceId,
+        CancellationToken cancellationToken)
+        => dbContext.ExperienceMedia
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.ExperienceId == experienceId && x.IsCover && x.Status == MediaStatus.Active,
                 cancellationToken);
 }

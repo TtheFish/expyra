@@ -105,7 +105,7 @@ public sealed class UpdateProfileTests
         currentUser.RequireUserId()
             .Returns(_ => throw new UnauthorizedAccessException("Kimlik doğrulaması gerekli."));
 
-        var handler = new UpdateProfileCommandHandler(dbContext, currentUser);
+        var handler = new UpdateProfileCommandHandler(dbContext, Substitute.For<IObjectStorage>(), currentUser);
 
         await Should.ThrowAsync<UnauthorizedAccessException>(async () =>
             await handler.Handle(new UpdateProfileCommand("Ada", "tr"), CancellationToken.None));

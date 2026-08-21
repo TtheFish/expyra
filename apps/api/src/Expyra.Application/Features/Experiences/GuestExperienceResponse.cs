@@ -38,6 +38,15 @@ public sealed record GuestExperiencePageResponse(
 /// megabaytlarını demek. Detay ucu aynı nesneye <c>description</c> ekleyerek dönüyor —
 /// yani liste şekli detay şeklinin ALT KÜMESİ, iki uç için tek ayrıştırıcı yetiyor.
 /// </param>
+/// <param name="Cover">
+/// Kart görseli. <b>Nullable ve öyle kalmalı</b>: kapak Blok 6'da yayın koşulu oldu, ama
+/// ondan ÖNCE yayınlanmış satırlar kapaksız duruyor ve migration onlara geriye dönük
+/// görsel uyduramaz. Tip zorunlu yapılsaydı bu satırlar çalışma anında patlardı;
+/// nullable kalınca arayüz yer tutucuya düşüyor. Yeni yayınlanan her ilanda dolu.
+///
+/// <para>Yalnız kapak: kart bir tane görsel çiziyor, galerinin tamamını listede
+/// taşımak sayfa başına on kat veri demek olurdu.</para>
+/// </param>
 public sealed record GuestExperienceSummaryResponse(
     string Slug,
     GuestExperienceCityResponse City,
@@ -45,6 +54,7 @@ public sealed record GuestExperienceSummaryResponse(
     int DurationMinutes,
     int Capacity,
     GuestExperienceTextResponse Text,
+    GuestExperienceImageResponse? Cover,
     DateTimeOffset PublishedAtUtc);
 
 /// <summary>
@@ -70,7 +80,19 @@ public sealed record GuestExperienceDetailResponse(
     IReadOnlyList<string> SpokenLanguages,
     IReadOnlyList<string> Tags,
     GuestExperienceDetailTextResponse Text,
+    IReadOnlyList<GuestExperienceImageResponse> Images,
     DateTimeOffset PublishedAtUtc);
+
+/// <param name="Url">
+/// Okuma adresi, her yanıtta yeniden üretiliyor (<c>IObjectStorage.PublicUrl</c>).
+/// Veritabanında adres değil anahtar duruyor — CDN alan adı değiştiğinde geçmiş
+/// satırlar migration istemesin.
+/// </param>
+/// <param name="Width">
+/// Gerçek piksel ölçüsü. İstemciye gitmesinin sebebi <c>next/image</c>: en-boy oranını
+/// çizimden ÖNCE bilmezse görsel yüklendiğinde sayfa zıplar (CLS).
+/// </param>
+public sealed record GuestExperienceImageResponse(Uri Url, int Width, int Height);
 
 /// <summary>
 /// Şehrin kart ve detayda görünen yüzü.

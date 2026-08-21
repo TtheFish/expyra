@@ -433,9 +433,12 @@ public sealed class GuestExperienceTests(ApiFactory factory)
         // geçer ve test hiçbir şey ölçmeden yeşil kalırdı.
         one.ShouldBeGreaterThan(0);
 
-        // 1 satır ile 5 satır AYNI maliyette: sayfa + metinler.
+        // 1 satır ile 5 satır AYNI maliyette: sayfa + metinler + kapaklar. Testin
+        // koruduğu şey tavanın kendisi değil, tavanın SATIR SAYISINDAN BAĞIMSIZ olması —
+        // N+1 buradan girer. Blok 6'da kapak sorgusu eklendi ve sayı 2'den 3'e çıktı;
+        // yükselen tavan, düşen değil, çünkü kapaklar da tek sorguda geliyor.
         many.ShouldBe(one);
-        one.ShouldBeLessThanOrEqualTo(2);
+        one.ShouldBeLessThanOrEqualTo(3);
     }
 
     [Fact]
@@ -464,9 +467,13 @@ public sealed class GuestExperienceTests(ApiFactory factory)
         leanCount.ShouldBeGreaterThan(0);
 
         // Detay sayfası TEK çağrıyla doluyor ve sunucu tarafındaki sorgu sayısı içerik
-        // miktarıyla büyümüyor: ilan + konuşulan diller + etiketler + metin.
+        // miktarıyla büyümüyor: ilan + konuşulan diller + etiketler + metin + galeri.
+        // Üç görselli ilan da bir görselli ilan da aynı sayıda sorgu koşuyor.
         richCount.ShouldBe(leanCount);
-        leanCount.ShouldBeLessThanOrEqualTo(4);
+
+        // Tavan Blok 6'da 4'ten 5'e çıktı (galeri sorgusu). Asıl korunan şey bu sayı
+        // değil, üstteki eşitlik: içerik büyüdükçe sorgu sayısı SABİT kalıyor.
+        leanCount.ShouldBeLessThanOrEqualTo(5);
     }
 
     // -----------------------------------------------------------------------

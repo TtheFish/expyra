@@ -4,7 +4,7 @@ using Expyra.Domain.Experiences;
 namespace Expyra.Application.UnitTests.Domain.Experiences;
 
 /// <summary>
-/// PLAN Blok 5 kabul kriteri 1'in saf tarafı. Kural veritabanı görmediği için her koşulu
+/// PLAN Blok 5 kabul kriteri 1 + Blok 6 kabul kriteri 3'ün saf tarafı. Kural veritabanı görmediği için her koşulu
 /// tek tek denemek bedava — ve aynı fonksiyon hem yayın ucunda hem host listesindeki
 /// "eksikler" rozetinde çalıştığı için burada geçen her satır ikisini birden doğruluyor.
 /// </summary>
@@ -23,7 +23,7 @@ public sealed class ExperiencePublishRulesTests
 
     [Fact]
     public void Missing_TamIlan_BosDoner()
-        => ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: true)
+        => ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: true, hasCoverMedia: true)
             .ShouldBeEmpty();
 
     [Fact]
@@ -31,7 +31,7 @@ public sealed class ExperiencePublishRulesTests
     {
         // docs/I18N.md §2: OriginalLanguage için çeviri satırı ZORUNLU — fallback
         // zincirinin sonu o satır. Başka dilde çeviri olması bunu KARŞILAMAZ.
-        var missing = ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: false);
+        var missing = ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: false, hasCoverMedia: true);
 
         missing.ShouldHaveSingleItem().ShouldBe(ExperiencePublishRequirement.Translation);
     }
@@ -43,7 +43,7 @@ public sealed class ExperiencePublishRulesTests
         experience.CityId = null;
         experience.TimeZoneId = null;
 
-        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true)
+        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true)
             .ShouldHaveSingleItem()
             .ShouldBe(ExperiencePublishRequirement.City);
     }
@@ -54,7 +54,7 @@ public sealed class ExperiencePublishRulesTests
         var experience = Complete();
         experience.CategorySlug = null;
 
-        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true)
+        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true)
             .ShouldHaveSingleItem()
             .ShouldBe(ExperiencePublishRequirement.Category);
     }
@@ -69,7 +69,7 @@ public sealed class ExperiencePublishRulesTests
         var experience = Complete();
         experience.Capacity = capacity;
 
-        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true)
+        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true)
             .ShouldHaveSingleItem()
             .ShouldBe(ExperiencePublishRequirement.Capacity);
     }
@@ -80,13 +80,25 @@ public sealed class ExperiencePublishRulesTests
         var draft = new Experience { HostId = Guid.CreateVersion7(), OriginalLanguage = "tr" };
 
         // Sıra SABİT: arayüz sihirbaz adımlarını bu diziye göre işaretliyor.
-        ExperiencePublishRules.Missing(draft, hasOriginalLanguageTranslation: false).ShouldBe(
-        [
-            ExperiencePublishRequirement.Translation,
-            ExperiencePublishRequirement.City,
-            ExperiencePublishRequirement.Category,
-            ExperiencePublishRequirement.Capacity,
-        ]);
+        ExperiencePublishRules.Missing(draft, hasOriginalLanguageTranslation: false, hasCoverMedia: false)
+            .ShouldBe(
+            [
+                ExperiencePublishRequirement.Translation,
+                ExperiencePublishRequirement.City,
+                ExperiencePublishRequirement.Category,
+                ExperiencePublishRequirement.Capacity,
+                ExperiencePublishRequirement.Cover,
+            ]);
+    }
+
+    [Fact]
+    public void Missing_KapakYok_TekEksik()
+    {
+        // PLAN Blok 6 kabul kriteri 3. Görselsiz ilan listede gri bir kutu olur ve
+        // paylaşıldığında önizlemesi boş çıkar.
+        ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: true, hasCoverMedia: false)
+            .ShouldHaveSingleItem()
+            .ShouldBe(ExperiencePublishRequirement.Cover);
     }
 
     [Fact]
@@ -98,7 +110,7 @@ public sealed class ExperiencePublishRulesTests
         var experience = Complete();
         experience.DurationMinutes = 0;
 
-        ExperiencePublishRules.CanPublish(experience, hasOriginalLanguageTranslation: true)
+        ExperiencePublishRules.CanPublish(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true)
             .ShouldBeTrue();
     }
 }

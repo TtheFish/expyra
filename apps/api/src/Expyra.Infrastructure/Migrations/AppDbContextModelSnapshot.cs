@@ -134,6 +134,88 @@ namespace Expyra.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Expyra.Domain.Experiences.ExperienceMedia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("ByteSize")
+                        .HasColumnType("bigint")
+                        .HasColumnName("byte_size");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("ExperienceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experience_id");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("integer")
+                        .HasColumnName("height");
+
+                    b.Property<bool>("IsCover")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_cover");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Pending")
+                        .HasColumnName("status");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("storage_key");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("integer")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc")
+                        .HasDatabaseName("ix_experience_media_pending")
+                        .HasFilter("status = 'Pending'");
+
+                    b.HasIndex("ExperienceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_experience_media_cover")
+                        .HasFilter("is_cover");
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_experience_media_storage_key");
+
+                    b.HasIndex("ExperienceId", "SortOrder")
+                        .HasDatabaseName("ix_experience_media_experience_sort");
+
+                    b.ToTable("experience_media", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_experience_media_active_has_size", "status <> 'Active' OR (width > 0 AND height > 0 AND byte_size > 0)");
+                        });
+                });
+
             modelBuilder.Entity("Expyra.Domain.Experiences.ExperienceSpokenLanguage", b =>
                 {
                     b.Property<Guid>("ExperienceId")
@@ -1070,6 +1152,11 @@ namespace Expyra.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AvatarKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("avatar_key");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
@@ -1162,6 +1249,15 @@ namespace Expyra.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_experience_original_language");
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Experiences.ExperienceMedia", b =>
+                {
+                    b.HasOne("Expyra.Domain.Experiences.Experience", null)
+                        .WithMany()
+                        .HasForeignKey("ExperienceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Expyra.Domain.Experiences.ExperienceSpokenLanguage", b =>

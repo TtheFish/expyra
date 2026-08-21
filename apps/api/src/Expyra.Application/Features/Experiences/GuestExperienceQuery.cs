@@ -205,9 +205,72 @@ internal static class GuestExperienceQuery
     internal static GuestExperienceCityResponse ToCity(GuestExperienceRow row)
         => new(row.CitySlug, row.CityCountryCode, row.CityName, row.CityEnglishName);
 
+    /// <summary>
+    /// Sayfadaki TÜM ilanların kapaklarını tek sorguda getirir.
+    ///
+    /// <para><b>Neden ana sorguya join edilmiyor:</b> deneyim başına birden fazla görsel
+    /// var; join, ana satırları çoğaltır ve keyset sayfalaması (bir fazla satır çekip
+    /// "daha var mı" diye bakma) anlamını yitirirdi. Metin yüklemesiyle aynı desen —
+    /// sorgu sayısı sayfa uzunluğundan bağımsız ve sabit.</para>
+    ///
+    /// <para>Kapaksız ilan sözlükte HİÇ YOK: çağıran <c>TryGetValue</c> ile
+    /// <c>null</c>'a düşüyor (bkz. <c>GuestExperienceSummaryResponse.Cover</c>).</para>
+    /// </summary>
+    internal static async Task<IReadOnlyDictionary<Guid, GuestExperienceImageResponse>> LoadCoversAsync(
+        IAppDbContext dbContext,
+        IObjectStorage storage,
+        IReadOnlyList<GuestExperienceRow> rows,
+        CancellationToken cancellationToken)
+    {
+        if (rows.Count == 0)
+        {
+            return new Dictionary<Guid, GuestExperienceImageResponse>();
+        }
+
+        var ids = rows.Select(x => x.Id).ToArray();
+
+        var covers = await dbContext.ExperienceMedia
+            .AsNoTracking()
+            .Where(x => ids.Contains(x.ExperienceId) && x.IsCover && x.Status == MediaStatus.Active)
+            .Select(x => new { x.ExperienceId, x.StorageKey, x.Width, x.Height })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return covers.ToDictionary(
+            x => x.ExperienceId,
+            x => new GuestExperienceImageResponse(storage.PublicUrl(x.StorageKey), x.Width, x.Height));
+    }
+
+    /// <summary>
+    /// Tek ilanın galerisi, host'un verdiği sırada. Doğrulanmamış satırlar dışarıda —
+    /// misafire yüklenmemiş bir dosyanın adresi gitmemeli.
+    /// </summary>
+    internal static async Task<IReadOnlyList<GuestExperienceImageResponse>> LoadImagesAsync(
+        IAppDbContext dbContext,
+        IObjectStorage storage,
+        Guid experienceId,
+        CancellationToken cancellationToken)
+    {
+        var media = await dbContext.ExperienceMedia
+            .AsNoTracking()
+            .Where(x => x.ExperienceId == experienceId && x.Status == MediaStatus.Active)
+            // Kapak ÖNCE, sonra host'un sırası: galeri açıldığında ilk görülen, kartta
+            // görülenle aynı olsun.
+            .OrderByDescending(x => x.IsCover)
+            .ThenBy(x => x.SortOrder)
+            .Select(x => new { x.StorageKey, x.Width, x.Height })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return media
+            .Select(x => new GuestExperienceImageResponse(storage.PublicUrl(x.StorageKey), x.Width, x.Height))
+            .ToList();
+    }
+
     internal static GuestExperienceSummaryResponse ToSummary(
         GuestExperienceRow row,
         ExperienceTextRow text,
+        GuestExperienceImageResponse? cover,
         string? requestedLanguage)
         => new(
             row.Slug,
@@ -220,6 +283,7 @@ internal static class GuestExperienceQuery
                 text.Title,
                 IsFallback(text.Language, requestedLanguage),
                 text.Source.ToString()),
+            cover,
             row.PublishedAtUtc);
 
     internal static GuestExperienceDetailResponse ToDetail(
@@ -227,6 +291,7 @@ internal static class GuestExperienceQuery
         ExperienceTextRow text,
         IReadOnlyList<string> spokenLanguages,
         IReadOnlyList<string> tags,
+        IReadOnlyList<GuestExperienceImageResponse> images,
         string? requestedLanguage)
         => new(
             row.Slug,
@@ -242,6 +307,7 @@ internal static class GuestExperienceQuery
                 text.Description,
                 IsFallback(text.Language, requestedLanguage),
                 text.Source.ToString()),
+            images,
             row.PublishedAtUtc);
 
     /// <summary>
