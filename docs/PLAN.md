@@ -48,11 +48,11 @@
 | Misafir adımı | Host adımı | Durum | Blok |
 |---|---|---|---|
 | Hesap aç / gir | Hesap aç / gir | ✅ TAMAM | — |
-| Giriş yaptığını görür, çıkar, adını düzenler | aynı ekran | ❌ yok (uçlar hazır, bağlanmamış) | **1** |
-| — | "Host ol" der, host olur | ❌ yok (rol sütunu yok) | **2** |
-| Arayüzü kendi dilinde görür | aynı | ⚠️ yalnız auth akışı | **3** |
-| Şehir seçer (gerçek şehir) | Şehir/kategori seçer | ❌ serbest metin | **4** |
-| Deneyimi listede görür + **detayını açar** | Deneyim taslağı yazar, yayınlar | ⚠️ prototip / ❌ yok | **5** |
+| Giriş yaptığını görür, çıkar, adını düzenler | aynı ekran | ✅ TAMAM | 1 |
+| — | "Host ol" der, host olur | ✅ TAMAM | 2 |
+| Arayüzü kendi dilinde görür | aynı | ✅ TAMAM | 3 |
+| Şehir seçer (gerçek şehir) | Şehir/kategori seçer | ✅ TAMAM | 4 |
+| Deneyimi listede görür + **detayını açar** | Deneyim taslağı yazar, yayınlar | ✅ TAMAM | 5 |
 | Görselleri görür | Görsel yükler, kapak seçer | ❌ yok | **6** |
 | Tarih-saat seçer, fiyatı kendi para biriminde görür | Takvim + fiyat girer | ❌ yok | **7** |
 | Arar, filtreler, boş sonuçta yönlendirilir | (tek taraflı) | ⚠️ prototip | **8** |
