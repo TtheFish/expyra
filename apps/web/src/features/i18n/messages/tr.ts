@@ -88,9 +88,40 @@ export const tr = {
 
   // --- Arama çubuğu ----------------------------------------------------------
   'search.destination.label': 'Nereye?',
-  'search.destination.placeholder': 'Şehir veya deneyim',
+  /** Artık serbest metin değil: alan yalnız kayıt defterindeki şehirleri kabul ediyor. */
+  'search.destination.placeholder': 'Şehir ara',
   'search.date.label': 'Ne zaman?',
   'search.submit': 'Ara',
+
+  // --- Şehir seçici ----------------------------------------------------------
+  /**
+   * Liste bir COMBOBOX'ın önerileri (bkz. city-picker.tsx); ekran okuyucu bu adı
+   * "liste kutusu" ile birlikte okuyor, o yüzden metinde "liste" sözcüğü yok.
+   */
+  'search.city.listLabel': 'Şehir önerileri',
+  'search.city.countriesHeading': 'Ülkeler',
+  'search.city.citiesHeading': 'Şehirler',
+  /** Ülke filtresinden çıkış satırı. */
+  'search.city.allCountries': 'Tüm ülkeler',
+  /**
+   * Sayı METİNDE YAZILI DEĞİL: eşik API ile paylaşılan bir sabit
+   * (`SearchCitiesQuery.MinQueryLength`) ve bir gün değişirse çeviri dosyalarında
+   * unutulurdu. "İki" yerine "birkaç" demek de yanlış olurdu — kullanıcı kaç harf
+   * yazacağını bilmeli, ama bunu ekrandaki liste zaten anında gösteriyor.
+   */
+  'search.city.tooShort': 'Şehir adının ilk harflerini yaz ya da listeden bir ülke seç.',
+  'search.city.loading': 'Aranıyor…',
+  'search.city.error': 'Şehir listesi şu an yüklenemedi. Biraz sonra tekrar dene.',
+  'search.city.empty': 'Bu aramaya uyan şehir yok.',
+  /** Liste API'nin tavanında kırpıldı; sayı yazmıyoruz, tavan bizim sabitimiz değil. */
+  'search.city.truncated': 'Daha fazla şehir var — aramayı daraltmak için yazmaya devam et.',
+  'search.city.clear': 'Seçili şehri kaldır',
+  /** İstemcide doldurulan ŞABLON: seçim sayfa yenilenmeden değişiyor. */
+  'search.city.selectedValue': '{sehir}, {ulke}',
+  /** Yalnız ekran okuyucuya: liste dolduğunda kaç sonuç geldiğini duyuruyor. */
+  'search.city.results': { one: '{n} şehir bulundu', other: '{n} şehir bulundu' },
+  /** Ülke satırındaki rozet — o ülkede kaç şehir kayıtlı. */
+  'search.city.countryCities': { one: '{n} şehir', other: '{n} şehir' },
 
   'search.guests.label': 'Misafirler',
   'search.guests.dialogLabel': 'Misafir sayısı',
@@ -137,6 +168,9 @@ export const tr = {
 
   // --- Arama sonucu ----------------------------------------------------------
   'explore.heading.all': 'Tüm deneyimler',
+  /** Şehir ÇÖZÜLDÜ: ad tırnaksız, çünkü artık bir arama metni değil bir yer. */
+  'explore.heading.city': '{sehir} deneyimleri',
+  /** Şehir çözülemedi: kullanıcının yazdığı metin tırnak içinde, olduğu gibi. */
   'explore.heading.query': '“{arama}” için sonuçlar',
   /**
    * Özet satırı TEK anahtar: parçaları JSX'te yan yana eklemek, sıranın
@@ -155,9 +189,19 @@ export const tr = {
   'explore.dateNotice':
     'Seçtiğin tarih sonuçları henüz daraltmıyor: deneyimlerin takvimi sisteme girmedi. Aşağıdaki liste tüm tarihleri kapsıyor.',
   'explore.empty.title': 'Burada henüz deneyim yok',
+  /** "Yaz" değil "seç": şehir alanı artık bir seçici. */
   'explore.empty.body':
-    'Aramanı genişletmeyi dene: farklı bir şehir yaz ya da misafir sayısını azalt. Yeni şehirler ekleniyor.',
+    'Aramanı genişletmeyi dene: listeden başka bir şehir seç ya da misafir sayısını azalt. Yeni şehirler ekleniyor.',
   'explore.empty.cta': 'Tüm deneyimleri gör',
+
+  /**
+   * Adres çubuğundaki şehir kayıt defterinde yok. "Sonuç bulunamadı" DEĞİL —
+   * arama hiç yapılmadı ve bunu söylemek zorundayız (PLAN Blok 4, kabul kriteri 3).
+   */
+  'explore.cityMissing.title': 'Bu şehri tanımıyoruz',
+  'explore.cityMissing.body':
+    'Adresteki şehir kayıtlarımızda yok; bağlantı eskimiş olabilir. Yukarıdaki alandan listeden bir şehir seç.',
+  'explore.cityMissing.cta': 'Tüm deneyimleri gör',
 
   // --- Nasıl çalışır ---------------------------------------------------------
   /** Sayfanın adı `nav.howItWorks`'ten geliyor — aynı sayfa, aynı ad. */

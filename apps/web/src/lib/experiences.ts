@@ -1,11 +1,21 @@
 /**
- * PROTOTİP VERİ — Faz 2'de gerçek `Experience` tablosundan gelecek.
+ * PROTOTİP VERİ — Blok 5'te gerçek `Experience` tablosundan gelecek ve bu dosya SİLİNECEK.
  * Ana sayfa ile /kesfet aynı listeyi kullansın diye buraya taşındı.
  */
 
 export type Experience = {
   slug: string
   title: string
+  /**
+   * Şehrin doğal anahtarı: `<ülke kodu>-<slug>`, kayıt defterindeki satırla birebir
+   * (docs/cities.json). Arama artık BUNUNLA eşleşiyor, şehir adının metniyle değil.
+   *
+   * Neden uuid değil: `city.id` seed sırasında üretiliyor ve yeniden üretilmiyor
+   * (`City.cs`), yani her veritabanında farklı. Buraya yazılacak bir uuid, seed'i
+   * bir kez daha koşan ilk makinede sessizce yanlış şehri gösterirdi.
+   */
+  cityKey: string
+  /** Gösterim adı — prototip veri Türkçe; Blok 5'te `experience_translation`'dan gelecek. */
   city: string
   country: string
   price: number
@@ -21,6 +31,7 @@ export const experiences: Experience[] = [
   {
     slug: 'bogazda-gun-batimi-yelkeni',
     title: 'Boğaz’da Gün Batımı Yelkeni',
+    cityKey: 'tr-istanbul',
     city: 'İstanbul',
     country: 'Türkiye',
     price: 48,
@@ -33,6 +44,7 @@ export const experiences: Experience[] = [
   {
     slug: 'vltava-kiyisinda-fotograf-turu',
     title: 'Vltava Kıyısında Fotoğraf Turu',
+    cityKey: 'cz-prague',
     city: 'Prag',
     country: 'Çekya',
     price: 35,
@@ -45,6 +57,7 @@ export const experiences: Experience[] = [
   {
     slug: 'ev-yapimi-pasta-atolyesi',
     title: 'Ev Yapımı Pasta Atölyesi',
+    cityKey: 'pt-lisbon',
     city: 'Lizbon',
     country: 'Portekiz',
     price: 62,
@@ -56,22 +69,18 @@ export const experiences: Experience[] = [
   },
 ]
 
-/**
- * Küçük harfe çevirme dile bağlı: Türkçe'de `I → ı`, `İ → i`.
- * "İstanbul" araması varsayılan (invariant) küçültmeyle "i̇stanbul" olur ve
- * kendi şehrini bulamaz.
- *
- * **Arayüz diline BAĞLANMIYOR, bilinçli.** Görüntüleme biçimleri (tarih, para)
- * sayfanın diline bağlandı; bu ise bir ARAMA katlaması. `/en` altında `'en'`
- * ile katlansaydı İngilizce arayüzden "İstanbul" aramak sonuç vermezdi — oysa
- * aranan veri Türkçe. Doğru locale burada okuyanın değil, VERİNİN dili; o da
- * Blok 5'te `Experience.OriginalLanguage` ile gelecek (docs/I18N.md §2).
- * Prototip veri Türkçe olduğu için katlama şimdilik Türkçe kuralında.
- */
-const fold = (value: string) => value.toLocaleLowerCase('tr-TR').trim()
-
 export type ExperienceQuery = {
-  destination?: string
+  /**
+   * Kayıt defterinden ÇÖZÜLMÜŞ şehrin anahtarı. Kullanıcının yazdığı metin buraya
+   * hiç ulaşmıyor: çözme işi `features/places/api.ts:resolveCity`'de, çözülemeyen
+   * değer ise ekranda söyleniyor (PLAN Blok 4, kabul kriteri 3).
+   *
+   * Eskiden burada `destination: string` vardı ve `fold(...)` ile şehir/ülke/başlık
+   * içinde substring aranıyordu. O eşleşme "praha" ile "Prag"ı hiçbir zaman
+   * bulamıyordu ve "a" araması her şeyi döndürüyordu — bu bloğun ortadan
+   * kaldırdığı şey tam olarak o.
+   */
+  cityKey?: string
   guests?: number
   /** `parseSearchDate`'ten geçmiş `yyyy-aa-gg`. */
   date?: string
@@ -96,29 +105,26 @@ export type ExperienceSearchResult = {
  * Blok 7'de geliyor (docs/PLAN.md). Yani "bu tarihte var mı" sorusunun bugün doğru
  * cevabı üretilemiyor. Üç seçenek vardı:
  *
- * 1. Sessizce yok say — bugünkü davranış. Kullanıcı tarih seçiyor, sonuç
- *    değişmiyor ve arayüz hiçbir şey söylemiyor: sistem tarihi dikkate almış gibi
- *    görünüyor. Bu yalan, ve rezervasyona kadar fark edilmiyor.
+ * 1. Sessizce yok say — kullanıcı tarih seçiyor, sonuç değişmiyor ve arayüz hiçbir
+ *    şey söylemiyor: sistem tarihi dikkate almış gibi görünüyor. Bu yalan, ve
+ *    rezervasyona kadar fark edilmiyor.
  * 2. Uydurma bir müsaitlik üret (ör. slug'dan türetilmiş sahte takvim). Yalanı
- *    doğruya BENZETİR — en kötüsü. Blok 7 geldiğinde de "neden bu tarihte yok"
- *    diye bakılacak bir kaynak bırakmaz.
+ *    doğruya BENZETİR — en kötüsü.
  * 3. Alanı bırak, sonucu daraltma, ve bunu kullanıcıya AÇIKÇA söyle.
  *
- * 3 seçildi. Alanı arayüzden kaldırmak da bir seçenekti; kaldırılmadı çünkü arama
- * çubuğunun şekli Blok 7 ile aynı kalacak ve tarih bilgisi bugün de anlamlı: özet
- * satırında görünüyor, URL'de taşınıyor, paylaşılan bağlantıda korunuyor.
+ * 3 seçildi. Şehir alanında ise aynı sorunun cevabı FARKLI olabildi: orada eksik
+ * olan veri artık var (kayıt defteri), o yüzden şehir gerçekten filtreliyor.
  */
 export function filterExperiences(
   all: readonly Experience[],
-  { destination, guests, date }: ExperienceQuery,
+  { cityKey, guests, date }: ExperienceQuery,
 ): ExperienceSearchResult {
   let items = [...all]
 
-  if (destination) {
-    const needle = fold(destination)
-    items = items.filter((item) =>
-      [item.city, item.country, item.title].some((field) => fold(field).includes(needle)),
-    )
+  if (cityKey) {
+    // Karşılaştırma tam eşitlik: anahtarın iki yakası da (URL ve bu tablo)
+    // kayıt defterindeki satırdan geliyor, "yaklaşık" eşleşmeye yer yok.
+    items = items.filter((item) => item.cityKey === cityKey)
   }
 
   if (guests && guests > 0) {

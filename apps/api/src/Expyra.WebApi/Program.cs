@@ -54,6 +54,24 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// `dotnet run --project apps/api/src/Expyra.WebApi -- seed reference-data`
+//
+// Seed AYRI bir komut, açılışın parçası DEĞİL (CLAUDE.md #2): açılışta veri yazmak,
+// şema değiştirmekle aynı sınıfta bir hata — iki kopya aynı anda kalkınca yarışır.
+// Bu dal çalıştığında uygulama HTTP dinlemeye hiç başlamıyor; iş bitince çıkış kodu
+// dönüyor ve normal açılış yolu hiç değişmiyor.
+if (SeedCommand.Matches(args, out var seedTarget))
+{
+    var seedExitCode = await SeedCommand.RunAsync(app, seedTarget);
+
+    // Açıkça dispose: log sağlayıcıları boşaltılsın ve veritabanı bağlantı havuzu
+    // kapansın. Süreç zaten ölecek ama "çıktı kayboldu" ile "iş yapılmadı" arasındaki
+    // farkı görmek isteyen tek şey bu satır.
+    await app.DisposeAsync();
+
+    return seedExitCode;
+}
+
 app.UseExceptionHandler();
 
 // Gövdesiz 4xx/5xx yanıtlara ProblemDetails gövdesi yazar. Bunsuz [Authorize]
@@ -102,6 +120,10 @@ if (app.Environment.IsDevelopment())
 }
 
 await app.RunAsync();
+
+// Seed komutu `return seedExitCode` yazdığı andan itibaren giriş noktası int döndürüyor;
+// normal sunucu yolu da açık bir çıkış kodu vermek zorunda (CS0161).
+return 0;
 
 /// <summary>Integration testlerin WebApplicationFactory ile bağlanabilmesi için.</summary>
 public partial class Program;

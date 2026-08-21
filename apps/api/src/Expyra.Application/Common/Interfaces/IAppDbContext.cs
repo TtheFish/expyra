@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Expyra.Domain.Catalog;
 using Expyra.Domain.Identity;
 using Expyra.Domain.Languages;
+using Expyra.Domain.Places;
+using Expyra.Domain.Pricing;
 using Expyra.Domain.Users;
 
 namespace Expyra.Application.Common.Interfaces;
@@ -14,6 +17,21 @@ public interface IAppDbContext
 {
     /// <summary>Dil kayıt defteri — sistemin desteklediği diller (docs/I18N.md).</summary>
     DbSet<Language> Languages { get; }
+
+    /// <summary>Ülke kayıt defteri (ISO 3166-1 alpha-2). Yerelleştirilmiş ad TUTMAZ — bkz. Country.</summary>
+    DbSet<Country> Countries { get; }
+
+    /// <summary>Şehir kayıt defteri. Serbest metin şehir alanının yerini aldı.</summary>
+    DbSet<City> Cities { get; }
+
+    /// <summary>Şehrin aranabilir yazımları (Prag/Prague/Praha) — aramanın dayandığı tablo.</summary>
+    DbSet<CityAlias> CityAliases { get; }
+
+    /// <summary>Para birimi kayıt defteri (ISO 4217). Asıl işi MinorUnits — bkz. Currency.</summary>
+    DbSet<Currency> Currencies { get; }
+
+    /// <summary>Deneyim kategorileri. Yalnız slug tutar; adlar Blok 3'ün sözlüğünde.</summary>
+    DbSet<Category> Categories { get; }
 
     /// <summary>Kullanıcı hesapları. Tablo adı app_user — "user" Postgres'te ayrılmış kelime.</summary>
     DbSet<User> Users { get; }

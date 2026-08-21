@@ -51,9 +51,23 @@ export const en = {
   'home.samples.heading': 'Sample experiences',
 
   'search.destination.label': 'Where to?',
-  'search.destination.placeholder': 'City or experience',
+  'search.destination.placeholder': 'Search for a city',
   'search.date.label': 'When?',
   'search.submit': 'Search',
+
+  'search.city.listLabel': 'City suggestions',
+  'search.city.countriesHeading': 'Countries',
+  'search.city.citiesHeading': 'Cities',
+  'search.city.allCountries': 'All countries',
+  'search.city.tooShort': 'Start typing a city name, or pick a country from the list.',
+  'search.city.loading': 'Searching…',
+  'search.city.error': 'We couldn’t load the city list. Try again in a moment.',
+  'search.city.empty': 'No city matches that search.',
+  'search.city.truncated': 'There are more cities — keep typing to narrow it down.',
+  'search.city.clear': 'Remove the selected city',
+  'search.city.selectedValue': '{sehir}, {ulke}',
+  'search.city.results': { one: '{n} city found', other: '{n} cities found' },
+  'search.city.countryCities': { one: '{n} city', other: '{n} cities' },
 
   'search.guests.label': 'Guests',
   'search.guests.dialogLabel': 'Number of guests',
@@ -80,6 +94,7 @@ export const en = {
   },
 
   'explore.heading.all': 'All experiences',
+  'explore.heading.city': 'Experiences in {sehir}',
   'explore.heading.query': 'Results for “{arama}”',
   'explore.summary': { one: '{n} experience · {misafir}', other: '{n} experiences · {misafir}' },
   'explore.summary.dated': {
@@ -91,8 +106,13 @@ export const en = {
     'The date you picked doesn’t narrow anything down yet — the experiences’ calendars aren’t in the system. Everything below covers every date.',
   'explore.empty.title': 'No experiences here yet',
   'explore.empty.body':
-    'Try widening the search: a different city, or fewer guests. New cities go up all the time.',
+    'Try widening the search: pick another city from the list, or fewer guests. New cities go up all the time.',
   'explore.empty.cta': 'See every experience',
+
+  'explore.cityMissing.title': 'We don’t know that city',
+  'explore.cityMissing.body':
+    'The city in the address isn’t in our registry — the link may be out of date. Pick a city from the list in the field above.',
+  'explore.cityMissing.cta': 'See every experience',
 
   'howItWorks.lede': 'Three steps and you’re done.',
   'howItWorks.back': 'Back',

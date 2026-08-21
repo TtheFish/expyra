@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Expyra.Application.Common.Interfaces;
 using Expyra.Infrastructure.Persistence;
+using Expyra.Infrastructure.Persistence.Seed;
 
 namespace Expyra.IntegrationTests.Common;
 
@@ -32,7 +33,40 @@ public sealed class DatabaseFixture : IAsyncLifetime
 
         await EnsureIdentitySchemaAsync(db).ConfigureAwait(false);
 
+        await SeedReferenceDataAsync(db).ConfigureAwait(false);
+
         await ResetDataAsync(db).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Referans veriyi (ülke, şehir, para birimi, kategori) test veritabanına yazar.
+    ///
+    /// <para>Bu veri <c>language</c>'ın aksine migration'a gömülü DEĞİL (bilinçli —
+    /// <c>ReferenceDataSeeder</c> sınıf notu), dolayısıyla <c>MigrateAsync</c> onu
+    /// getirmiyor. Şehir arama testleri gerçek seed verisi ve gerçek index üzerinde
+    /// koşmak zorunda: elle üç satır uydurulsaydı test, sahada koşacak sorguyu değil
+    /// kendi kurgusunu doğrulardı.</para>
+    ///
+    /// <para>Seeder idempotent olduğu için her koşuda çağrılması güvenli;
+    /// <c>ReferenceDataSeedTests</c> bunu ayrıca doğruluyor.</para>
+    /// </summary>
+    private static async Task SeedReferenceDataAsync(AppDbContext db)
+    {
+        try
+        {
+            await ReferenceDataSeeder.SeedAsync(db).ConfigureAwait(false);
+        }
+        catch (PostgresException postgres)
+            when (string.Equals(postgres.SqlState, PostgresErrorCodes.UndefinedTable, StringComparison.Ordinal))
+        {
+            // Hata yutma değil, en olası ilk kırılmayı okunur bir mesaja çevirme —
+            // EnsureIdentitySchemaAsync ile aynı kalıp.
+            throw new InvalidOperationException(
+                "country/city/currency/category tabloları yok: referans veri migration'ı henüz üretilmemiş. " +
+                "`dotnet ef migrations add AddReferenceData --project apps/api/src/Expyra.Infrastructure " +
+                "--startup-project apps/api/src/Expyra.WebApi` çalıştır, sonra `pnpm api:migrate`.",
+                postgres);
+        }
     }
 
     /// <summary>
@@ -44,8 +78,9 @@ public sealed class DatabaseFixture : IAsyncLifetime
     /// başlıyor — belirtisi aldatıcı: aynı test dün geçer, bugün "beklenen 202, gelen
     /// 429" der ve kodda hiçbir şey değişmemiştir.</para>
     ///
-    /// <para><c>language</c> tablosuna DOKUNULMUYOR: seed verisi, migration ile geliyor
-    /// ve silinirse dil çözümü yapan her uç bozulur.</para>
+    /// <para>Kayıt defteri tablolarına (<c>language</c>, <c>country</c>, <c>city</c>,
+    /// <c>city_alias</c>, <c>currency</c>, <c>category</c>) DOKUNULMUYOR: bunlar referans
+    /// veri, teste ait değil. Silinirse dil çözümü ve şehir araması yapan her uç bozulur.</para>
     /// </summary>
     private static Task ResetDataAsync(AppDbContext db)
         // refresh_token ve external_login app_user'a FK ile bağlı; CASCADE ikisini de

@@ -24,6 +24,28 @@ namespace Expyra.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Expyra.Domain.Catalog.Category", b =>
+                {
+                    b.Property<string>("Slug")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("slug");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Slug");
+
+                    b.ToTable("category", (string)null);
+                });
+
             modelBuilder.Entity("Expyra.Domain.Identity.ExternalLogin", b =>
                 {
                     b.Property<Guid>("Id")
@@ -742,6 +764,134 @@ namespace Expyra.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Expyra.Domain.Places.City", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("country_code");
+
+                    b.Property<string>("EnglishName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("english_name");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("latitude");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision")
+                        .HasColumnName("longitude");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("slug")
+                        .UseCollation("C");
+
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("time_zone_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CountryCode", "Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ux_city_country_slug");
+
+                    b.ToTable("city", (string)null);
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Places.CityAlias", b =>
+                {
+                    b.Property<Guid>("CityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("city_id");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("normalized_name")
+                        .UseCollation("C");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("display_name");
+
+                    b.HasKey("CityId", "NormalizedName");
+
+                    b.HasIndex("NormalizedName")
+                        .HasDatabaseName("ix_city_alias_normalized");
+
+                    b.ToTable("city_alias", (string)null);
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Places.Country", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("EnglishName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("english_name");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("country", (string)null);
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Pricing.Currency", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("EnglishName")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("english_name");
+
+                    b.Property<int>("MinorUnits")
+                        .HasColumnType("integer")
+                        .HasColumnName("minor_units");
+
+                    b.Property<string>("Symbol")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("symbol");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("currency", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_currency_minor_units", "minor_units >= 0 AND minor_units <= 4");
+                        });
+                });
+
             modelBuilder.Entity("Expyra.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -842,6 +992,30 @@ namespace Expyra.Infrastructure.Migrations
                         .HasConstraintName("fk_refresh_token_user");
                 });
 
+            modelBuilder.Entity("Expyra.Domain.Places.City", b =>
+                {
+                    b.HasOne("Expyra.Domain.Places.Country", "Country")
+                        .WithMany("Cities")
+                        .HasForeignKey("CountryCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_city_country");
+
+                    b.Navigation("Country");
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Places.CityAlias", b =>
+                {
+                    b.HasOne("Expyra.Domain.Places.City", "City")
+                        .WithMany("Aliases")
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_city_alias_city");
+
+                    b.Navigation("City");
+                });
+
             modelBuilder.Entity("Expyra.Domain.Users.User", b =>
                 {
                     b.HasOne("Expyra.Domain.Languages.Language", null)
@@ -849,6 +1023,16 @@ namespace Expyra.Infrastructure.Migrations
                         .HasForeignKey("PreferredLanguage")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_app_user_preferred_language");
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Places.City", b =>
+                {
+                    b.Navigation("Aliases");
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Places.Country", b =>
+                {
+                    b.Navigation("Cities");
                 });
 #pragma warning restore 612, 618
         }

@@ -5,9 +5,12 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Expyra.Application.Common.Interfaces;
+using Expyra.Domain.Catalog;
 using Expyra.Domain.Common;
 using Expyra.Domain.Identity;
 using Expyra.Domain.Languages;
+using Expyra.Domain.Places;
+using Expyra.Domain.Pricing;
 using Expyra.Domain.Users;
 
 namespace Expyra.Infrastructure.Persistence;
@@ -25,6 +28,16 @@ public sealed class AppDbContext(
     private static readonly ConcurrentDictionary<Type, RowLock> RowLocks = new();
 
     public DbSet<Language> Languages => Set<Language>();
+
+    public DbSet<Country> Countries => Set<Country>();
+
+    public DbSet<City> Cities => Set<City>();
+
+    public DbSet<CityAlias> CityAliases => Set<CityAlias>();
+
+    public DbSet<Currency> Currencies => Set<Currency>();
+
+    public DbSet<Category> Categories => Set<Category>();
 
     public DbSet<User> Users => Set<User>();
 

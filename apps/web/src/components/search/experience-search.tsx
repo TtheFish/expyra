@@ -1,7 +1,9 @@
 import Form from 'next/form'
+import { CityPicker, type CityOption } from '@/components/search/city-picker'
 import { DateField } from '@/components/search/date-field'
 import { GuestPicker } from '@/components/search/guest-picker'
 import { getPluralTemplates, getTemplate, getTranslator } from '@/features/i18n/translator'
+import { MIN_CITY_QUERY_LENGTH, prefersEnglishCityName } from '@/features/places/api'
 
 /**
  * Arama çubuğu — nereye / ne zaman / kaç kişi.
@@ -14,9 +16,20 @@ import { getPluralTemplates, getTemplate, getTranslator } from '@/features/i18n/
  * Otelden farkımız: "oda" yok, tarih aralığı yok. Bir deneyim tek gün sürer —
  * giriş/çıkış yerine tek tarih soruyoruz.
  *
- * **Metin burada çözülüp iki istemci bileşenine prop olarak iniyor.** Tek
- * istisna misafir seçicinin özet satırı: sayıyı kullanıcı değiştiriyor, o
- * yüzden hazır metin değil ÇOĞUL BİÇİM TABLOSU gidiyor (bkz. `guest-picker`).
+ * **"Nereye?" artık serbest metin değil** (PLAN Blok 4): alan bir seçici ve
+ * forma yalnız kayıt defterindeki bir şehrin doğal anahtarı (`cz-prague`)
+ * gidiyor. Kullanıcının yazdığı metnin `name` özniteliği yok, yani tarayıcı onu
+ * gönderemiyor — "seçilmeyen metin sessizce yok sayılmaz" kuralı burada yapısal
+ * olarak sağlanıyor, bir kontrole bağlı değil.
+ *
+ * **JS kapalıyken şehir seçilemiyor** ve bu bilinçli bir kayıp: seçicisiz bir
+ * kutunun yazdığı metnin karşılığı olan şehri bulmak zaten sunucuda yapılamıyor
+ * (bugünkü substring eşleşmesi üç sabit satır üzerinde çalışan bir kurguydu).
+ * Form yine gönderiliyor; sonuç sayfası şehir seçilmediğini SÖYLÜYOR.
+ *
+ * **Metin burada çözülüp istemci bileşenlerine prop olarak iniyor.** İstisnalar
+ * yer tutucusu istemcide değişen metinler: misafir özeti ve şehir seçicinin
+ * seçili satırı ile sonuç sayımları.
  */
 
 type ExperienceSearchProps = {
@@ -24,7 +37,10 @@ type ExperienceSearchProps = {
   lang: string
   /** Sonuç sayfasının yolu — dile göre değişiyor (`/tr/kesfet`, `/en/explore`). */
   action: string
-  defaultDestination?: string
+  /** URL'den çözülmüş şehir. Çözülemediyse `null` (bkz. `defaultCityQuery`). */
+  defaultCity?: CityOption | null
+  /** Çözülemeyen ham metin; kutuya yazılı gelir ki kullanıcı doğrusunu seçebilsin. */
+  defaultCityQuery?: string
   defaultDate?: string
   defaultAdults?: number
   defaultChildren?: number
@@ -34,19 +50,24 @@ type ExperienceSearchProps = {
 export async function ExperienceSearch({
   lang,
   action,
-  defaultDestination = '',
+  defaultCity = null,
+  defaultCityQuery = '',
   defaultDate = '',
   defaultAdults,
   defaultChildren,
   className = '',
 }: ExperienceSearchProps) {
-  const [t, adultForms, childForms, summaryBoth] = await Promise.all([
-    getTranslator(lang),
-    getPluralTemplates(lang, 'search.guests.summary.adults'),
-    getPluralTemplates(lang, 'search.guests.summary.children'),
-    // Şablon olarak gidiyor: parçaları istemci dolduruyor (bkz. `getTemplate`).
-    getTemplate(lang, 'search.guests.summary.both'),
-  ])
+  const [t, adultForms, childForms, summaryBoth, cityResults, cityCounts, citySelected] =
+    await Promise.all([
+      getTranslator(lang),
+      getPluralTemplates(lang, 'search.guests.summary.adults'),
+      getPluralTemplates(lang, 'search.guests.summary.children'),
+      // Şablon olarak gidiyor: parçaları istemci dolduruyor (bkz. `getTemplate`).
+      getTemplate(lang, 'search.guests.summary.both'),
+      getPluralTemplates(lang, 'search.city.results'),
+      getPluralTemplates(lang, 'search.city.countryCities'),
+      getTemplate(lang, 'search.city.selectedValue'),
+    ])
 
   return (
     <Form
@@ -60,18 +81,31 @@ export async function ExperienceSearch({
       className={`glass glass-edge glass-thick search-bar relative z-20 mx-auto w-full max-w-4xl ${className}`}
     >
       <div className="search-group">
-        <label className="search-field" htmlFor="search-nerede">
-          <span className="search-field-label">{t('search.destination.label')}</span>
-          <input
-            id="search-nerede"
-            name="nerede"
-            type="search"
-            defaultValue={defaultDestination}
-            placeholder={t('search.destination.placeholder')}
-            autoComplete="off"
-            className="search-field-input"
-          />
-        </label>
+        <CityPicker
+          lang={lang}
+          /* Hangi dilin İngilizce exonimi tercih ettiği kararı SUNUCUDA
+             (`features/places/api.ts`); istemciye yalnız sonucu iniyor. */
+          preferEnglishName={prefersEnglishCityName(lang)}
+          minQueryLength={MIN_CITY_QUERY_LENGTH}
+          defaultCity={defaultCity}
+          defaultQuery={defaultCityQuery}
+          labels={{
+            field: t('search.destination.label'),
+            placeholder: t('search.destination.placeholder'),
+            listLabel: t('search.city.listLabel'),
+            countriesHeading: t('search.city.countriesHeading'),
+            citiesHeading: t('search.city.citiesHeading'),
+            allCountries: t('search.city.allCountries'),
+            tooShort: t('search.city.tooShort'),
+            loading: t('search.city.loading'),
+            error: t('search.city.error'),
+            empty: t('search.city.empty'),
+            truncated: t('search.city.truncated'),
+            clear: t('search.city.clear'),
+            selectedValue: citySelected,
+          }}
+          forms={{ results: cityResults, countryCities: cityCounts }}
+        />
 
         <div className="search-divider" aria-hidden="true" />
 

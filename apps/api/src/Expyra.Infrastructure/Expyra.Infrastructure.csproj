@@ -12,6 +12,14 @@
   <ItemGroup>
     <EmbeddedResource Include="..\..\..\..\docs\languages.json"
                       LogicalName="Expyra.Infrastructure.Seed.languages.json" />
+    <EmbeddedResource Include="..\..\..\..\docs\countries.json"
+                      LogicalName="Expyra.Infrastructure.Seed.countries.json" />
+    <EmbeddedResource Include="..\..\..\..\docs\cities.json"
+                      LogicalName="Expyra.Infrastructure.Seed.cities.json" />
+    <EmbeddedResource Include="..\..\..\..\docs\currencies.json"
+                      LogicalName="Expyra.Infrastructure.Seed.currencies.json" />
+    <EmbeddedResource Include="..\..\..\..\docs\categories.json"
+                      LogicalName="Expyra.Infrastructure.Seed.categories.json" />
   </ItemGroup>
 
   <ItemGroup>
