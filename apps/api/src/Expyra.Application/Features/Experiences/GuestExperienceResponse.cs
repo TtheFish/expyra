@@ -81,7 +81,20 @@ public sealed record GuestExperienceDetailResponse(
     IReadOnlyList<string> Tags,
     GuestExperienceDetailTextResponse Text,
     IReadOnlyList<GuestExperienceImageResponse> Images,
+    GuestExperienceHostResponse Host,
     DateTimeOffset PublishedAtUtc);
+
+/// <summary>
+/// İlanı yazan kişi. <b>Kimlik (uuid) ve e-posta YOK</b>: misafirin ihtiyacı olan
+/// tek şey kime güveneceğini görmek. Host profili kendi sayfasını hak ediyor ve o
+/// gün bir tanıtıcı eklenir; bugün eklenen bir alan kullanılmayan bir sözleşme
+/// parçası olurdu (yanıtta uuid bulunmaması kararıyla aynı çizgi).
+/// </summary>
+/// <param name="DisplayName">
+/// Host adını hiç yazmadıysa <c>null</c> — arayüz genel bir ada düşüyor. Uydurma
+/// bir ad ("Host") sunucudan gönderilseydi çeviri sunucuya sızardı (docs/I18N.md §1).
+/// </param>
+public sealed record GuestExperienceHostResponse(string? DisplayName, Uri? AvatarUrl);
 
 /// <param name="Url">
 /// Okuma adresi, her yanıtta yeniden üretiliyor (<c>IObjectStorage.PublicUrl</c>).

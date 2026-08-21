@@ -149,6 +149,9 @@ export const en = {
     'The host runs the experience in these languages. The language the listing is written in is a separate thing.',
   'experience.detail.spoken.none': 'The host hasn’t listed the languages they speak yet.',
   'experience.detail.tags.heading': 'Tags',
+  'experience.detail.gallery.heading': 'Gallery',
+  'experience.detail.host.heading': 'Hosted by',
+  'experience.detail.host.anonymous': 'An Expyra host',
   'experience.detail.booking.title': 'No dates or price yet',
   'experience.detail.booking.body':
     'Once this experience has a calendar and a price, booking opens right here.',
@@ -233,6 +236,12 @@ export const en = {
   'account.email.label': 'Your email address',
   'account.email.note': 'Email addresses can’t be changed yet.',
 
+  'account.avatar.label': 'Profile photo',
+  'account.avatar.help': 'JPEG, PNG or WebP · at least 800×600 pixels · up to 10 MB',
+  'account.avatar.add': 'Add a photo',
+  'account.avatar.change': 'Change',
+  'account.avatar.remove': 'Remove',
+  'account.avatar.uploading': 'Uploading…',
   'account.name.label': 'Your display name',
   'account.name.help': 'This is the name other people see. You can leave it empty.',
   'account.name.placeholder': 'e.g. Alex M.',
@@ -421,6 +430,7 @@ export const en = {
   'host.experience.missing.city': 'a city',
   'host.experience.missing.category': 'a category',
   'host.experience.missing.capacity': 'a capacity',
+  'host.experience.missing.cover': 'a cover photo',
   'host.experience.missing.unknown': 'an unfinished field',
 
   'host.experience.publish': 'Publish',
@@ -430,6 +440,31 @@ export const en = {
   'host.experience.archive': 'Archive',
   'host.experience.archiving': 'Archiving…',
   'host.experience.archived': 'Listing archived.',
+
+  // --- Media (Block 6) ----------------------------------------------------
+  'host.media.heading': 'Photos',
+  'host.media.hint': 'JPEG, PNG or WebP · at least 800×600 pixels · up to 10 MB · 12 photos max',
+  'host.media.add': 'Add photos',
+  'host.media.drop': 'Drop files here',
+  'host.media.uploading': 'Uploading…',
+  'host.media.empty': 'No photos yet. The first one you upload becomes the cover.',
+  'host.media.cover': 'Cover',
+  'host.media.makeCover': 'Make cover',
+  'host.media.delete': 'Delete',
+  'host.media.moveEarlier': 'Move earlier',
+  'host.media.moveLater': 'Move later',
+  'host.media.position': 'Photo {n}',
+  'host.media.error.rejected': "That photo wasn't accepted.",
+  'host.media.error.unsupported': 'Only JPEG, PNG and WebP can be uploaded.',
+  'host.media.error.notUploaded': "The upload didn't finish. Try again.",
+  'host.media.error.notAnImage': "That file isn't an image.",
+  'host.media.error.mismatch': "The file's contents don't match its extension.",
+  'host.media.error.tooSmall': 'Photos must be at least 800×600 pixels.',
+  'host.media.error.tooLarge': 'Files can be at most 10 MB.',
+  'host.media.error.limit': 'A listing can have at most 12 photos.',
+  'host.media.error.lastOfPublished':
+    "You can't delete the last photo of a live listing. Add another photo first, or archive the listing.",
+
   'host.experience.status.publishedNote':
     'Your listing shows up in search. Archiving hides it without deleting it — you can publish it again whenever you want.',
   'host.experience.status.privateNote': 'Until you publish it, nobody but you can see this listing.',

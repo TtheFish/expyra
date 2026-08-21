@@ -119,6 +119,12 @@ uygulama açılışında migrate eden kod yok, yalnızca bekleyen migration vars
 | `login_code` | Tek kullanımlık giriş kodları | Kod **hash'li**; satır kullanıcıdan önce doğabilir |
 | `refresh_token` | Oturum aileleri | Token hash'li; rotasyon + yeniden kullanım tespiti |
 | `external_login` | Google/Apple bağı | Tablo hazır, kodu Faz 1.9'da |
+| `country`, `city`, `city_alias` | Yer kayıt defteri | Arama `city_alias` üzerinden; ad **yerelleştirilmiş değil** |
+| `currency`, `category` | Para birimi ve kategori | Kategori yalnız slug tutar; adı arayüz sözlüğünde |
+| `experience` | İlanlar | **Başlık/açıklama YOK** — onlar çeviri tablosunda (docs/I18N.md §2) |
+| `experience_translation` | İlan metinleri, dil başına bir satır | Bileşik anahtar (`experience_id`, `language`) |
+| `experience_spoken_language`, `experience_tag` | Konuşulan diller, serbest etiketler | İkisi ayrı kavram |
+| `experience_media` | İlan görselleri | **Bayt tutmaz**: depo anahtarı + ölçü. Baytlar dev'de `.object-store`'da, üretimde S3/R2 |
 
 Dikkat çeken index'ler:
 
@@ -129,6 +135,21 @@ Dikkat çeken index'ler:
 - `ix_refresh_token_family` — kısmi (`WHERE revoked_at_utc IS NULL`): aile bazlı
   toplu iptal için.
 - `app_user.roles` üzerinde index **yok** — o sütunda filtreleyen sorgu yok.
+- `ux_experience_media_cover` — kısmi (`WHERE is_cover`): "ilan başına en fazla 1
+  kapak" değişmezini kod disiplinine değil **veritabanına** bağlıyor.
+- `ix_experience_media_pending` — kısmi (`WHERE status='Pending'`): yükleme izni
+  alınıp tamamlanmamış satırları taramadan bulmak için. Temizliği yapan zamanlayıcı
+  Blok 10'da geliyor; o gelene kadar elle.
+
+### Dev nesne deposu
+
+Görseller geliştirmede diske düşüyor: `.object-store/` (yol `Storage:Directory` ile
+değişir, mutlak hâli açılışta loglanır). Klasör `.gitignore`'da — içinde
+kullanıcıların yüklediği gerçek fotoğraflar var.
+
+Veritabanı **adres değil anahtar** tutuyor (`experiences/{id}/{id}.jpg`); herkese açık
+adres her yanıtta `IObjectStorage.PublicUrl` ile üretiliyor. Böylece CDN alan adı
+değiştiğinde geçmiş satırların hiçbiri migration istemiyor.
 
 ### Migration ekleme
 

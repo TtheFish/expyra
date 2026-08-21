@@ -24,6 +24,7 @@ import {
   TITLE_FIELD,
 } from '@/features/host/experience-fields'
 import { ExperienceForm } from '@/features/host/experience-forms'
+import { MediaUploader } from '@/features/host/media-uploader'
 import {
   HostExperienceAccessError,
   categoryMessageKey,
@@ -283,8 +284,40 @@ export default async function EditExperiencePage({
             </ExperienceForm>
           </Section>
 
+          {/* Yayından ÖNCE: kapak görseli bir yayın koşulu (PLAN Blok 6 kabul
+              kriteri 3) ve sihirbazın sırası koşulların sırasını izliyor. */}
           <Section
             index={6}
+            title={t('host.media.heading')}
+            help={t('host.media.hint')}
+          >
+            <MediaUploader
+              experienceId={experience.id}
+              language={lang}
+              media={experience.media}
+              /* Metinler SUNUCUDA çözülüp iniyor: sözlük `server-only` ve
+                 tarayıcıya yalnız bu ilanın ihtiyacı olan dizgeler gidiyor
+                 (experience-forms.tsx ile aynı karar). */
+              labels={{
+                hint: t('host.media.hint'),
+                add: t('host.media.add'),
+                drop: t('host.media.drop'),
+                uploading: t('host.media.uploading'),
+                empty: t('host.media.empty'),
+                cover: t('host.media.cover'),
+                makeCover: t('host.media.makeCover'),
+                delete: t('host.media.delete'),
+                moveEarlier: t('host.media.moveEarlier'),
+                moveLater: t('host.media.moveLater'),
+                positions: experience.media.map((_, index) => t('host.media.position', { n: index + 1 })),
+                errorRejected: t('host.media.error.rejected'),
+                errorTooLarge: t('host.media.error.tooLarge'),
+              }}
+            />
+          </Section>
+
+          <Section
+            index={7}
             title={t('host.experience.section.status')}
             help={t('host.experience.section.statusHelp')}
           >

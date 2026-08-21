@@ -88,7 +88,11 @@ internal sealed class GetExperienceBySlugQueryHandler(IAppDbContext dbContext, I
             .LoadImagesAsync(dbContext, storage, row.Id, cancellationToken)
             .ConfigureAwait(false);
 
+        var host = await GuestExperienceQuery
+            .LoadHostAsync(dbContext, storage, row.HostId, cancellationToken)
+            .ConfigureAwait(false);
+
         return GuestExperienceQuery.ToDetail(
-            row, texts[row.Id], spokenLanguages, tags, images, language);
+            row, texts[row.Id], spokenLanguages, tags, images, host, language);
     }
 }

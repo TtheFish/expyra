@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Expyra.Application.Common.Exceptions;
 using Expyra.Application.Common.Interfaces;
+using Expyra.Application.Features.Media;
 using Expyra.Domain.Experiences;
 
 namespace Expyra.Application.Features.Experiences.Commands.DeleteMedia;
@@ -69,7 +70,8 @@ internal sealed class DeleteMediaCommandHandler(
             && remaining.Count == 0)
         {
             throw new ConflictException(
-                "Yayındaki bir deneyimin son görseli silinemez. Önce başka bir görsel ekleyin ya da ilanı arşivleyin.");
+                "Yayındaki bir deneyimin son görseli silinemez. Önce başka bir görsel ekleyin ya da ilanı arşivleyin.",
+                MediaConflict.LastOfPublished);
         }
 
         dbContext.ExperienceMedia.Remove(target);

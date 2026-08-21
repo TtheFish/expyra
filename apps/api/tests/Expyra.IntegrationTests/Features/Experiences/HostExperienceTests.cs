@@ -578,7 +578,7 @@ public sealed class HostExperienceTests(ApiFactory factory)
         return document.RootElement.TryGetProperty("title", out var title) ? title.GetString() : null;
     }
 
-    private async Task<HostExperienceResponse> CreateDraftAsync(
+    private static async Task<HostExperienceResponse> CreateDraftAsync(
         HttpClient client, string token, string originalLanguage = "tr")
     {
         var response = await PostAsync(client, token, BasePath, new { originalLanguage });

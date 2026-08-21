@@ -53,7 +53,7 @@
 | Arayüzü kendi dilinde görür | aynı | ✅ TAMAM | 3 |
 | Şehir seçer (gerçek şehir) | Şehir/kategori seçer | ✅ TAMAM | 4 |
 | Deneyimi listede görür + **detayını açar** | Deneyim taslağı yazar, yayınlar | ✅ TAMAM | 5 |
-| Görselleri görür | Görsel yükler, kapak seçer | ❌ yok | **6** |
+| Görselleri görür | Görsel yükler, kapak seçer | ✅ TAMAM | 6 |
 | Tarih-saat seçer, fiyatı kendi para biriminde görür | Takvim + fiyat girer | ❌ yok | **7** |
 | Arar, filtreler, boş sonuçta yönlendirilir | (tek taraflı) | ⚠️ prototip | **8** |
 | Rezervasyon yapar | Gelen rezervasyonu görür/onaylar | ❌ yok | **9** |

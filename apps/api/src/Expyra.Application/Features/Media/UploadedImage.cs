@@ -35,14 +35,14 @@ internal static class UploadedImage
         // kabul eden bir gün ayrışırsa diye duruyor.
         if (stored.ByteSize > MediaRules.MaxByteSize)
         {
-            return UploadedImageResult.Invalid("byte-size", "Yüklenen dosya izin verilen boyutu aşıyor.");
+            return UploadedImageResult.Invalid(MediaConflict.TooLarge, "Yüklenen dosya izin verilen boyutu aşıyor.");
         }
 
         var info = await ProbeAsync(storage, storageKey, cancellationToken).ConfigureAwait(false);
 
         if (info is null)
         {
-            return UploadedImageResult.Invalid("not-an-image", "Yüklenen dosya geçerli bir görsel değil.");
+            return UploadedImageResult.Invalid(MediaConflict.NotAnImage, "Yüklenen dosya geçerli bir görsel değil.");
         }
 
         // Beyan ile gerçeğin AYRIŞMASI reddediliyor. Yalnız "görsel mi" diye bakılsaydı,
@@ -51,14 +51,14 @@ internal static class UploadedImage
         if (!string.Equals(info.ContentType, declaredContentType, StringComparison.Ordinal))
         {
             return UploadedImageResult.Invalid(
-                "content-type-mismatch",
+                MediaConflict.ContentTypeMismatch,
                 $"Dosya {declaredContentType} olarak bildirildi ama içeriği {info.ContentType}.");
         }
 
         if (!MediaRules.IsAcceptableSize(info))
         {
             return UploadedImageResult.Invalid(
-                "too-small",
+                MediaConflict.TooSmall,
                 $"Görsel en az {MediaRules.MinWidth}×{MediaRules.MinHeight} piksel olmalı; "
                 + $"yüklenen {info.Width}×{info.Height}.");
         }
@@ -105,6 +105,27 @@ internal static class UploadedImage
     }
 }
 
+/// <summary>
+/// Medya çakışmalarının kararlı kodları. Sabit string, enum değil: değer istemciye
+/// gidiyor ve arayüz sözlüğünde bir anahtara eşleniyor — enum yeniden adlandırılsa
+/// derleyici sunucuyu düzeltir ama dolaşımdaki istemciyi düzeltmez
+/// (<c>ExperiencePublishRequirement</c> ile aynı gerekçe).
+/// </summary>
+internal static class MediaConflict
+{
+    internal const string NotUploaded = "media-not-uploaded";
+    internal const string NotAnImage = "media-not-an-image";
+    internal const string ContentTypeMismatch = "media-content-type-mismatch";
+    internal const string TooSmall = "media-too-small";
+    internal const string TooLarge = "media-too-large";
+
+    /// <summary>Deneyim başına görsel tavanı aşıldı.</summary>
+    internal const string LimitReached = "media-limit-reached";
+
+    /// <summary>Yayındaki ilanın son görseli silinemez.</summary>
+    internal const string LastOfPublished = "media-last-of-published";
+}
+
 /// <param name="Discard">
 /// Yüklemenin bir daha kurtarılamayacağı — yani satırın ve nesnenin silinmesi gerektiği.
 /// "Henüz yüklenmemiş" için <c>false</c>: orada bozuk bir şey yok, host yüklemeyi
@@ -121,7 +142,7 @@ internal sealed record UploadedImageResult(
         => new(info, byteSize, null, null, false);
 
     internal static UploadedImageResult NotUploaded()
-        => new(null, 0, "not-uploaded", "Görsel henüz yüklenmemiş.", false);
+        => new(null, 0, MediaConflict.NotUploaded, "Görsel henüz yüklenmemiş.", false);
 
     internal static UploadedImageResult Invalid(string reason, string message)
         => new(null, 0, reason, message, true);

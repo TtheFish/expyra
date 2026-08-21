@@ -51,6 +51,17 @@ dotnet_diagnostic.CA1062.severity = none
 [**/tests/**/*.cs]
 dotnet_diagnostic.CA1707.severity = none
 
+# CA1861: "sabit dizi argümanını static readonly alana taşı". Amacı sıcak yolda
+# tekrarlanan ayırmayı önlemek; test gövdesi bir kez koşuyor. Uymak, değeri
+# kullanıldığı satırdan alıp dosyanın tepesine taşımak demek — testin ne kurduğu
+# çağrı yerinde okunamaz hâle gelirdi (`new { tags = new[] { "Vegan" } }`).
+dotnet_diagnostic.CA1861.severity = none
+
+# CA1711: "tip adı 'Collection' ile bitmesin". Buradaki `ApiCollection` bir
+# koleksiyon TİPİ değil, xUnit'in `[CollectionDefinition]` işaretçisi ve adı o
+# sözleşmenin parçası. Yeniden adlandırmak kuralı değil yalnız okunurluğu bozar.
+dotnet_diagnostic.CA1711.severity = none
+
 # ---------------------------------------------------------------------------
 # EF Core'un ÜRETTİĞİ migration'lar
 # ---------------------------------------------------------------------------

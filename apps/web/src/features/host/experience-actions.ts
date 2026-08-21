@@ -27,14 +27,20 @@ import {
 import {
   HostExperienceAccessError,
   archiveExperience,
+  confirmMedia,
   createExperience,
+  createMediaUpload,
+  deleteMedia,
   fetchHostExperience,
   hostExperiencePath,
   publishExperience,
+  reorderMedia,
   requirementMessageKey,
   setExperienceTranslation,
+  setMediaCover,
   updateExperience,
   type HostExperiencePatch,
+  type MediaUpload,
 } from './experiences-api'
 
 /**
@@ -639,4 +645,172 @@ function readField(formData: FormData, name: string): string | null {
 
   const trimmed = value.trim()
   return trimmed.length > 0 ? trimmed : null
+}
+
+
+// ---------------------------------------------------------------------------
+// Görseller
+//
+// Bu eylemler FORM eylemi DEĞİL: yükleyici bir istemci bileşeni ve onları
+// doğrudan çağırıyor. Sebebi akışın ortasında tarayıcının kendisinin olması —
+// dosyayı depoya PUT eden taraf tarayıcı ve o adım hiçbir sunucudan geçmiyor
+// (PLAN Blok 6 kabul kriteri 1). Bir `<form>` bunu ifade edemezdi.
+//
+// Bu yüzden dönüş tipi de `ExperienceFormState` değil: `at` damgası aynı hatayı
+// yeniden göstermek içindi, burada çağıran her seferinde yeni bir sonuç alıyor.
+// ---------------------------------------------------------------------------
+
+/** Yükleme izni ya da hata — ikisi birden asla. */
+export type MediaUploadResult = { upload: MediaUpload; error: null } | { upload: null; error: string }
+
+export type MediaActionResult = { error: string | null }
+
+/**
+ * İmzalı yükleme adresi ister. Bayt HENÜZ YOK: yalnız tip ve boyut beyan ediliyor
+ * ve ikisi de imzaya giriyor, yani beyandan büyük bir gövde depo tarafından
+ * reddediliyor.
+ */
+export async function requestMediaUploadAction(
+  language: string,
+  experienceId: string,
+  contentType: string,
+  byteSize: number,
+): Promise<MediaUploadResult> {
+  const lang = uiLocaleOf(language)
+  const t = await getTranslator(lang)
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, hostExperiencePath(lang, experienceId)), RedirectType.replace)
+  }
+
+  try {
+    const upload = await createMediaUpload(accessToken, experienceId, { contentType, byteSize })
+    return { upload, error: null }
+  } catch (error) {
+    return { upload: null, error: await mediaFailure(t, lang, experienceId, error) }
+  }
+}
+
+/**
+ * Yüklemeyi doğrular. Asıl kontrol SUNUCUDA ve baytlara bakıyor: "image/png" diye
+ * bildirilmiş bir SVG burada 409 alıyor.
+ */
+export async function confirmMediaAction(
+  language: string,
+  experienceId: string,
+  mediaId: string,
+): Promise<MediaActionResult> {
+  return runMediaAction(language, experienceId, (token) =>
+    confirmMedia(token, experienceId, mediaId))
+}
+
+/** Kapağı bu görsele taşır. Kapağı boşaltan bir eylem YOK — daima tam bir tane var. */
+export async function setMediaCoverAction(
+  language: string,
+  experienceId: string,
+  mediaId: string,
+): Promise<MediaActionResult> {
+  return runMediaAction(language, experienceId, (token) =>
+    setMediaCover(token, experienceId, mediaId))
+}
+
+/** Görseli siler; depodaki nesne de gider. Yayındaki ilanın SON görseli 409. */
+export async function deleteMediaAction(
+  language: string,
+  experienceId: string,
+  mediaId: string,
+): Promise<MediaActionResult> {
+  return runMediaAction(language, experienceId, (token) =>
+    deleteMedia(token, experienceId, mediaId))
+}
+
+/** Sırayı TOPTAN yazar. Kısmi liste 409 — sunucu ile istemcinin sırası ayrışmasın. */
+export async function reorderMediaAction(
+  language: string,
+  experienceId: string,
+  mediaIds: string[],
+): Promise<MediaActionResult> {
+  return runMediaAction(language, experienceId, (token) =>
+    reorderMedia(token, experienceId, mediaIds))
+}
+
+/**
+ * Dört medya eyleminin ortak gövdesi: token al, çağır, sayfayı tazele.
+ *
+ * `revalidatePath` ŞART: yükleyici sunucudan gelen galeriyi çiziyor ve eksik
+ * yayın koşulları rozeti de aynı yanıttan besleniyor. Tazelenmezse host, kapak
+ * yüklediği hâlde "kapak görseli eksik" yazısını görmeye devam ederdi.
+ */
+async function runMediaAction(
+  language: string,
+  experienceId: string,
+  call: (accessToken: string) => Promise<unknown>,
+): Promise<MediaActionResult> {
+  const lang = uiLocaleOf(language)
+  const t = await getTranslator(lang)
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, hostExperiencePath(lang, experienceId)), RedirectType.replace)
+  }
+
+  try {
+    await call(accessToken)
+  } catch (error) {
+    return { error: await mediaFailure(t, lang, experienceId, error) }
+  }
+
+  revalidatePath('/', 'layout')
+
+  return { error: null }
+}
+
+/**
+ * Medya uçlarının hata eşlemesi. Yazma uçlarından AYRI çünkü 409'un anlamı burada
+ * başka: orada "önce arşivle", burada "dosya kabul edilmedi" ya da "son görseli
+ * silemezsin". Aynı cümleyi kullanmak host'a yanlış çözümü söylerdi.
+ *
+ * Eşlenmeyen her şey YENİDEN FIRLATILIYOR (CLAUDE.md #1).
+ */
+async function mediaFailure(
+  t: Translate,
+  lang: UiLocale,
+  experienceId: string,
+  error: unknown,
+): Promise<string> {
+  if (error instanceof HostExperienceAccessError) {
+    redirect(accessHref(lang, error, hostExperiencePath(lang, experienceId)), RedirectType.replace)
+  }
+
+  if (error instanceof ApiError) {
+    // Sunucunun MESAJI kullanılmıyor: Türkçe ve arayüz iki dilde. Dal seçimi
+    // makine-okunur koda göre (`AppException.Code`), metin sözlükten.
+    const byCode = error.code ? MEDIA_ERROR_KEYS[error.code] : undefined
+    if (byCode) {
+      return t(byCode)
+    }
+
+    // Kodu olmayan durumlar. 409 buraya yalnız kod eklenmemiş yeni bir çakışma
+    // eklenirse düşer — genel cümle, sessizce yanlış cümleden iyi.
+    if (error.status === 409) return t('host.media.error.rejected')
+    if (error.status === 404) return t('host.experience.error.notFound')
+    if (error.status === 400) return t('host.media.error.unsupported')
+  }
+
+  throw error
+}
+
+/**
+ * Sunucu kodu → arayüz metni. Kodlar `Expyra.Application.Features.Media.MediaConflict`
+ * sabitleriyle birebir; eşlenmeyen kod genel cümleye düşüyor, gizlenmiyor.
+ */
+const MEDIA_ERROR_KEYS: Record<string, SimpleMessageKey> = {
+  'media-not-uploaded': 'host.media.error.notUploaded',
+  'media-not-an-image': 'host.media.error.notAnImage',
+  'media-content-type-mismatch': 'host.media.error.mismatch',
+  'media-too-small': 'host.media.error.tooSmall',
+  'media-too-large': 'host.media.error.tooLarge',
+  'media-limit-reached': 'host.media.error.limit',
+  'media-last-of-published': 'host.media.error.lastOfPublished',
 }

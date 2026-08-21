@@ -163,7 +163,7 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
         var confirm = await MediaApi.ConfirmAsync(client, token, draft.Id, upload.MediaId);
 
         confirm.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await TitleAsync(confirm)).ShouldContain("image/jpeg");
+        (await TitleAsync(confirm)).ShouldNotBeNull().ShouldContain("image/jpeg");
     }
 
     [Fact]
@@ -180,7 +180,7 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
         var confirm = await MediaApi.ConfirmAsync(client, token, draft.Id, upload.MediaId);
 
         confirm.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await TitleAsync(confirm)).ShouldContain($"{MediaRules.MinWidth}");
+        (await TitleAsync(confirm)).ShouldNotBeNull().ShouldContain($"{MediaRules.MinWidth}");
     }
 
     [Fact]
@@ -405,6 +405,65 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
     }
 
     // -----------------------------------------------------------------------
+    // Misafir tarafı
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task Misafir_KapagiVeGaleriyiGoruyor_HostKartiylaBirlikte()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+
+        // Host'un adı var: kart adı gösterebilsin.
+        await MediaApi.SendAsync(
+            client, HttpMethod.Patch, "/api/users/me", token,
+            new { displayName = "Deniz Kaptan", preferredLanguage = "tr" });
+
+        var draft = await CreateCompleteDraftAsync(client, token, "Koy Turu");
+
+        await MediaApi.UploadAsync(client, token, draft.Id, MediaApi.Png(1600, 1200));
+        var uploaded = await MediaApi.UploadAsync(client, token, draft.Id, MediaApi.Png(1000, 900));
+
+        await MediaApi.SendAsync(client, HttpMethod.Post, $"{BasePath}/{draft.Id}/publish", token);
+
+        var slug = (await ExperienceRowAsync(draft.Id)).Slug;
+
+        // Liste: kart yalnız KAPAĞI taşıyor — galerinin tamamı sayfa başına on kat
+        // veri demek olurdu.
+        var page = await client.GetFromJsonAsync<GuestExperiencePageResponse>(
+            new Uri($"/api/experiences?language=tr&city=tr-izmir", UriKind.Relative), AuthApi.Json);
+
+        var card = page!.Items.Single(x => x.Slug == slug);
+        card.Cover.ShouldNotBeNull();
+        card.Cover.Width.ShouldBe(1600);
+        card.Cover.Height.ShouldBe(1200);
+
+        var detail = await client.GetFromJsonAsync<GuestExperienceDetailResponse>(
+            new Uri($"/api/experiences/{slug}?language=tr", UriKind.Relative), AuthApi.Json);
+
+        // Galeri kapakla BAŞLIYOR: kartta görülen görsel ile detayda ilk görülen aynı.
+        detail!.Images.Count.ShouldBe(2);
+        detail.Images[0].Width.ShouldBe(1600);
+        detail.Images[1].Width.ShouldBe(1000);
+
+        detail.Host.DisplayName.ShouldBe("Deniz Kaptan");
+
+        // Host'un avatarı yok: uydurulmuş bir adres değil null dönüyor, arayüz baş
+        // harfe düşüyor.
+        detail.Host.AvatarUrl.ShouldBeNull();
+
+        // Doğrulanmamış görsel misafire GİTMİYOR: adres alındı, yükleme yapılmadı.
+        await MediaApi.RequestUploadAsync(client, token, draft.Id, byteSize: 1024);
+
+        var again = await client.GetFromJsonAsync<GuestExperienceDetailResponse>(
+            new Uri($"/api/experiences/{slug}?language=tr", UriKind.Relative), AuthApi.Json);
+
+        again!.Images.Count.ShouldBe(2);
+
+        uploaded.Media.Count.ShouldBe(2);
+    }
+
+    // -----------------------------------------------------------------------
     // Sınırlar ve yetki
     // -----------------------------------------------------------------------
 
@@ -484,7 +543,7 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
         return activated!.AccessToken;
     }
 
-    private async Task<HostExperienceResponse> CreateDraftAsync(HttpClient client, string token)
+    private static async Task<HostExperienceResponse> CreateDraftAsync(HttpClient client, string token)
     {
         var response = await MediaApi.SendAsync(
             client, HttpMethod.Post, BasePath, token, new { originalLanguage = "tr" });

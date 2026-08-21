@@ -78,6 +78,7 @@ internal static class GuestExperienceQuery
            orderby experience.PublishedAtUtc descending, experience.Id descending
            select new GuestExperienceRow(
                experience.Id,
+               experience.HostId,
                experience.Slug!,
                experience.OriginalLanguage,
                experience.CategorySlug!,
@@ -242,6 +243,33 @@ internal static class GuestExperienceQuery
     }
 
     /// <summary>
+    /// İlanı yazan kişinin kartı. Ayrı sorgu: ana sorguya join edilseydi liste ucu da
+    /// her satırda host satırını çekerdi ve kart onu hiç göstermiyor.
+    /// </summary>
+    internal static async Task<GuestExperienceHostResponse> LoadHostAsync(
+        IAppDbContext dbContext,
+        IObjectStorage storage,
+        Guid hostId,
+        CancellationToken cancellationToken)
+    {
+        var host = await dbContext.Users
+            .AsNoTracking()
+            .Where(x => x.Id == hostId)
+            .Select(x => new { x.DisplayName, x.AvatarKey })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        // Satır yoksa boş kart: ilan görünür durumdaysa host'u da Active demektir
+        // (Visible sorgusu bunu şart koşuyor), yani buraya düşmek beklenmiyor.
+        // Yine de patlamıyoruz — misafir sayfası bir tutarsızlık yüzünden 500 vermemeli.
+        return host is null
+            ? new GuestExperienceHostResponse(null, null)
+            : new GuestExperienceHostResponse(
+                host.DisplayName,
+                host.AvatarKey is null ? null : storage.PublicUrl(host.AvatarKey));
+    }
+
+    /// <summary>
     /// Tek ilanın galerisi, host'un verdiği sırada. Doğrulanmamış satırlar dışarıda —
     /// misafire yüklenmemiş bir dosyanın adresi gitmemeli.
     /// </summary>
@@ -292,6 +320,7 @@ internal static class GuestExperienceQuery
         IReadOnlyList<string> spokenLanguages,
         IReadOnlyList<string> tags,
         IReadOnlyList<GuestExperienceImageResponse> images,
+        GuestExperienceHostResponse host,
         string? requestedLanguage)
         => new(
             row.Slug,
@@ -308,6 +337,7 @@ internal static class GuestExperienceQuery
                 IsFallback(text.Language, requestedLanguage),
                 text.Source.ToString()),
             images,
+            host,
             row.PublishedAtUtc);
 
     /// <summary>
@@ -326,6 +356,8 @@ internal static class GuestExperienceQuery
 /// </summary>
 internal sealed record GuestExperienceRow(
     Guid Id,
+    /// <summary>Host kartı için. İstemciye GİTMİYOR — yalnız sunucu tarafında kullanılıyor.</summary>
+    Guid HostId,
     string Slug,
     string OriginalLanguage,
     string CategorySlug,

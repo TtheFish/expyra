@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { SiteFooter } from '@/components/brand/site-footer'
@@ -95,13 +96,39 @@ export default async function ExperienceDetail({ params }: { params: PageParams 
       <main className="relative z-10 mx-auto w-full max-w-3xl flex-1 px-4 py-10">
         <article className="glass glass-edge glass-thick overflow-hidden rounded-[var(--radius-glass-xl)]">
           <div className="relative h-56 w-full sm:h-72">
-            {/* Kapak GÖRSELİ Blok 6'da. Bugünkü gradyan kartla AYNI fonksiyondan
-                geliyor — aynı ilan listede ve detayda aynı rengi taşıyor. */}
-            <div
-              className="h-full w-full"
-              style={experienceCoverStyle(experience.slug)}
-              aria-hidden="true"
-            />
+            {experience.images.length > 0 ? (
+              /*
+                Kapak API'de zaten ilk sırada (GuestExperienceQuery.LoadImagesAsync),
+                yani kartta görülen görsel ile burada görülen aynı.
+
+                Bu görsel sayfanın LCP öğesi, o yüzden tembel DEĞİL.
+
+                `priority` KULLANILMIYOR: Next 16'da kaldırılmaya alındı
+                (node_modules/next/dist/docs/.../image.md — "deprecated in favor of
+                preload"). `preload` de doğru araç değil; o, `<head>`'e bir
+                `<link rel=preload>` koyuyor ve geç KEŞFEDİLEN görseller için var.
+                Bu görsel ilk HTML'de zaten duruyor, yani tarayıcı onu görüyor —
+                gereken tek şey sıraya öncelikli girmesi. Doküman da bu durumda
+                `loading="eager"` + `fetchPriority="high"` diyor.
+              */
+              <Image
+                src={experience.images[0].url}
+                alt=""
+                fill
+                loading="eager"
+                fetchPriority="high"
+                sizes="(min-width: 768px) 768px, 100vw"
+                className="object-cover"
+              />
+            ) : (
+              /* Kapaksız eski ilanlar. Gradyan kartla AYNI fonksiyondan geliyor —
+                 aynı ilan listede ve detayda aynı rengi taşıyor. */
+              <div
+                className="h-full w-full"
+                style={experienceCoverStyle(experience.slug)}
+                aria-hidden="true"
+              />
+            )}
 
             {categoryKey && (
               <span className="glass glass-edge absolute bottom-4 left-4 rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs font-medium">
@@ -210,6 +237,73 @@ export default async function ExperienceDetail({ params }: { params: PageParams 
             )}
 
             {/*
+              Host kartı: misafirin "kime güveniyorum" sorusunun cevabı ve VISION §8'in
+              arz tarafı vurgusunun görünen yüzü. Profil sayfası henüz yok, o yüzden
+              kart bir bağlantı DEĞİL — tıklanabilir görünüp hiçbir yere gitmemek,
+              hiç tıklanabilir olmamaktan kötü.
+            */}
+            <Section heading={t('experience.detail.host.heading')}>
+              <div className="flex items-center gap-3">
+                {experience.host.avatarUrl === null ? (
+                  /* Fotoğraf yok: baş harf. Uydurma bir avatar (gravatar, harf
+                     üreteci) göstermek, olmayan bir kişiselleştirmeyi varmış gibi
+                     sunardı. `aria-hidden`: ad hemen yanında zaten yazıyor. */
+                  <span
+                    aria-hidden="true"
+                    className="glass glass-edge flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                  >
+                    {initialOf(experience.host.displayName) ?? '·'}
+                  </span>
+                ) : (
+                  <Image
+                    src={experience.host.avatarUrl}
+                    alt=""
+                    width={44}
+                    height={44}
+                    className="size-11 shrink-0 rounded-full object-cover"
+                  />
+                )}
+
+                <p className="text-sm font-medium">
+                  {experience.host.displayName ?? t('experience.detail.host.anonymous')}
+                </p>
+              </div>
+            </Section>
+
+            {experience.images.length > 1 && (
+              <Section heading={t('experience.detail.gallery.heading')}>
+                {/*
+                  Işık kutusu (lightbox) YOK ve bu bilinçli: küçük resimler tıklanınca
+                  açılan bir katman, klavye tuzağı ve odak yönetimi demek — doğru
+                  yapılmadığında erişilebilirliği bozar, doğru yapmak da bu bloğun işi
+                  değil. Görseller doğrudan okunabilir boyutta çiziliyor.
+
+                  `alt` BOŞ: host'tan alternatif metin ALINMIYOR, dolayısıyla
+                  uyduracağımız her metin ("deneyimden bir kare") ekran okuyucuya
+                  bilgi değil gürültü taşırdı. Açıklama metni ilanı zaten anlatıyor.
+                  Host'tan görsel başına alt metin istemek gerçek bir eksik ve kendi
+                  işini hak ediyor.
+                */}
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {experience.images.slice(1).map((image) => (
+                    <li
+                      key={image.url}
+                      className="relative aspect-[4/3] overflow-hidden rounded-[var(--radius-glass-sm)]"
+                    >
+                      <Image
+                        src={image.url}
+                        alt=""
+                        fill
+                        sizes="(min-width: 640px) 240px, 45vw"
+                        className="object-cover"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+            )}
+
+            {/*
               Rezervasyon Blok 7 (takvim/fiyat) ve Blok 9 (rezervasyon) ile geliyor.
               Sessiz bir boşluk bırakmak, misafire "bu sayfa yarım" dedirtirdi;
               İÇ TERİM de kullanılmıyor ("Blok 7'de açılıyor" kimseye bir şey
@@ -275,4 +369,23 @@ function summarize(description: string | null): string | undefined {
   const cut = text.slice(0, META_DESCRIPTION_LENGTH)
   const lastSpace = cut.lastIndexOf(' ')
   return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`
+}
+
+/**
+ * Adın ilk harfi, BÜYÜTÜLMÜŞ hâliyle. `toLocaleUpperCase` yerine `tr` kültürü
+ * verilmiyor: burada gösterilen host'un adı ve o ad her dilde olabilir — "işçi"
+ * adının baş harfini Türkçe kurallarıyla büyütmek doğru, "istanbul" yazan bir
+ * İngiliz için "İ" üretmek değil. Ada ait bir dil bilgimiz olmadığından
+ * değişmez kültür kullanılıyor.
+ *
+ * Boşlukla başlayan ya da tamamen boş adlar için `null`; çağıran nötr bir
+ * işarete düşüyor.
+ */
+function initialOf(name: string | null): string | null {
+  const trimmed = name?.trim()
+  if (!trimmed) return null
+
+  // Codepoint bazlı: emoji ya da BMP dışı bir harfle başlayan ad, `[0]` ile
+  // yarım bir surrogate üretirdi.
+  return [...trimmed][0]?.toUpperCase() ?? null
 }

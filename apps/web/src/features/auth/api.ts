@@ -38,6 +38,12 @@ export type CurrentUser = {
    * eski access token bitene kadar (15 dk) panelini göremezdi.
    */
   isHost: boolean
+  /**
+   * Profil fotoğrafının okuma adresi; yoksa `null` ve arayüz baş harfe düşüyor.
+   * Adres HER yanıtta yeniden üretiliyor — veritabanında anahtar duruyor, böylece
+   * CDN alan adı değiştiğinde geçmiş satırlar migration istemiyor.
+   */
+  avatarUrl: string | null
 }
 
 /**
@@ -65,14 +71,26 @@ export class ApiError extends Error {
   readonly retryAfterSeconds: number | null
   readonly errors: ProblemErrors | null
 
+  /**
+   * Sunucunun makine-okunur sebep kodu (`media-too-small`), varsa.
+   *
+   * `message` TÜRKÇE ve arayüz iki dilde — bu yüzden ekrana basılmıyor ve dal
+   * seçmek için de kullanılamıyor (cümle düzeltildiği gün sessizce kırılırdı).
+   * Kod o boşluğu dolduruyor: çağıran onu arayüz sözlüğünde bir anahtara eşliyor.
+   * Sunucu tarafı: `AppException.Code`.
+   */
+  readonly code: string | null
+
   constructor(
     status: number,
     message: string,
     retryAfterSeconds: number | null,
     errors: ProblemErrors | null = null,
+    code: string | null = null,
   ) {
     super(message)
     this.name = 'ApiError'
+    this.code = code
     this.status = status
     this.retryAfterSeconds = retryAfterSeconds
     this.errors = errors
@@ -164,6 +182,7 @@ async function problemOf(response: Response): Promise<ApiError> {
   const retryAfterSeconds = parseRetryAfter(response.headers.get('retry-after'))
   let title = ''
   let errors: ProblemErrors | null = null
+  let code: string | null = null
 
   try {
     const payload: unknown = await response.json()
@@ -176,13 +195,20 @@ async function problemOf(response: Response): Promise<ApiError> {
       if ('errors' in payload) {
         errors = validationErrorsOf((payload as { errors: unknown }).errors)
       }
+
+      // ProblemDetails uzantısı (AppException.Code). Yoksa null kalıyor ve çağıran
+      // durum koduna göre genel bir cümleye düşüyor.
+      if ('code' in payload) {
+        const value = (payload as { code: unknown }).code
+        if (typeof value === 'string' && value.length > 0) code = value
+      }
     }
   } catch {
     // Gövde ProblemDetails değil (ör. ters proxy'nin HTML hata sayfası). Hata
     // yutulmuyor: zaten ApiError üretiyoruz, yalnız mesaj durum koduna düşüyor.
   }
 
-  return new ApiError(response.status, title || `API ${response.status}`, retryAfterSeconds, errors)
+  return new ApiError(response.status, title || `API ${response.status}`, retryAfterSeconds, errors, code)
 }
 
 /** Gövdenin şekli garanti değil; beklenmeyen biçim `null` olur, patlamaz. */
@@ -336,4 +362,60 @@ export async function updateProfile(
   }
 
   return (await response.json()) as CurrentUser
+}
+
+/**
+ * İmzalı avatar yükleme adresi. Bayt BU uçtan geçmiyor — tarayıcı dönen adrese
+ * doğrudan PUT ediyor (ilan görselleriyle birebir aynı akış).
+ */
+export async function createAvatarUpload(
+  accessToken: string,
+  file: { contentType: string; byteSize: number },
+): Promise<AvatarUpload> {
+  return (await sendProfile(accessToken, 'POST', '/api/users/me/avatar/upload-url', file)) as AvatarUpload
+}
+
+/** Yüklemeyi doğrular ve fotoğrafı profile bağlar. Güncel profili döner. */
+export async function confirmAvatar(accessToken: string, storageKey: string): Promise<CurrentUser> {
+  return (await sendProfile(accessToken, 'POST', '/api/users/me/avatar/confirm', {
+    storageKey,
+  })) as CurrentUser
+}
+
+/** Fotoğrafı kaldırır. İdempotent: fotoğrafı olmayan kullanıcı için de 200. */
+export async function deleteAvatar(accessToken: string): Promise<CurrentUser> {
+  return (await sendProfile(accessToken, 'DELETE', '/api/users/me/avatar')) as CurrentUser
+}
+
+export type AvatarUpload = {
+  storageKey: string
+  uploadUrl: string
+  method: string
+  /** PUT isteğinde AYNEN gönderilecek başlıklar; imza onların üzerine kurulu. */
+  headers: Record<string, string>
+  expiresAtUtc: string
+}
+
+async function sendProfile(
+  accessToken: string,
+  method: 'POST' | 'DELETE',
+  path: string,
+  body?: unknown,
+): Promise<unknown> {
+  const response = await fetch(`${apiBaseUrl()}${path}`, {
+    method,
+    headers: {
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      Authorization: `Bearer ${accessToken}`,
+      ...(await forwardedHeaders()),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    throw await problemOf(response)
+  }
+
+  return response.json()
 }

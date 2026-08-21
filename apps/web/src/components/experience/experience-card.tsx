@@ -1,7 +1,9 @@
+import Image from 'next/image'
 import type { CSSProperties } from 'react'
 import {
   countryDisplayName,
   experiencePath,
+  type GuestExperienceImage,
   type GuestExperienceSummary,
 } from '@/features/experiences/api'
 import { categoryMessageKey } from '@/features/host/experiences-api'
@@ -50,8 +52,7 @@ export function ExperienceCard({
     */
     <article className="glass glass-edge glass-interactive relative overflow-hidden rounded-[var(--radius-glass-lg)]">
       <div className="relative h-40 w-full">
-        {/* Kapak GÖRSELİ Blok 6'da; bugün slug'dan türeyen sabit bir gradyan. */}
-        <div className="h-full w-full" style={experienceCoverStyle(item.slug)} aria-hidden="true" />
+        <ExperienceCover image={item.cover} slug={item.slug} />
 
         {categoryKey && (
           <span className="glass glass-edge absolute bottom-3 left-3 rounded-[var(--radius-glass-sm)] px-2.5 py-1 text-[0.6875rem] font-medium">
@@ -117,12 +118,41 @@ export function ExperienceCard({
 }
 
 /**
+ * Kapak: gerçek görsel varsa o, yoksa slug'dan türeyen gradyan.
+ *
+ * **`alt` bilerek BOŞ ve `title` da yok.** Görsel kartı süslüyor; hemen
+ * yanındaki başlık aynı ilanı zaten adlandırıyor. `alt="Alaçatı Rüzgar Sörfü"`
+ * yazılsaydı ekran okuyucu aynı adı iki kez okurdu (WCAG H67 — dekoratif görselin
+ * adı boş bırakılır) ve `title` da aynı tekrarı bazı okuyucularda geri getirirdi.
+ *
+ * `sizes` GEREKLİ: `fill` kullanan bir görsel, kaç piksel geniş çizileceğini
+ * kendi başına bilemiyor ve sizes olmadan Next her ekrana en büyük varyantı
+ * gönderiyor. Kart üç sütunlu ızgarada ~1/3 ekran, mobilde tam genişlik.
+ */
+function ExperienceCover({ image, slug }: { image: GuestExperienceImage | null; slug: string }) {
+  if (!image) {
+    // Kapak Blok 6'da yayın koşulu oldu; buraya yalnız ondan ÖNCE yayınlanmış
+    // ilanlar düşüyor. Boş gri kutu yerine ilana özgü, kararlı bir renk.
+    return <div className="h-full w-full" style={experienceCoverStyle(slug)} aria-hidden="true" />
+  }
+
+  return (
+    <Image
+      src={image.url}
+      alt=""
+      fill
+      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+      className="object-cover"
+    />
+  )
+}
+
+/**
  * Kapak yüzeyi. **Kart ve detay sayfası aynı fonksiyonu çağırıyor** — iki yerde iki
  * gradyan formülü, aynı deneyimin iki farklı renkte görünmesi demekti.
  *
  * Renk slug'dan türüyor: aynı ilan her yüklemede aynı rengi alıyor, sunucu ve
- * istemci aynı sonucu üretiyor. Blok 6 gerçek görseli getirdiğinde bu fonksiyonun
- * İKİ çağrı yeri de tek seferde değişiyor.
+ * istemci aynı sonucu üretiyor.
  */
 export function experienceCoverStyle(slug: string): CSSProperties {
   const tone = toneOf(slug)

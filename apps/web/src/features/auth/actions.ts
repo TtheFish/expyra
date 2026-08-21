@@ -6,6 +6,10 @@ import type { SimpleMessageKey, Translate } from '@/features/i18n/dictionary'
 import { UI_LANGUAGE_FIELD, uiLocaleOf } from '@/features/i18n/locale'
 import { getTranslator } from '@/features/i18n/translator'
 import {
+  type AvatarUpload,
+  confirmAvatar,
+  createAvatarUpload,
+  deleteAvatar,
   ApiError,
   DISPLAY_NAME_MAX_LENGTH,
   requestLoginCode,
@@ -293,4 +297,102 @@ function verifyErrorKey(error: unknown): SimpleMessageKey {
   }
 
   throw error
+}
+
+// ---------------------------------------------------------------------------
+// Profil fotoğrafı
+//
+// Akışın ortasında TARAYICI var: imzalı adres → tarayıcı depoya PUT ediyor →
+// onay. Ortadaki adım hiçbir sunucudan geçmiyor, dolayısıyla bir `<form>`
+// eylemiyle ifade edilemiyor (ilan görselleriyle birebir aynı gerekçe,
+// features/host/experience-actions.ts).
+// ---------------------------------------------------------------------------
+
+export type AvatarUploadResult =
+  | { upload: AvatarUpload; error: null }
+  | { upload: null; error: string }
+
+export type AvatarActionResult = { error: string | null }
+
+export async function requestAvatarUploadAction(
+  language: string,
+  contentType: string,
+  byteSize: number,
+): Promise<AvatarUploadResult> {
+  const lang = uiLocaleOf(language)
+  const t = await getTranslator(lang)
+
+  const session = await getSession()
+  if (!session?.accessToken) {
+    return { upload: null, error: t('account.error.signedOut') }
+  }
+
+  try {
+    return { upload: await createAvatarUpload(session.accessToken, { contentType, byteSize }), error: null }
+  } catch (error) {
+    return { upload: null, error: avatarFailure(t, error) }
+  }
+}
+
+export async function confirmAvatarAction(
+  language: string,
+  storageKey: string,
+): Promise<AvatarActionResult> {
+  return runAvatarAction(language, (token) => confirmAvatar(token, storageKey))
+}
+
+export async function deleteAvatarAction(language: string): Promise<AvatarActionResult> {
+  return runAvatarAction(language, (token) => deleteAvatar(token))
+}
+
+async function runAvatarAction(
+  language: string,
+  call: (accessToken: string) => Promise<unknown>,
+): Promise<AvatarActionResult> {
+  const t = await getTranslator(uiLocaleOf(language))
+
+  const session = await getSession()
+  if (!session?.accessToken) {
+    return { error: t('account.error.signedOut') }
+  }
+
+  try {
+    await call(session.accessToken)
+  } catch (error) {
+    return { error: avatarFailure(t, error) }
+  }
+
+  // Avatar üst çubukta da duruyor: yalnız hesap sayfasını tazelemek, kullanıcı
+  // başka bir sayfaya geçtiğinde eski fotoğrafı geri getirirdi (ad ile aynı durum).
+  revalidatePath('/', 'layout')
+
+  return { error: null }
+}
+
+/**
+ * Sunucunun MESAJI kullanılmıyor: Türkçe ve arayüz iki dilde. Dal seçimi
+ * makine-okunur koda göre (`AppException.Code`), metin sözlükten.
+ *
+ * Eşlenmeyen her şey YENİDEN FIRLATILIYOR (CLAUDE.md #1).
+ */
+function avatarFailure(t: Translate, error: unknown): string {
+  if (error instanceof ApiError) {
+    const key = error.code ? AVATAR_ERROR_KEYS[error.code] : undefined
+    if (key) return t(key)
+
+    if (error.status === 401) return t('account.error.signedOut')
+    if (error.status === 400) return t('host.media.error.unsupported')
+    if (error.status === 404 || error.status === 409) return t('host.media.error.rejected')
+  }
+
+  throw error
+}
+
+/** Kodlar `Expyra.Application.Features.Media.MediaConflict` sabitleriyle birebir. */
+const AVATAR_ERROR_KEYS: Record<string, SimpleMessageKey> = {
+  'media-not-uploaded': 'host.media.error.notUploaded',
+  'media-not-an-image': 'host.media.error.notAnImage',
+  'media-content-type-mismatch': 'host.media.error.mismatch',
+  'media-too-small': 'host.media.error.tooSmall',
+  'media-too-large': 'host.media.error.tooLarge',
 }

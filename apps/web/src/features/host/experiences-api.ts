@@ -68,6 +68,12 @@ export type HostExperience = {
   spokenLanguages: string[]
   tags: string[]
   translations: HostExperienceTranslation[]
+  /**
+   * Galeri, host'un verdiği sırada. **Yalnız doğrulanmış görseller**: imzalı adresi
+   * alınmış ama yüklenmemiş satırlar burada çıkmıyor, aksi halde panelde kırık
+   * küçük resim olurdu.
+   */
+  media: HostExperienceMedia[]
   /** Yayına engel olan koşulların kodları; boşsa ilan yayınlanabilir. */
   missingPublishRequirements: string[]
   createdAtUtc: string
@@ -87,6 +93,31 @@ export type HostExperience = {
  *
  * Koleksiyonlarda "boşalt" niyeti **boş dizi** ile anlatılıyor (`[]` ≠ `undefined`).
  */
+export type HostExperienceMedia = {
+  id: string
+  url: string
+  /** GERÇEK piksel ölçüsü — baytlardan okundu, istemcinin beyanı değil. */
+  width: number
+  height: number
+  sortOrder: number
+  /** Kartta ve paylaşım önizlemesinde çıkan görsel. İlan başına en fazla bir tane. */
+  isCover: boolean
+}
+
+/**
+ * İmzalı yükleme izni. `uploadUrl` API'nin değil DEPONUN adresi — tarayıcı oraya
+ * doğrudan PUT ediyor ve yetki `Authorization` başlığında değil imzada.
+ *
+ * `headers` AYNEN gönderilmek zorunda: imza onların üzerine kurulu.
+ */
+export type MediaUpload = {
+  mediaId: string
+  uploadUrl: string
+  method: string
+  headers: Record<string, string>
+  expiresAtUtc: string
+}
+
 export type HostExperiencePatch = {
   cityId?: string
   categorySlug?: string
@@ -139,6 +170,7 @@ const REQUIREMENT_MESSAGE_KEYS: Record<string, SimpleMessageKey> = {
   city: 'host.experience.missing.city',
   category: 'host.experience.missing.category',
   capacity: 'host.experience.missing.capacity',
+  cover: 'host.experience.missing.cover',
 }
 
 export function requirementMessageKey(code: string): SimpleMessageKey {
@@ -247,7 +279,7 @@ function validationErrorsOf(value: unknown): ProblemErrors | null {
 
 type RequestInput = {
   accessToken: string
-  method: 'GET' | 'POST' | 'PATCH' | 'PUT'
+  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
   path: string
   body?: unknown
 }
@@ -464,4 +496,95 @@ export async function fetchCategorySlugs(): Promise<string[]> {
  */
 export function hostExperiencePath(lang: string, id: string): string {
   return `/${lang}/host/experience/${encodeURIComponent(id)}`
+}
+
+// ---------------------------------------------------------------------------
+// Görseller
+//
+// Akış İKİ adımlı ve arada tarayıcı var: (1) sunucu imzalı adres üretiyor,
+// (2) TARAYICI dosyayı doğrudan depoya PUT ediyor, (3) sunucu onaylıyor.
+//
+// Ortadaki adım bu dosyadan geçMİYOR ve geçemez: bayt Next sunucusuna uğrasaydı
+// PLAN Blok 6 kabul kriteri 1 ("API bayt taşımaz") BFF katmanında delinirdi —
+// dosya yine bir sunucudan geçmiş olurdu, sadece başka bir sunucudan.
+// ---------------------------------------------------------------------------
+
+/** İmzalı yükleme adresi ister. Bayt henüz yok; yalnız tip ve boyut beyan ediliyor. */
+export async function createMediaUpload(
+  accessToken: string,
+  id: string,
+  file: { contentType: string; byteSize: number },
+): Promise<MediaUpload> {
+  const response = await send({
+    accessToken,
+    method: 'POST',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/media/upload-url`,
+    body: file,
+  })
+
+  return (await response.json()) as MediaUpload
+}
+
+/**
+ * Yüklemeyi doğrular ve görseli yayına açar. Sunucu burada BAYTLARA bakıyor —
+ * "image/png" diye bildirilmiş bir SVG bu adımda 409 alıyor.
+ */
+export async function confirmMedia(
+  accessToken: string,
+  id: string,
+  mediaId: string,
+): Promise<HostExperience> {
+  const response = await send({
+    accessToken,
+    method: 'POST',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/media/${encodeURIComponent(mediaId)}/confirm`,
+  })
+
+  return (await response.json()) as HostExperience
+}
+
+/** Sırayı TOPTAN yazar: gelen dizinin sırası yeni sıra. Eksik kimlik 409. */
+export async function reorderMedia(
+  accessToken: string,
+  id: string,
+  mediaIds: string[],
+): Promise<HostExperience> {
+  const response = await send({
+    accessToken,
+    method: 'PUT',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/media/order`,
+    body: { mediaIds },
+  })
+
+  return (await response.json()) as HostExperience
+}
+
+/** Kapağı bu görsele taşır. Kapağı BOŞALTAN bir uç yok — daima tam bir tane var. */
+export async function setMediaCover(
+  accessToken: string,
+  id: string,
+  mediaId: string,
+): Promise<HostExperience> {
+  const response = await send({
+    accessToken,
+    method: 'PUT',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/media/${encodeURIComponent(mediaId)}/cover`,
+  })
+
+  return (await response.json()) as HostExperience
+}
+
+/** Görseli siler; depodaki nesne de gider. Yayındaki ilanın SON görseli 409. */
+export async function deleteMedia(
+  accessToken: string,
+  id: string,
+  mediaId: string,
+): Promise<HostExperience> {
+  const response = await send({
+    accessToken,
+    method: 'DELETE',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/media/${encodeURIComponent(mediaId)}`,
+  })
+
+  return (await response.json()) as HostExperience
 }

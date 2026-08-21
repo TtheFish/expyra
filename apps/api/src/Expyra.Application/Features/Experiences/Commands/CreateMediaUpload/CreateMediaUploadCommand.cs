@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Expyra.Application.Common.Exceptions;
 using Expyra.Application.Common.Interfaces;
+using Expyra.Application.Features.Media;
 using Expyra.Domain.Experiences;
 using Expyra.Domain.Media;
 
@@ -82,7 +83,8 @@ internal sealed class CreateMediaUploadCommandHandler(
         if (existing >= MediaRules.MaxPerExperience)
         {
             throw new ConflictException(
-                $"Bir deneyimde en fazla {MediaRules.MaxPerExperience} görsel olabilir.");
+                $"Bir deneyimde en fazla {MediaRules.MaxPerExperience} görsel olabilir.",
+                MediaConflict.LimitReached);
         }
 
         var mediaId = Guid.CreateVersion7();

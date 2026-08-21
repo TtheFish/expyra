@@ -295,6 +295,9 @@ export const tr = {
     'Host deneyimi bu dillerde anlatıyor. İlan metninin yazıldığı dil ayrı bir şey.',
   'experience.detail.spoken.none': 'Host konuştuğu dilleri henüz yazmadı.',
   'experience.detail.tags.heading': 'Etiketler',
+  'experience.detail.gallery.heading': 'Galeri',
+  'experience.detail.host.heading': 'Bu deneyimi düzenleyen',
+  'experience.detail.host.anonymous': "Expyra host'u",
   /**
    * Takvim Blok 7, rezervasyon Blok 9. Sessiz bir boşluk "bu sayfa yarım"
    * dedirtirdi; iç terim de kullanılmıyor (yazım kuralı 4).
@@ -398,6 +401,12 @@ export const tr = {
   // Alanı "düzenlenebilir gibi" göstermek yerine neden olmadığını yazıyoruz.
   'account.email.note': 'E-posta adresi şimdilik değiştirilemiyor.',
 
+  'account.avatar.label': 'Profil fotoğrafı',
+  'account.avatar.help': 'JPEG, PNG veya WebP · en az 800×600 piksel · en fazla 10 MB',
+  'account.avatar.add': 'Fotoğraf ekle',
+  'account.avatar.change': 'Değiştir',
+  'account.avatar.remove': 'Kaldır',
+  'account.avatar.uploading': 'Yükleniyor…',
   'account.name.label': 'Görünen adın',
   'account.name.help': 'Diğer kullanıcılar seni bu adla görür. Boş bırakabilirsin.',
   'account.name.placeholder': 'Örn. Deniz K.',
@@ -637,6 +646,7 @@ export const tr = {
   'host.experience.missing.city': 'şehir',
   'host.experience.missing.category': 'kategori',
   'host.experience.missing.capacity': 'kapasite',
+  'host.experience.missing.cover': 'kapak görseli',
   /** Sunucu tanımadığımız bir koşul eklerse: gizlemiyoruz, "bir şey daha var" diyoruz. */
   'host.experience.missing.unknown': 'tamamlanmamış bir alan',
 
@@ -647,6 +657,34 @@ export const tr = {
   'host.experience.archive': 'Arşivle',
   'host.experience.archiving': 'Arşivleniyor…',
   'host.experience.archived': 'İlan arşivlendi.',
+
+  // --- Görseller (Blok 6) -------------------------------------------------
+  //
+  // Hata metinleri SUNUCUDAN gelmiyor: API mesajları Türkçe ve arayüz iki dilde.
+  // Sunucu makine-okunur bir kod veriyor (AppException.Code), cümleyi burası yazıyor.
+  'host.media.heading': 'Görseller',
+  'host.media.hint': 'JPEG, PNG veya WebP · en az 800×600 piksel · en fazla 10 MB · 12 görsele kadar',
+  'host.media.add': 'Görsel ekle',
+  'host.media.drop': 'Dosyaları buraya sürükleyin',
+  'host.media.uploading': 'Yükleniyor…',
+  'host.media.empty': 'Henüz görsel yok. İlk yüklediğin görsel kapak olur.',
+  'host.media.cover': 'Kapak',
+  'host.media.makeCover': 'Kapak yap',
+  'host.media.delete': 'Sil',
+  'host.media.moveEarlier': 'Öne al',
+  'host.media.moveLater': 'Geri al',
+  'host.media.position': '{n}. görsel',
+  'host.media.error.rejected': 'Görsel kabul edilmedi.',
+  'host.media.error.unsupported': 'Yalnız JPEG, PNG ve WebP yükleyebilirsin.',
+  'host.media.error.notUploaded': 'Yükleme tamamlanmadı. Tekrar dene.',
+  'host.media.error.notAnImage': 'Bu dosya bir görsel değil.',
+  'host.media.error.mismatch': 'Dosyanın içeriği uzantısıyla uyuşmuyor.',
+  'host.media.error.tooSmall': 'Görsel en az 800×600 piksel olmalı.',
+  'host.media.error.tooLarge': 'Dosya en fazla 10 MB olabilir.',
+  'host.media.error.limit': 'Bir ilanda en fazla 12 görsel olabilir.',
+  'host.media.error.lastOfPublished':
+    'Yayındaki bir ilanın son görseli silinemez. Önce başka bir görsel ekle ya da ilanı arşivle.',
+
   'host.experience.status.publishedNote':
     'İlanın aramada çıkıyor. Arşivlersen görünmez olur, silinmez — istediğin zaman geri yayınlarsın.',
   'host.experience.status.privateNote': 'Yayınlanana kadar bu ilanı senden başkası görmüyor.',

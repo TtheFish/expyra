@@ -467,13 +467,13 @@ public sealed class GuestExperienceTests(ApiFactory factory)
         leanCount.ShouldBeGreaterThan(0);
 
         // Detay sayfası TEK çağrıyla doluyor ve sunucu tarafındaki sorgu sayısı içerik
-        // miktarıyla büyümüyor: ilan + konuşulan diller + etiketler + metin + galeri.
-        // Üç görselli ilan da bir görselli ilan da aynı sayıda sorgu koşuyor.
+        // miktarıyla büyümüyor: ilan + konuşulan diller + etiketler + metin + galeri
+        // + host kartı. Üç görselli ilan da bir görselli ilan da aynı sayıda sorgu koşuyor.
         richCount.ShouldBe(leanCount);
 
-        // Tavan Blok 6'da 4'ten 5'e çıktı (galeri sorgusu). Asıl korunan şey bu sayı
-        // değil, üstteki eşitlik: içerik büyüdükçe sorgu sayısı SABİT kalıyor.
-        leanCount.ShouldBeLessThanOrEqualTo(5);
+        // Tavan Blok 6'da 4'ten 6'ya çıktı (galeri ve host sorguları). Asıl korunan şey
+        // bu sayı değil, üstteki eşitlik: içerik büyüdükçe sorgu sayısı SABİT kalıyor.
+        leanCount.ShouldBeLessThanOrEqualTo(6);
     }
 
     // -----------------------------------------------------------------------
@@ -562,7 +562,7 @@ public sealed class GuestExperienceTests(ApiFactory factory)
         return user.Id;
     });
 
-    private Task SetUserStatusAsync(Guid userId, UserStatus status) => factory.QueryAsync(async db =>
+    private Task<bool> SetUserStatusAsync(Guid userId, UserStatus status) => factory.QueryAsync(async db =>
     {
         var user = await db.Users.SingleAsync(x => x.Id == userId);
         user.Status = status;
@@ -571,7 +571,7 @@ public sealed class GuestExperienceTests(ApiFactory factory)
         return true;
     });
 
-    private Task DeleteExperienceAsync(string slug) => factory.QueryAsync(async db =>
+    private Task<bool> DeleteExperienceAsync(string slug) => factory.QueryAsync(async db =>
     {
         // Çeviri/dil/etiket satırları FK cascade ile gidiyor.
         var experience = await db.Experiences.SingleAsync(x => x.Slug == slug);

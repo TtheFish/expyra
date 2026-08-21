@@ -77,7 +77,25 @@ export type GuestExperienceSummary = {
   durationMinutes: number
   capacity: number
   text: GuestExperienceText
+  /**
+   * Kart görseli. **null olabilir ve öyle kalmalı**: kapak Blok 6'da yayın koşulu
+   * oldu ama ondan ÖNCE yayınlanmış ilanlar kapaksız duruyor. Kart o durumda
+   * gradyan yer tutucuya düşüyor — hiç çizmemek yerine.
+   */
+  cover: GuestExperienceImage | null
   publishedAtUtc: string
+}
+
+/**
+ * `GuestExperienceImageResponse` ile birebir.
+ *
+ * `width`/`height` GERÇEK piksel ölçüsü ve `next/image` için zorunlu: en-boy
+ * oranını çizimden önce bilmezse görsel yüklendiğinde sayfa zıplar (CLS).
+ */
+export type GuestExperienceImage = {
+  url: string
+  width: number
+  height: number
 }
 
 /**
@@ -90,6 +108,22 @@ export type GuestExperienceDetail = Omit<GuestExperienceSummary, 'text'> & {
   /** Host'un yazdığı serbest etiketler, yazdığı hâliyle. Kategori değil. */
   tags: string[]
   text: GuestExperienceDetailText
+  /** Galeri, kapak ilk sırada. Kapaksız eski ilanlarda boş. */
+  images: GuestExperienceImage[]
+  host: GuestExperienceHost
+}
+
+/**
+ * İlanı yazan kişi. Kimlik ve e-posta YOK — misafirin ihtiyacı olan tek şey kime
+ * güveneceğini görmek.
+ *
+ * İkisi de `null` olabilir: adını yazmamış ve fotoğraf yüklememiş bir host tamamen
+ * geçerli. Arayüz o durumda genel bir ada ve baş harfe düşüyor; uydurma bir ad
+ * SUNUCUDAN gelmiyor, çünkü o metin çeviri gerektirir (docs/I18N.md §1).
+ */
+export type GuestExperienceHost = {
+  displayName: string | null
+  avatarUrl: string | null
 }
 
 export type GuestExperiencePage = {

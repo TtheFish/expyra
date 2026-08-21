@@ -19,7 +19,59 @@ type PageId = keyof typeof routeMap.canonical
 const pages = Object.keys(routeMap.canonical) as PageId[]
 const languages = Object.keys(routeMap.localized)
 
+/**
+ * `next/image`'in yükleyebileceği uzak kaynaklar. Açık liste olmadan görsel hiç
+ * çizilmiyor — ve bu bir güvenlik önlemi: liste açık bırakılsaydı optimizasyon
+ * ucu herhangi bir adresi indiren bir proxy'ye dönerdi (SSRF).
+ *
+ * Adres yapılandırmadan geliyor çünkü geliştirmede API'nin kendisi, üretimde CDN
+ * alan adı. Değişken tanımsızsa derleme KIRILIYOR: sessizce boş bir liste, tüm
+ * görsellerin çizilmediği ama hata da vermeyen bir üretim dağıtımı demek olurdu.
+ */
+function mediaPattern() {
+  const raw = process.env.EXPYRA_MEDIA_URL?.trim() || process.env.EXPYRA_API_URL?.trim()
+
+  if (!raw) {
+    throw new Error(
+      'EXPYRA_MEDIA_URL (ya da EXPYRA_API_URL) tanımlı değil; görseller çizilemez. ' +
+        'apps/web/.env.example dosyasına bak.',
+    )
+  }
+
+  const url = new URL(raw)
+  const prefix = url.pathname.replace(/\/+$/, '')
+
+  return {
+    protocol: url.protocol.replace(':', '') as 'http' | 'https',
+    hostname: url.hostname,
+    port: url.port,
+    // Yol ön eki adresin KENDİSİNDEN geliyor. Geliştirmede görseller API ile aynı
+    // alan adında duruyor (`/api/dev/objects/...`) ve ön ek olmasaydı optimizasyon
+    // ucu üzerinden API'nin diğer uçları da istenebilirdi. Üretimde adres bir CDN
+    // kökü olacak, ön ek boş kalacak ve `/**` doğru cevap olacak.
+    pathname: `${prefix}/**`,
+  }
+}
+
 const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [mediaPattern()],
+
+    /*
+      Next 16 varsayılan olarak ÖZEL IP'lerden görsel optimize etmiyor: optimizasyon
+      ucu, adres verilen her yeri indiren bir proxy olduğu için iç ağa erişim
+      sızdırabilir (SSRF). Geliştirmede depo `localhost:5205` — yani tam olarak o
+      yasağın kapsamında ve bayrak olmadan hiçbir görsel çizilmiyor.
+
+      `development` KAPISI ŞART: üretimde medya herkese açık bir CDN'de duracak,
+      dolayısıyla bayrağa hiç gerek yok ve açık bırakmak korumayı sebepsiz
+      kaldırmak olurdu. Yapılandırma bayrağıyla değil ortamla kapatılıyor —
+      bayrak yanlış bir ortam değişkeniyle üretime sızabilir (API tarafındaki
+      `AddDevelopmentObjectStorage` ile aynı gerekçe).
+    */
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
+  },
+
   async rewrites() {
     return pages.flatMap((page) =>
       languages

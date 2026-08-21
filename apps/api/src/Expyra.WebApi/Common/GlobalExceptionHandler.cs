@@ -69,6 +69,12 @@ internal sealed class GlobalExceptionHandler(
         {
             Status = app.StatusCode,
             Title = app.Message,
+
+            // Kod VARSA yanıta giriyor. Title Türkçe ve arayüz iki dilde: istemci
+            // metne bakarak dal seçemez (bkz. AppException.Code).
+            Extensions = app.Code is null
+                ? new Dictionary<string, object?>(StringComparer.Ordinal)
+                : new Dictionary<string, object?>(StringComparer.Ordinal) { ["code"] = app.Code },
         },
 
         UnauthorizedAccessException => new ProblemDetails

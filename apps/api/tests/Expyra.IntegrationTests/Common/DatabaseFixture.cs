@@ -82,7 +82,7 @@ public sealed class DatabaseFixture : IAsyncLifetime
     /// <c>city_alias</c>, <c>currency</c>, <c>category</c>) DOKUNULMUYOR: bunlar referans
     /// veri, teste ait değil. Silinirse dil çözümü ve şehir araması yapan her uç bozulur.</para>
     /// </summary>
-    private static Task ResetDataAsync(AppDbContext db)
+    private static Task<int> ResetDataAsync(AppDbContext db)
         // refresh_token ve external_login app_user'a FK ile bağlı; CASCADE ikisini de
         // alır. Tablo adları EF modelinden değil elle yazılıyor çünkü TRUNCATE ham SQL
         // ister — ad değişirse test derlenmeye devam eder ama burada patlar, sessizce

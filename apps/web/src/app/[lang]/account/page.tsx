@@ -9,6 +9,7 @@ import {
   fetchCurrentUser,
   type CurrentUser,
 } from '@/features/auth/api'
+import { AvatarField } from '@/features/auth/avatar-field'
 import { ProfileForm, type LanguageOption } from '@/features/auth/profile-form'
 import { RETURN_TO_PARAM } from '@/features/auth/return-to'
 import { getSession } from '@/features/auth/session'
@@ -79,6 +80,22 @@ export default async function AccountPage({ params }: { params: Promise<{ lang: 
             <p className="auth-email text-sm">{user.email}</p>
             <p className="auth-help">{t('account.email.note')}</p>
           </section>
+
+          <AvatarField
+            lang={lang}
+            avatarUrl={user.avatarUrl}
+            displayName={user.displayName}
+            labels={{
+              heading: t('account.avatar.label'),
+              hint: t('account.avatar.help'),
+              add: t('account.avatar.add'),
+              change: t('account.avatar.change'),
+              remove: t('account.avatar.remove'),
+              uploading: t('account.avatar.uploading'),
+              errorRejected: t('host.media.error.rejected'),
+              errorTooLarge: t('host.media.error.tooLarge'),
+            }}
+          />
 
           <ProfileForm
             displayName={user.displayName}

@@ -85,7 +85,7 @@ internal sealed class ConfirmMediaCommandHandler(
         if (validation.Info is null)
         {
             await RejectAsync(transaction, media, validation, cancellationToken).ConfigureAwait(false);
-            throw new ConflictException(validation.Message!);
+            throw new ConflictException(validation.Message!, validation.Reason);
         }
 
         var info = validation.Info;
