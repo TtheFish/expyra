@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Expyra.Application.Common.Interfaces;
+using Expyra.Infrastructure.Email;
 using Expyra.Infrastructure.Storage;
 
 namespace Expyra.WebApi.Features.Dev;
@@ -78,6 +79,36 @@ internal static class DevelopmentObjectEndpoints
                 // enableRangeProcessing: <video> ve bazı tarayıcılar aralık istiyor;
                 // desteklenmezse dosya hiç oynatılmaz. Görselde de zararsız.
                 : Results.File(stream, stored.ContentType, enableRangeProcessing: true);
+        })
+        .AllowAnonymous()
+        .ExcludeFromDescription();
+
+        return app;
+    }
+
+    /// <summary>
+    /// Dev posta kutusu: son gönderilen e-postalar. <b>Giriş kodları burada AÇIK.</b>
+    ///
+    /// <para>Üretimde bu uç HİÇ YOK — <c>Program.cs</c> onu yalnız <c>IsDevelopment()</c>
+    /// altında kuruyor. Yapılandırma bayrağıyla değil ortamla kapatılıyor: bayrak yanlış
+    /// bir ortam değişkeniyle üretime sızabilir ve o gün herkesin giriş kodu bir GET
+    /// isteğiyle okunabilir olurdu.</para>
+    ///
+    /// <para><b>Neden var:</b> şifresiz sistemde her giriş bir OTP istiyor ve kodu
+    /// okumanın tek yolu <c>.mail-drop</c> klasöründeki en yeni dosyayı elle açmaktı.
+    /// Arayüz bunu çağırıp kodu giriş ekranında gösteriyor.</para>
+    /// </summary>
+    internal static WebApplication MapDevelopmentMailbox(this WebApplication app)
+    {
+        app.MapGet("/api/dev/emails", (
+            [FromQuery] string? to,
+            [FromQuery] int? count,
+            ILocalMailbox mailbox) =>
+        {
+            // Tavan sabit: istemcinin verdiği sayı kutunun kapasitesini aşamaz.
+            var take = Math.Clamp(count ?? 5, 1, 25);
+
+            return Results.Ok(mailbox.Recent(to, take));
         })
         .AllowAnonymous()
         .ExcludeFromDescription();

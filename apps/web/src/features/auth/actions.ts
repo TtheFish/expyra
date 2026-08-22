@@ -7,6 +7,7 @@ import { UI_LANGUAGE_FIELD, uiLocaleOf } from '@/features/i18n/locale'
 import { getTranslator } from '@/features/i18n/translator'
 import {
   type AvatarUpload,
+  peekDevLoginCode,
   confirmAvatar,
   createAvatarUpload,
   deleteAvatar,
@@ -395,4 +396,20 @@ const AVATAR_ERROR_KEYS: Record<string, SimpleMessageKey> = {
   'media-content-type-mismatch': 'host.media.error.mismatch',
   'media-too-small': 'host.media.error.tooSmall',
   'media-too-large': 'host.media.error.tooLarge',
+}
+
+/**
+ * GELİŞTİRME ARACI — giriş ekranındaki "kod" şeridini tazeler.
+ *
+ * Sayfa ilk çizimde kodu SUNUCUDA okuyor; bu eylem yalnız "yeniden gönder"den sonra
+ * gerekiyor, çünkü o akış sayfayı yeniden çizmiyor (form eylemi durum döndürüyor,
+ * yönlendirme yapmıyor) ve ekrandaki kod eskimiş oluyor.
+ *
+ * Üretimde `peekDevLoginCode` daima `null` dönüyor.
+ */
+export async function peekDevLoginCodeAction(
+  email: string,
+  codeLength: number,
+): Promise<string | null> {
+  return peekDevLoginCode(email, codeLength)
 }

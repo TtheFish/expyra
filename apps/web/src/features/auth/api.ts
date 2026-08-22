@@ -419,3 +419,44 @@ async function sendProfile(
 
   return response.json()
 }
+
+/**
+ * GELİŞTİRME ARACI — son giriş kodunu API'nin dev posta kutusundan okur.
+ *
+ * Şifresiz sistemde her giriş bir OTP istiyor ve geliştirmede o kodu okumanın tek
+ * yolu API'nin `.mail-drop` klasöründeki en yeni dosyayı elle açmaktı.
+ *
+ * **Üretimde çağrılmıyor ve çağrılsa da bir şey bulamaz:** `/api/dev/emails` ucu
+ * API tarafında yalnız `IsDevelopment()` altında kuruluyor, yani üretimde 404.
+ * Buradaki `NODE_ENV` kapısı ikinci savunma — ağa hiç çıkmamak için.
+ *
+ * Hata YUTULUYOR ve bu bilinçli bir istisna (CLAUDE.md #1'in kapsamı ürün akışları):
+ * bu bir geliştirici kolaylığı ve API kapalıyken giriş ekranının çökmesi kabul
+ * edilemez. Kod bulunamazsa arayüz şeridi hiç çizmiyor.
+ */
+export async function peekDevLoginCode(email: string, codeLength: number): Promise<string | null> {
+  if (process.env.NODE_ENV !== 'development') return null
+
+  try {
+    const response = await fetch(
+      `${apiBaseUrl()}/api/dev/emails?to=${encodeURIComponent(email)}&count=1`,
+      { cache: 'no-store' },
+    )
+
+    if (!response.ok) return null
+
+    const messages = (await response.json()) as { subject: string }[]
+    const subject = messages[0]?.subject
+    if (!subject) return null
+
+    // Kod uzunluğu yapılandırmadan geliyor (Auth:Otp:Digits) — sabit 6 yazmak,
+    // ayar değiştiği gün sessizce yanlış parçayı yakalardı.
+    //
+    // `String.raw` ŞART: düz bir şablon dizgesinde `\b` backspace karakterine,
+    // `\d` de düz `d` harfine çözülür ve desen hiçbir şeyle eşleşmez — sessizce.
+    // Bu tam olarak bir kez yaşandı.
+    return new RegExp(String.raw`\b\d{${codeLength}}\b`).exec(subject)?.[0] ?? null
+  } catch {
+    return null
+  }
+}

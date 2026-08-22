@@ -15,10 +15,29 @@ internal sealed class FileSystemEmailSender(
     EmailOptions options,
     IDateTimeProvider dateTimeProvider,
     ILogger<FileSystemEmailSender> logger)
-    : IEmailSender
+    : IEmailSender, ILocalMailbox
 {
+    /// <summary>
+    /// Bellekte tutulan mesaj tavanı. Sınırsız olsaydı uzun süre açık kalan bir dev
+    /// sunucusu her giriş denemesini süresiz saklardı — kodlar dahil.
+    /// </summary>
+    private const int MailboxCapacity = 25;
+
     // BOM'suz UTF-8: .eml'i okuyan araçların çoğu BOM'u gövdenin parçası sayıyor.
     private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false);
+
+    /// <summary>
+    /// Son mesajlar, en YENİSİ başta. Diske de yazılıyor ama dosya adı alıcıyı
+    /// taşımıyor (bilinçli); alıcıya göre filtrelemenin tek yolu gönderim anında
+    /// yakalamak.
+    ///
+    /// <para><c>Enqueue</c>/<c>TryDequeue</c> yerine kilit + liste: okuma sırasında
+    /// tam bir anlık görüntü gerekiyor ve <c>ConcurrentQueue</c> numaralandırma
+    /// sırasında tutarlı bir sıra garanti etmiyor.</para>
+    /// </summary>
+    private readonly List<LocalMailMessage> mailbox = [];
+
+    private readonly Lock mailboxLock = new();
 
     public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken)
     {
@@ -40,6 +59,8 @@ internal sealed class FileSystemEmailSender(
         await File.WriteAllTextAsync(path, BuildEml(message, now), Utf8NoBom, cancellationToken)
             .ConfigureAwait(false);
 
+        Record(new LocalMailMessage(message.To, message.Subject, message.Body, now));
+
         // Log'a YALNIZ dosya yolu gider. Konu satırı kodun kendisini taşıyor ve gövde
         // de öyle; ikisini loglamak, kodu "asla logda taşınmaz" kuralını tek satırda
         // bozardı. Geliştiricinin ihtiyacı olan tek şey mailin nereye düştüğü —
@@ -47,6 +68,38 @@ internal sealed class FileSystemEmailSender(
         if (logger.IsEnabled(LogLevel.Information))
         {
             logger.LogInformation("auth.email.dropped file={File}", path);
+        }
+    }
+
+    public IReadOnlyList<LocalMailMessage> Recent(string? to, int count)
+    {
+        lock (mailboxLock)
+        {
+            IEnumerable<LocalMailMessage> source = mailbox;
+
+            if (!string.IsNullOrWhiteSpace(to))
+            {
+                var needle = to.Trim();
+
+                // OrdinalIgnoreCase: e-posta yerel kısmı teknik olarak harf duyarlı ama
+                // pratikte hiçbir sağlayıcı öyle davranmıyor ve bu bir dev aracı.
+                source = source.Where(x => string.Equals(x.To, needle, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return source.Take(count).ToList();
+        }
+    }
+
+    private void Record(LocalMailMessage message)
+    {
+        lock (mailboxLock)
+        {
+            mailbox.Insert(0, message);
+
+            if (mailbox.Count > MailboxCapacity)
+            {
+                mailbox.RemoveRange(MailboxCapacity, mailbox.Count - MailboxCapacity);
+            }
         }
     }
 

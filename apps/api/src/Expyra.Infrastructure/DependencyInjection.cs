@@ -72,9 +72,18 @@ public static class DependencyInjection
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        // Tek örnek İKİ arayüzle kayıtlı: posta kutusu göndericinin BELLEĞİNDE yaşıyor,
+        // iki ayrı örnek olsaydı dev ucu boş bir kutuya bakardı (AddDevelopmentObjectStorage
+        // ile aynı durum).
+        services.Replace(ServiceDescriptor.Singleton<FileSystemEmailSender, FileSystemEmailSender>());
+
         // Replace, Add'in üzerine yazdığına güvenmekten iyi: kayıt sırası değişirse
         // "son kazanır" davranışı sessizce ters döner.
-        services.Replace(ServiceDescriptor.Singleton<IEmailSender, FileSystemEmailSender>());
+        services.Replace(ServiceDescriptor.Singleton<IEmailSender>(sp
+            => sp.GetRequiredService<FileSystemEmailSender>()));
+
+        services.Replace(ServiceDescriptor.Singleton<ILocalMailbox>(sp
+            => sp.GetRequiredService<FileSystemEmailSender>()));
 
         return services;
     }

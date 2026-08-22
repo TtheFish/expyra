@@ -2,8 +2,10 @@ import type { Metadata } from 'next'
 import { AuthCard } from '@/components/auth/auth-card'
 import { BrandLogo } from '@/components/brand/brand-logo'
 import { GlassButton } from '@/components/ui/glass-button'
+import { peekDevLoginCode } from '@/features/auth/api'
 import { getChallenge, secondsUntil } from '@/features/auth/challenge'
 import { CodeStep } from '@/features/auth/code-step'
+import { DevCodeHint } from '@/features/auth/dev-code-hint'
 import { EmailStep } from '@/features/auth/email-step'
 import { RETURN_TO_PARAM, safeReturnTo } from '@/features/auth/return-to'
 import { getTranslator } from '@/features/i18n/translator'
@@ -92,6 +94,14 @@ export default async function SignInPage({
                 resend: t('auth.code.resend'),
                 changeEmail: t('auth.code.changeEmail'),
               }}
+            />
+
+            {/* Geliştirme kolayligi: kod SUNUCUDA okunuyor. Üretimde
+                `peekDevLoginCode` daima null döndürüyor ve şerit hiç çizilmiyor. */}
+            <DevCodeHint
+              email={challenge.email}
+              codeLength={challenge.codeLength}
+              initialCode={await peekDevLoginCode(challenge.email, challenge.codeLength)}
             />
           </AuthCard>
         ) : (

@@ -114,6 +114,9 @@ app.MapControllers();
 if (app.Environment.IsDevelopment())
 {
     app.MapDevelopmentObjectStorage();
+
+    // Giriş kodlarını okunur kılan dev ucu. Üretimde hiç kurulmuyor.
+    app.MapDevelopmentMailbox();
 }
 
 // Migration'lar OTOMATİK uygulanmaz. `dotnet ef database update` ile elle çalıştırılır.
