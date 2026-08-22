@@ -155,7 +155,7 @@ export default async function BecomeHostPage({ params }: { params: Promise<{ lan
             <p className="text-base font-semibold">{t('host.contact.title')}</p>
             <p className="mx-auto mt-2 max-w-lg text-sm text-fg-muted">{t('host.contact.body')}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-3">
-              <GlassButton variant="primary" href="mailto:host@expyra.com">
+              <GlassButton variant="primary" href="mailto:destek@expyra.com">
                 {t('host.contact.cta')}
               </GlassButton>
               <GlassButton href={path(lang, 'howItWorks')}>

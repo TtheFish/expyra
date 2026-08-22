@@ -430,6 +430,7 @@ export const en = {
   'host.experience.missing.city': 'a city',
   'host.experience.missing.category': 'a category',
   'host.experience.missing.capacity': 'a capacity',
+  'host.experience.missing.duration': 'a duration',
   'host.experience.missing.cover': 'a cover photo',
   'host.experience.missing.unknown': 'an unfinished field',
 

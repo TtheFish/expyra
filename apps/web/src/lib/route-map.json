@@ -12,7 +12,8 @@
     "experienceDetail": "experience/:slug",
     "hostExperienceNew": "host/experience/new",
     "signIn": "sign-in",
-    "account": "account"
+    "account": "account",
+    "hostExperienceEdit": "host/experience/:id"
   },
   "localized": {
     "tr": {
@@ -24,7 +25,8 @@
       "experienceDetail": "deneyim/:slug",
       "hostExperienceNew": "host/deneyim/yeni",
       "signIn": "giris",
-      "account": "hesap"
+      "account": "hesap",
+      "hostExperienceEdit": "host/experience/:id"
     },
     "en": {
       "home": "",
@@ -35,7 +37,8 @@
       "experienceDetail": "experience/:slug",
       "hostExperienceNew": "host/experience/new",
       "signIn": "sign-in",
-      "account": "account"
+      "account": "account",
+      "hostExperienceEdit": "host/experience/:id"
     }
   }
 }

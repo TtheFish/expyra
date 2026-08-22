@@ -35,11 +35,36 @@ export function isRoutableLanguage(value: string | undefined): value is string {
   return value !== undefined && routableLanguages.includes(value)
 }
 
-/** Kullanıcıya gösterilecek yol: `path('tr', 'explore')` → `/tr/kesfet`. */
-export function path(language: string, page: PageId): string {
+/**
+ * Kullanıcıya gösterilecek yol: `path('tr', 'explore')` → `/tr/kesfet`.
+ *
+ * Parametreli sayfalarda (`deneyim/:slug`) <b>yer tutucu OLDUĞU GİBİ döner</b>
+ * — çağıran ya `params` verir ya da kalıbı kendisi doldurur
+ * (`experiencePath` → `fillSlug`). Sessizce boş bırakmak her karta aynı
+ * bağlantıyı verirdi.
+ */
+export function path(language: string, page: PageId, params: readonly string[] = []): string {
   const table = localized[language] ?? localized[defaultRouteLanguage]
   const segment = table[page]
-  return segment ? `/${language}/${segment}` : `/${language}`
+
+  if (!segment) return `/${language}`
+
+  return `/${language}/${params.length > 0 ? fillParams(segment, params) : segment}`
+}
+
+/**
+ * Kalıptaki `:ad` yer tutucularını SIRAYLA doldurur. Ada göre değil sıraya göre:
+ * aynı sayfanın Türkçe ve İngilizce kalıbında yer tutucu adları farklı olabilir
+ * (`:slug` / `:id`) ama sırası aynı — dil değiştirirken eşleştirmenin tek
+ * güvenilir yolu konum.
+ */
+function fillParams(pattern: string, params: readonly string[]): string {
+  let index = 0
+
+  return pattern
+    .split('/')
+    .map((part) => (part.startsWith(':') ? encodeURIComponent(params[index++] ?? '') : part))
+    .join('/')
 }
 
 /** Rewrite hedefi: `/tr/kesfet` → `/tr/explore`. */
@@ -51,33 +76,87 @@ export function canonicalPath(language: string, page: PageId): string {
 /**
  * Yoldan sayfa kimliğini çözer. Dil değiştirirken gerekiyor: kullanıcı
  * `/tr/kesfet`'te dili İngilizce yaparsa `/en/explore`'a gitmeli — ana sayfaya
- * atılmamalı. Bunun için önce "hangi sayfadayız" sorusunu cevaplamak lazım.
+ * atılmamalı.
+ *
+ * <b>Yolun TAMAMI eşleştiriliyor, ilk segmenti değil.</b> Önceki hâli yalnız dilden
+ * sonraki tek segmente bakıp tam eşitlik arıyordu; tablodaki çok segmentli kayıtlar
+ * (`deneyim/:slug`, `host/deneyim/yeni`) hiçbir zaman tutmuyor ve deneyim detayında
+ * dil değiştiren kullanıcı ana sayfaya düşüyordu — Blok 5'in vitrin sayfası dahil.
+ *
+ * Yakalanan parametreler geri veriliyor ki hedef dilde AYNI kaynağa gidilebilsin:
+ * `/tr/deneyim/x` → `/en/experience/x`, slug'ı kaybetmeden.
  */
-export function resolvePage(pathname: string): { language: string; page: PageId } | undefined {
-  const [, maybeLanguage = '', maybeSegment = ''] = pathname.split('/')
+export function resolvePage(
+  pathname: string,
+): { language: string; page: PageId; params: string[] } | undefined {
+  const [maybeLanguage = '', ...rest] = pathname.split('/').filter(Boolean)
 
   if (!isRoutableLanguage(maybeLanguage)) return undefined
 
-  if (maybeSegment === '') {
-    return { language: maybeLanguage, page: 'home' }
+  if (rest.length === 0) {
+    return { language: maybeLanguage, page: 'home', params: [] }
   }
 
-  const table = localized[maybeLanguage]
-  const hit = entriesOf(table).find(([, segment]) => segment === maybeSegment)
-  if (hit) {
-    return { language: maybeLanguage, page: hit[0] }
+  // Önce lokalize tablo, sonra kanonik: kanonik segmentle de gelinebilir (rewrite
+  // sonrası iç yol, ya da elle yazılmış `/tr/explore`). Sayfayı bulabiliyorsak
+  // 404 vermek için sebep yok.
+  const hit = matchTable(localized[maybeLanguage], rest) ?? matchTable(canonical, rest)
+
+  return hit ? { language: maybeLanguage, page: hit.page, params: hit.params } : undefined
+}
+
+/**
+ * Tablodaki kalıpları segmentlere karşı dener. <b>Değişmezi az olan önce</b>:
+ * `host/deneyim/yeni` ile `host/deneyim/:id` ikisi de üç segmentli ve aynı yolu
+ * tutabilir; sabit olanı önce denemezsek "yeni" bir kimlik sanılır.
+ */
+function matchTable(
+  table: Record<PageId, string> | undefined,
+  segments: readonly string[],
+): { page: PageId; params: string[] } | undefined {
+  if (!table) return undefined
+
+  const candidates = entriesOf(table)
+    .filter(([, pattern]) => pattern !== '')
+    .sort(([, a], [, b]) => countParams(a) - countParams(b))
+
+  for (const [page, pattern] of candidates) {
+    const params = matchPattern(pattern, segments)
+    if (params) return { page, params }
   }
 
-  // Kanonik segmentle de gelinebilir: rewrite sonrası iç yol, ya da elle yazılmış
-  // `/tr/explore`. Sayfayı bulabiliyorsak 404 vermek için sebep yok.
-  const canonicalHit = entriesOf(canonical).find(([, segment]) => segment === maybeSegment)
-  return canonicalHit ? { language: maybeLanguage, page: canonicalHit[0] } : undefined
+  return undefined
+}
+
+function countParams(pattern: string): number {
+  return pattern.split('/').filter((part) => part.startsWith(':')).length
+}
+
+/** Kalıp segmentleri tutuyorsa yakalanan parametreler, tutmuyorsa `undefined`. */
+function matchPattern(pattern: string, segments: readonly string[]): string[] | undefined {
+  const parts = pattern.split('/')
+  if (parts.length !== segments.length) return undefined
+
+  const params: string[] = []
+
+  for (const [index, part] of parts.entries()) {
+    if (part.startsWith(':')) {
+      // Boş segment yakalanmıyor: `/tr/deneyim/` bir ilan değil.
+      if (!segments[index]) return undefined
+      params.push(decodeURIComponent(segments[index]))
+      continue
+    }
+
+    if (part !== segments[index]) return undefined
+  }
+
+  return params
 }
 
 /** Aynı sayfanın başka dildeki karşılığı. Bulunamazsa o dilin ana sayfası. */
 export function switchLanguage(pathname: string, target: string): string {
   const resolved = resolvePage(pathname)
-  return resolved ? path(target, resolved.page) : path(target, 'home')
+  return resolved ? path(target, resolved.page, resolved.params) : path(target, 'home')
 }
 
 /**

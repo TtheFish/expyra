@@ -87,6 +87,7 @@ public sealed class ExperiencePublishRulesTests
                 ExperiencePublishRequirement.City,
                 ExperiencePublishRequirement.Category,
                 ExperiencePublishRequirement.Capacity,
+                ExperiencePublishRequirement.Duration,
                 ExperiencePublishRequirement.Cover,
             ]);
     }
@@ -102,15 +103,16 @@ public sealed class ExperiencePublishRulesTests
     }
 
     [Fact]
-    public void Missing_SureBirKosulDEGIL()
+    public void Missing_SureYok_TekEksik()
     {
-        // PLAN kabul kriteri 1 dört koşul sayıyor ve süre onlardan biri değil. Bu test
-        // kapının SESSİZCE genişlemesine karşı: süreyi buraya eklemek isteyen, önce bu
-        // satırı silmek ve PLAN'ı yeniden okumak zorunda kalsın.
+        // Süre Blok 7'de koşul OLDU: seansın bitiş saati ondan hesaplanıyor, yani
+        // süresiz bir ilan takvim kuramaz. Önceki hâlinde bu test tam tersini
+        // (süresiz ilan yayınlanabilir) sabitliyordu.
         var experience = Complete();
         experience.DurationMinutes = 0;
 
-        ExperiencePublishRules.CanPublish(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true)
-            .ShouldBeTrue();
+        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true)
+            .ShouldHaveSingleItem()
+            .ShouldBe(ExperiencePublishRequirement.Duration);
     }
 }

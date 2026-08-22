@@ -49,6 +49,7 @@ public sealed record MediaUploadResponse(
 internal sealed class CreateMediaUploadCommandHandler(
     IAppDbContext dbContext,
     IObjectStorage storage,
+    IDateTimeProvider clock,
     ICurrentUser currentUser)
     : IRequestHandler<CreateMediaUploadCommand, MediaUploadResponse>
 {
@@ -74,10 +75,22 @@ internal sealed class CreateMediaUploadCommandHandler(
             throw new NotFoundException("Deneyim bulunamadı.");
         }
 
-        // Pending satırlar da sayılıyor: sayılmasaydı, yüklemeyi hiç bitirmeyen bir
-        // istemci sınırsız sayıda imzalı adres alarak tavanı boşa çıkarabilirdi.
+        // TAZE Pending satırlar da sayılıyor: sayılmasaydı, yüklemeyi hiç bitirmeyen
+        // bir istemci sınırsız sayıda imzalı adres alarak tavanı boşa çıkarabilirdi.
+        //
+        // Ama ÖLÜ olanlar sayılmıyor. İmzalı adresin ömrü dolduğunda o satır artık
+        // hiçbir zaman Active olamaz — nesne yüklense bile onay ucu imzayı reddeder.
+        // Hepsini saymak, yarıda kalan her yüklemenin 12'lik hakkı KALICI yemesi
+        // demekti: on iki kopan yüklemeden sonra host kapak yükleyemez ve kapak
+        // yayın koşulu olduğu için ilanı hiç yayınlayamazdı. Kota böylece kendi
+        // kendini onarıyor; satırların silinmesi hâlâ Blok 10'un temizleyicisinde.
+        var staleBefore = clock.UtcNow - MediaRules.UploadLifetime;
+
         var existing = await dbContext.ExperienceMedia
-            .CountAsync(x => x.ExperienceId == experience.Id, cancellationToken)
+            .CountAsync(
+                x => x.ExperienceId == experience.Id
+                    && (x.Status == MediaStatus.Active || x.CreatedAtUtc > staleBefore),
+                cancellationToken)
             .ConfigureAwait(false);
 
         if (existing >= MediaRules.MaxPerExperience)

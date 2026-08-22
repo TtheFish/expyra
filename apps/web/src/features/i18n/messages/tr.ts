@@ -646,6 +646,7 @@ export const tr = {
   'host.experience.missing.city': 'şehir',
   'host.experience.missing.category': 'kategori',
   'host.experience.missing.capacity': 'kapasite',
+  'host.experience.missing.duration': 'süre',
   'host.experience.missing.cover': 'kapak görseli',
   /** Sunucu tanımadığımız bir koşul eklerse: gizlemiyoruz, "bir şey daha var" diyoruz. */
   'host.experience.missing.unknown': 'tamamlanmamış bir alan',

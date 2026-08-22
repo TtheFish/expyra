@@ -170,6 +170,7 @@ const REQUIREMENT_MESSAGE_KEYS: Record<string, SimpleMessageKey> = {
   city: 'host.experience.missing.city',
   category: 'host.experience.missing.category',
   capacity: 'host.experience.missing.capacity',
+  duration: 'host.experience.missing.duration',
   cover: 'host.experience.missing.cover',
 }
 

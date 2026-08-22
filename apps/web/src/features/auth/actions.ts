@@ -101,7 +101,13 @@ export async function resendCodeAction(
   if (!challenge) return fail(t, 'auth.error.expiredChallenge')
 
   try {
-    const issued = await requestLoginCode({ email: challenge.email })
+    // `preferredLanguage` ŞART: verilmezse API Accept-Language'e düşüyor ve
+    // ilk kod sayfa dilinde, ikincisi tarayıcı dilinde gidiyor. Aynı hata bir kez
+    // ölçülüp ilk gönderimde düzeltilmiş, yeniden gönderimde atlanmıştı.
+    const issued = await requestLoginCode({
+      email: challenge.email,
+      preferredLanguage: readField(formData, UI_LANGUAGE_FIELD) || null,
+    })
 
     await setChallenge({
       id: issued.challengeId,

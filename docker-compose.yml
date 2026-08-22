@@ -4,12 +4,14 @@
 # tanır (scripts/db-up.sh). Bu dosya, makineye Postgres kurmak istemeyenler ve
 # temiz bir kopyayla çalışmak isteyenler için.
 #
-# Sürüm 17: CI'da (.github/workflows/ci.yml) kullanılan sürümle aynı kalmalı —
-# farklı sürümler farklı davranır ve "bende çalışıyordu" oraya taşınır.
+# Sürüm 18: CI (.github/workflows/ci.yml) ve geliştirme makineleriyle aynı kalmalı —
+# farklı sürümler farklı davranır ve "bende çalışıyordu" oraya taşınır. Bu üçlü bir
+# kez ayrıştı (compose ve CI 17'de kalmışken yerel 18'e geçmişti) ve doküman da
+# yanlış söylüyordu; sürümü değiştiren docs/DATABASE.md'yi de güncellemek zorunda.
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     container_name: expyra-postgres
     restart: unless-stopped
     environment:

@@ -73,6 +73,12 @@ export function MediaUploader({
     for (const file of Array.from(files)) {
       setUploading((count) => count + 1)
 
+      // İzin ALINDIKTAN sonra her başarısızlıkta satır geri veriliyor: sunucu
+      // taze Pending satırları kotaya sayıyor, dolayısıyla bırakılan her yarım
+      // yükleme imzanın ömrü boyunca (15 dk) bir hak tutuyor. Silmek onu anında
+      // iade ediyor; silinemezse zaten kendi kendine düşüyor.
+      let mediaId: string | null = null
+
       try {
         const permit = await requestMediaUploadAction(
           language,
@@ -85,6 +91,8 @@ export function MediaUploader({
           setError(permit.error)
           break
         }
+
+        mediaId = permit.upload.mediaId
 
         const response = await fetch(permit.upload.uploadUrl, {
           method: permit.upload.method,
@@ -108,8 +116,23 @@ export function MediaUploader({
           setError(confirmed.error)
           break
         }
+
+        // Buraya gelindiyse satır Active; iade edilecek bir şey yok.
+        mediaId = null
+      } catch {
+        // `catch` ŞART: `fetch` ağ hatasında FIRLATIYOR ve yalnız `finally`
+        // varken bu yakalanmamış bir reddedilme oluyordu — ekranda hiçbir şey
+        // değişmiyor, host yüklemenin neden olmadığını göremiyordu.
+        setError(labels.errorRejected)
+        break
       } finally {
         setUploading((count) => count - 1)
+
+        if (mediaId !== null) {
+          // Sonucu beklenmiyor ve hatası yutuluyor: bu bir TEMİZLİK, kullanıcının
+          // gördüğü hata mesajını ikinci bir hatayla değiştirmenin anlamı yok.
+          void deleteMediaAction(language, experienceId, mediaId)
+        }
       }
     }
 

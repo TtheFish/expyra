@@ -8,10 +8,13 @@ namespace Expyra.Domain.Experiences;
 ///
 /// <para>Liste PLAN'ın açıkça saydığı koşullardan ibaret ve keyfî büyümüyor: Blok 5
 /// kabul kriteri 1 dördünü, Blok 6 kabul kriteri 3 kapak görselini ekliyor. Buraya
-/// PLAN'da yazmayan bir kural koymak (ör. süre girilmiş olmalı) yayın kapısını sessizce
-/// genişletir. <b>Süre hâlâ koşul DEĞİL</b> — alan yazıldığı yerde doğrulanıyor,
-/// <c>UpdateExperienceCommandValidator</c> sıfır ya da negatifi reddediyor, ama hiç
-/// girilmemiş bir taslak yayınlanabiliyor. Bilinen boşluk; kapatmak tek satır.</para>
+/// PLAN'da yazmayan bir kural koymak yayın kapısını sessizce genişletir.</para>
+///
+/// <para><b>Süre sonradan koşul OLDU</b> ve bu bilinçli bir kapsam genişletmesi:
+/// Blok 7 seansların bitiş saatini <see cref="Experience.DurationMinutes"/>'ten
+/// hesaplıyor, yani süresi olmayan bir yayın takvimi kuramaz. Kapı kapatılmasaydı
+/// yayında "0 dakika" süren ilanlar birikir ve Blok 7 onları geriye dönük
+/// düzeltmek zorunda kalırdı — sahibi başka bir şeyle uğraşırken.</para>
 /// </summary>
 public static class ExperiencePublishRules
 {
@@ -61,6 +64,13 @@ public static class ExperiencePublishRules
             missing.Add(ExperiencePublishRequirement.Capacity);
         }
 
+        // Taslakta 0 = "henüz girilmedi" (Experience.DurationMinutes). Blok 7 seansın
+        // bitiş saatini bundan türetiyor; süresiz bir ilan takvim kuramaz.
+        if (experience.DurationMinutes <= 0)
+        {
+            missing.Add(ExperiencePublishRequirement.Duration);
+        }
+
         // PLAN Blok 6 kabul kriteri 3. Görselsiz ilan listede gri bir kutu olarak durur
         // ve paylaşıldığında önizlemesi boş çıkar; "yayında ama kimse tıklamıyor" tam
         // olarak böyle doğar. Kapağı zorunlu kılmak, kapıyı geçen her ilanın en azından
@@ -100,4 +110,7 @@ public static class ExperiencePublishRequirement
 
     /// <summary>Kapak olarak işaretlenmiş, doğrulanmış bir görsel yok.</summary>
     public const string Cover = "cover";
+
+    /// <summary>Süre hiç girilmemiş (0). Blok 7 seans bitişini bundan hesaplıyor.</summary>
+    public const string Duration = "duration";
 }
