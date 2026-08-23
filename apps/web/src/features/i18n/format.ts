@@ -38,12 +38,14 @@ export function formatNumber(locale: string, value: number): string {
 }
 
 /**
- * Para. Bugün ana birim (`48` = 48 EUR) alıyor çünkü prototip veri böyle;
- * Blok 7'de tutar minör birime (`Money(AmountMinor, CurrencyCode)`) dönecek ve
- * o gün burada `minimumFractionDigits` yerine `MinorUnits` kullanılacak
- * (docs/PLAN.md Blok 4 — JPY 0, KWD 3 hane).
+ * Para — <b>ANA birim</b> (`48` = 48 EUR) ve küsuratı atıyor.
  *
- * Sembolün yeri dile bağlı: "€48.00" (en) ve "48,00 €" (tr) aynı tutar.
+ * Yalnız PROTOTİP veri için: bilet ekranı ve PDF'i (`DEMO_TICKETS`) hâlâ bu
+ * şekli taşıyor. **Yeni kodda kullanma** — API'nin gönderdiği her tutar minör
+ * birim tam sayısı ve buraya geçirilirse yüz kat büyük görünür. Doğrusu
+ * <see cref="formatMinorMoney"/>.
+ *
+ * Prototip veri gerçek rezervasyona döndüğünde (Blok 9) bu fonksiyon silinecek.
  */
 export function formatMoney(locale: string, amount: number, currency: string): string {
   return numberFormat(locale, {
@@ -53,12 +55,86 @@ export function formatMoney(locale: string, amount: number, currency: string): s
   }).format(amount)
 }
 
+/**
+ * Para — <b>MİNÖR birim tam sayısı</b>. API'nin konuştuğu tek şekil bu
+ * (CLAUDE.md #7): `4500` + `EUR` + `minorUnits: 2` → "45,00 €".
+ *
+ * <b>Üs parametre, sabit DEĞİL.</b> ISO 4217 üssü para birimine göre değişiyor
+ * — JPY 0, KWD 3, çoğunluk 2 — ve web'de bir tablo tutulmuyor: kayıt defteri
+ * sunucuda (`currency.minor_units`) ve yanıt onu `chargeMinorUnits` /
+ * `display.minorUnits` olarak zaten taşıyor. Burada bir kopya tutmak, iki
+ * kaynağın ayrışacağı ve JPY'nin yüz kat küçük görüneceği gün demekti.
+ *
+ * Küsurat ATILMIYOR (`formatMoney`'nin aksine): 45,00 € ile 45,50 € arasındaki
+ * fark ödenecek paranın kendisi. `minimumFractionDigits` ile üs eşitleniyor,
+ * yani JPY'de hiç ondalık, KWD'de üç hane çıkıyor.
+ */
+export function formatMinorMoney(
+  locale: string,
+  amountMinor: number,
+  currency: string,
+  minorUnits: number,
+): string {
+  return numberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: minorUnits,
+    maximumFractionDigits: minorUnits,
+  }).format(amountMinor / 10 ** minorUnits)
+}
+
+/**
+ * <b>Kesin bir ANI</b> biçimler (ISO 8601, saat dilimi ekli). Duvar saati
+ * dizgeleri için DEĞİL — onlar için <see cref="formatWallClock"/>.
+ */
 export function formatDateTime(
   locale: string,
   value: Date | string | number,
   options: Intl.DateTimeFormatOptions,
 ): string {
   return new Intl.DateTimeFormat(locale, options).format(new Date(value))
+}
+
+/**
+ * <b>Duvar saati</b> biçimler: `2026-10-13T14:00` gibi saat dilimi EKİ OLMAYAN
+ * bir dizgeyi, deneyimin saat diliminde yazıldığı gibi gösterir.
+ *
+ * <b>`new Date(value)` KULLANILMIYOR</b> ve bu farkın bedeli görünmez: o çağrı
+ * eki olmayan dizgeyi TARAYICININ saat diliminde yorumlar, yani Prag'daki
+ * 14:00'lük bir tur İstanbul'daki misafire 14:00 diye gösterilir ama altındaki
+ * `Date` 12:00 UTC'yi tutar; sonraki her hesap bir saat kayar.
+ *
+ * Burada dizge AYRIŞTIRILIYOR, dönüştürülmüyor: sunucu zaten deneyimin
+ * saat dilimindeki duvar saatini gönderdi ve gösterilecek şey tam olarak o.
+ * Yalnız BİÇİM locale'e göre değişiyor ("13 Eki 14:00" / "Oct 13, 2:00 PM").
+ *
+ * @param wallClock `YYYY-MM-DDTHH:mm` — sonda `Z` ya da offset OLMAMALI.
+ */
+export function formatWallClock(
+  locale: string,
+  wallClock: string,
+  options: Intl.DateTimeFormatOptions,
+): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(wallClock)
+
+  if (!match) {
+    // Sessizce `new Date()`e düşmüyor: o dal tam olarak bu fonksiyonun
+    // engellemek için var olduğu saat kaymasını geri getirirdi (CLAUDE.md #1).
+    throw new Error(
+      `formatWallClock: "${wallClock}" beklenen biçimde değil (YYYY-MM-DDTHH:mm). ` +
+        'Saat dilimi ekli bir damga geldiyse formatDateTime kullanılmalı.',
+    )
+  }
+
+  const [, year, month, day, hour, minute] = match
+
+  // UTC olarak kuruluyor ve `timeZone: 'UTC'` ile okunuyor: iki taraf da aynı
+  // varsayımda olduğu için kaydırma sıfır. Sayılar ne yazıldıysa o çıkıyor.
+  const asUtc = new Date(
+    Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute)),
+  )
+
+  return new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).format(asUtc)
 }
 
 /**

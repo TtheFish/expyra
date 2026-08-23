@@ -308,3 +308,176 @@ export const fetchExperience = cache(
 function problemOf(response: Response): ApiError {
   return new ApiError(response.status, `Deneyim ucu ${response.status} döndü.`, null)
 }
+
+// ---------------------------------------------------------------------------
+// Müsaitlik ve teklif (PLAN Blok 7)
+// ---------------------------------------------------------------------------
+
+/** Misafire AÇIK tek seans. Kapalı, dolu ve geçmiş olanlar yanıtta hiç yok. */
+export type GuestSlot = {
+  slotId: string
+  startsAtUtc: string
+  /**
+   * Deneyimin saat dilimindeki duvar saati, EK OLMADAN: `2026-10-13T14:00`.
+   * `new Date()` ile AYRIŞTIRMA — o çağrı dizgeyi TARAYICININ dilimine göre
+   * yorumlar ve Prag'daki bir tur İstanbul'daki misafire kaymış görünür.
+   * Doğrusu `formatWallClock` (bkz. `features/i18n/format.ts`).
+   */
+  startsAtLocal: string
+  endsAtUtc: string
+  durationMinutes: number
+  /** Kalan yer. Toplam kapasite yanıtta YOK — kaç kişinin aldığını ele verirdi. */
+  remainingCapacity: number
+}
+
+export type GuestPriceLine = {
+  /** `"adult" | "child" | "infant"` */
+  guestType: string
+  /** MİNÖR birim (CLAUDE.md #7). */
+  unitAmountMinor: number
+  /** Gösterim parasındaki karşılığı; çevrim istenmemişse `null`. */
+  displayUnitAmountMinor: number | null
+}
+
+/**
+ * Misafirin para birimindeki karşılık. **Tahsilat DEĞİL** — o daima
+ * `chargeCurrency` (PLAN Blok 7 kabul kriteri 3). Ayrı alan olması bunu tip
+ * düzeyinde koruyor.
+ */
+export type GuestDisplayPrice = {
+  currency: string
+  minorUnits: number
+  fromAmountMinor: number
+  /** Blok 9 rezervasyona bunu yazacak: "o an hangi kuru gösterdik". */
+  rateSnapshotId: string
+  /** Kurun ÖLÇÜLDÜĞÜ an — arayüz "kur şu tarihli" notunu bununla yazıyor. */
+  capturedAtUtc: string
+}
+
+export type GuestPricing = {
+  /** Tahsilat para birimi — DAİMA dolu ve ekranda daima yazmalı. */
+  chargeCurrency: string
+  chargeMinorUnits: number
+  /** Kişi başı yetişkin fiyatı — kartlardaki "şu tutardan başlayan". */
+  fromAmountMinor: number
+  rules: GuestPriceLine[]
+  display: GuestDisplayPrice | null
+}
+
+export type GuestAvailability = {
+  /** `"Europe/Prague"`. Saatler bununla çiziliyor. */
+  timeZoneId: string
+  /** Yanıtın GERÇEKTEN kapsadığı ilk gün — istenen tarih geçmişse bugüne kırpılmış hâli. */
+  from: string
+  to: string
+  /** Host fiyat girmemişse `null`. */
+  pricing: GuestPricing | null
+  slots: GuestSlot[]
+}
+
+/**
+ * Seçilebilir seanslar ve fiyat.
+ *
+ * `no-store` ve bu liste ucundan (60 sn ISR) farklı olmak ZORUNDA:
+ * `remainingCapacity` bir dakika bayat gösterilirse misafir dolmuş bir seansa
+ * tıklar ve hatayı ancak rezervasyon adımında görür.
+ *
+ * 404 → `null`: yayınlanmamış ilan ile olmayan slug API'de aynı cevabı alıyor
+ * (enumeration'a kapalı) ve sayfanın ikisine verdiği karşılık da aynı.
+ */
+export async function fetchAvailability(input: {
+  slug: string
+  from?: string | null
+  to?: string | null
+  currency?: string | null
+}): Promise<GuestAvailability | null> {
+  const params = new URLSearchParams()
+
+  if (input.from) params.set('from', input.from)
+  if (input.to) params.set('to', input.to)
+  if (input.currency) params.set('currency', input.currency)
+
+  const query = params.size > 0 ? '?' + params.toString() : ''
+
+  const response = await fetch(
+    `${apiBaseUrl()}/api/experiences/${encodeURIComponent(input.slug)}/availability${query}`,
+    { headers: { Accept: 'application/json' }, cache: 'no-store' },
+  )
+
+  if (response.status === 404) return null
+
+  if (!response.ok) {
+    throw problemOf(response)
+  }
+
+  return (await response.json()) as GuestAvailability
+}
+
+export type GuestQuoteLine = {
+  guestType: string
+  count: number
+  unitAmountMinor: number
+  lineTotalMinor: number
+}
+
+export type GuestQuote = {
+  slotId: string
+  startsAtUtc: string
+  startsAtLocal: string
+  timeZoneId: string
+  /** Toplam kişi. */
+  headcount: number
+  /** Kontenjandan DÜŞEN kişi — bebek deneyime göre koltuk tüketmeyebilir. */
+  seats: number
+  /** Tahsil edilecek tutar, daima host'un para biriminde. */
+  charge: { currency: string; minorUnits: number; amountMinor: number }
+  /** Misafirin para birimindeki karşılık; istenmemişse `null`. Tahsilata GİRMİYOR. */
+  display: {
+    currency: string
+    minorUnits: number
+    amountMinor: number
+    rateSnapshotId: string
+    capturedAtUtc: string
+  } | null
+  /**
+   * Kalemler YALNIZ tahsilat para biriminde. Kalem kalem çevrilseydi yuvarlama
+   * farkı yüzünden toplamı tutmayabilirdi ve ekranda "2+1 ≠ 3" görünürdü.
+   */
+  lines: GuestQuoteLine[]
+}
+
+/**
+ * "Bu seansa şu kadar kişi kaç eder?" **Hiçbir şey rezerve etmiyor** — kapasite
+ * kontrol ediliyor ama koltuk tutulmuyor (koltuğu kilitleyen yazma Blok 9'da).
+ *
+ * Hesap sunucuda: istemci kalem toplasaydı yuvarlama ve kur kuralları iki yerde
+ * yaşar, biri bir gün ayrışır ve misafir gördüğünden farklı bir tutar öderdi.
+ */
+export async function fetchQuote(input: {
+  slug: string
+  slotId: string
+  adults: number
+  children: number
+  infants: number
+  currency?: string | null
+}): Promise<GuestQuote> {
+  const params = new URLSearchParams({
+    slotId: input.slotId,
+    adults: String(input.adults),
+    children: String(input.children),
+    infants: String(input.infants),
+  })
+
+  if (input.currency) params.set('currency', input.currency)
+
+  const response = await fetch(
+    `${apiBaseUrl()}/api/experiences/${encodeURIComponent(input.slug)}/quote?${params.toString()}`,
+    { headers: { Accept: 'application/json' }, cache: 'no-store' },
+  )
+
+  if (!response.ok) {
+    throw problemOf(response)
+  }
+
+  return (await response.json()) as GuestQuote
+}

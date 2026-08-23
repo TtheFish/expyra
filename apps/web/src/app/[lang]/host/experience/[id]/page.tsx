@@ -12,16 +12,22 @@ import {
   publishExperienceAction,
   setTranslationAction,
   updateExperienceAction,
+  updatePricingAction,
 } from '@/features/host/experience-actions'
 import {
+  ADULT_PRICE_FIELD,
   CAPACITY_FIELD,
   CATEGORY_FIELD,
+  CHILD_PRICE_FIELD,
+  CURRENCY_FIELD,
   DESCRIPTION_FIELD,
   DURATION_FIELD,
+  INFANT_PRICE_FIELD,
   SPOKEN_LANGUAGE_FIELD,
   TAGS_FIELD,
   TEXT_LANGUAGE_PARAM,
   TITLE_FIELD,
+  toMajorAmountInput,
 } from '@/features/host/experience-fields'
 import { ExperienceForm } from '@/features/host/experience-forms'
 import { MediaUploader } from '@/features/host/media-uploader'
@@ -29,11 +35,15 @@ import {
   HostExperienceAccessError,
   categoryMessageKey,
   fetchCategorySlugs,
+  fetchCurrencies,
   fetchHostExperience,
+  fetchHostSchedule,
   hostExperiencePath,
   requirementMessageKey,
+  type CurrencyOption,
   type HostExperience,
   type HostExperienceTranslation,
+  type HostPricing,
 } from '@/features/host/experiences-api'
 import type { SimpleMessageKey, Translate } from '@/features/i18n/dictionary'
 import { getPluralTemplates, getTemplate, getTranslator } from '@/features/i18n/translator'
@@ -128,7 +138,18 @@ export default async function EditExperiencePage({
   }
 
   const experience = loaded
-  const categories = await fetchCategorySlugs()
+
+  // Takvim ve para birimi kayıt defteri PARALEL: ikisi de ilan verisine bağlı
+  // değil ve seri beklemek sayfayı iki tur geciktirirdi.
+  //
+  // Fiyat `schedule.pricing` içinden geliyor, ayrı bir uçtan değil: yazma ucu
+  // TAM DEĞİŞTİRME yapıyor, yani formun kayıtlı değeri okuyabilmesi şart —
+  // okuyamazsa boş gönderilen bir form mevcut kademeleri siler.
+  const [categories, currencies, schedule] = await Promise.all([
+    fetchCategorySlugs(),
+    fetchCurrencies(),
+    fetchHostSchedule(session.accessToken, experience.id),
+  ])
 
   const activeLanguage = resolveActiveLanguage(experience, query[TEXT_LANGUAGE_PARAM])
   const activeTranslation =
@@ -318,6 +339,25 @@ export default async function EditExperiencePage({
 
           <Section
             index={7}
+            title={t('host.experience.section.pricing')}
+            help={t('host.experience.section.pricingHelp')}
+          >
+            <ExperienceForm
+              action={updatePricingAction}
+              lang={lang}
+              experienceId={experience.id}
+              className="auth-form"
+              labels={{
+                submit: t('host.experience.save'),
+                pending: t('host.experience.saving'),
+              }}
+            >
+              <PricingFields pricing={schedule.pricing} currencies={currencies} t={t} />
+            </ExperienceForm>
+          </Section>
+
+          <Section
+            index={8}
             title={t('host.experience.section.status')}
             help={t('host.experience.section.statusHelp')}
           >
@@ -840,6 +880,143 @@ function TagsField({ experience, t }: { experience: HostExperience; t: Translate
  * yerde (arayüz + sunucu) yaşamasına kapı açar. Basıldığında gelen 409, eksikleri
  * `role="alert"` içinde duyuruyor.
  */
+function PricingFields({
+  pricing,
+  currencies,
+  t,
+}: {
+  pricing: HostPricing | null
+  currencies: CurrencyOption[]
+  t: Translate
+}) {
+  const minorUnits = pricing?.minorUnits ?? 2
+
+  // Boş ile SIFIR ayrı: boş = "bu kademeyi sunmuyorum", 0 = "ücretsiz".
+  // `|| ''` yazılsaydı ücretsiz bir kademe sunulmuyor gibi görünürdü.
+  const amountOf = (guestType: string): string => {
+    const rule = pricing?.rules.find((item) => item.guestType === guestType)
+    return rule ? toMajorAmountInput(rule.unitAmountMinor, minorUnits) : ''
+  }
+
+  const locked = pricing?.currencyLocked ?? false
+
+  return (
+    <>
+      <div>
+        <label className="auth-label" htmlFor="para-birimi">
+          {t('host.pricing.currency.label')}
+        </label>
+        {/*
+          Yayındaki ilanda seçici KİLİTLİ ama `disabled` DEĞİL: devre dışı bir
+          alan form gövdesine hiç girmez ve sunucu para birimini "boş" görüp
+          reddederdi. `readOnly` de `<select>` üzerinde çalışmıyor — bu yüzden
+          seçenek listesi tek satıra indiriliyor: değiştirilemiyor ama
+          gönderiliyor.
+        */}
+        <select
+          id="para-birimi"
+          name={CURRENCY_FIELD}
+          className="auth-input"
+          required
+          defaultValue={pricing?.currency ?? ''}
+          aria-describedby="para-birimi-yardim"
+        >
+          {pricing ? null : <option value="">{t('host.pricing.currency.placeholder')}</option>}
+          {(locked && pricing
+            ? currencies.filter((item) => item.code === pricing.currency)
+            : currencies
+          ).map((item) => (
+            <option key={item.code} value={item.code}>
+              {item.symbol
+                ? `${item.code} — ${item.englishName} (${item.symbol})`
+                : `${item.code} — ${item.englishName}`}
+            </option>
+          ))}
+        </select>
+        <p id="para-birimi-yardim" className="auth-help">
+          {locked ? t('host.pricing.currency.locked') : t('host.pricing.currency.help')}
+        </p>
+      </div>
+
+      <PriceField
+        id="yetiskin-fiyat"
+        name={ADULT_PRICE_FIELD}
+        label={t('host.pricing.adult.label')}
+        help={t('host.pricing.adult.help')}
+        defaultValue={amountOf('adult')}
+        required
+      />
+      <PriceField
+        id="cocuk-fiyat"
+        name={CHILD_PRICE_FIELD}
+        label={t('host.pricing.child.label')}
+        help={t('host.pricing.child.help')}
+        defaultValue={amountOf('child')}
+      />
+      <PriceField
+        id="bebek-fiyat"
+        name={INFANT_PRICE_FIELD}
+        label={t('host.pricing.infant.label')}
+        help={t('host.pricing.infant.help')}
+        defaultValue={amountOf('infant')}
+      />
+    </>
+  )
+}
+
+/**
+ * Tek kademe tutarı.
+ *
+ * **Tutar ANA birimde giriliyor** (`45.50`), API'ye MİNÖR birimde gidiyor
+ * (`4550`). Çevrimi sunucu eylemi yapıyor (`parseMinorAmount`), form değil:
+ * çevrimi yapan taraf para biriminin üssünü bilmek zorunda ve o üs kayıt
+ * defterinde — istemcide bir kopya tutmak JPY'yi yüz kat yanlış kaydeden ikinci
+ * bir doğruluk kaynağı olurdu.
+ *
+ * **`step="any"`** ve bu bilinçli: doğru adım seçilen para biriminin üssüne bağlı
+ * (JPY 1, EUR 0.01, KWD 0.001) ve seçici değişince adımın da değişmesi gerekirdi
+ * — yani istemci durumu. Sabit `step="0.01"` JPY'de tarayıcıyı "geçersiz" demeye
+ * zorlardı. Gerçek doğrulama sunucuda ve fazla haneyi o reddediyor.
+ */
+function PriceField({
+  id,
+  name,
+  label,
+  help,
+  defaultValue,
+  required = false,
+}: {
+  id: string
+  name: string
+  label: string
+  help: string
+  defaultValue: string
+  required?: boolean
+}) {
+  return (
+    <div>
+      <label className="auth-label" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        name={name}
+        type="number"
+        inputMode="decimal"
+        min="0"
+        step="any"
+        className="auth-input"
+        required={required}
+        defaultValue={defaultValue}
+        aria-describedby={`${id}-yardim`}
+      />
+      <p id={`${id}-yardim`} className="auth-help">
+        {help}
+      </p>
+    </div>
+  )
+}
+
 function PublishSection({
   lang,
   experience,

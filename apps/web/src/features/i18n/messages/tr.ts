@@ -662,6 +662,7 @@ export const tr = {
   'host.experience.missing.capacity': 'kapasite',
   'host.experience.missing.duration': 'süre',
   'host.experience.missing.cover': 'kapak görseli',
+  'host.experience.missing.price': 'fiyat',
   /** Sunucu tanımadığımız bir koşul eklerse: gizlemiyoruz, "bir şey daha var" diyoruz. */
   'host.experience.missing.unknown': 'tamamlanmamış bir alan',
 
@@ -752,4 +753,34 @@ export const tr = {
   'category.photography': 'Fotoğrafçılık',
   'category.tours-walks': 'Turlar ve yürüyüşler',
   'category.local-life': 'Yerel hayat',
+  // --- Fiyat (PLAN Blok 7) ---
+  'host.experience.section.pricing': 'Fiyat',
+  'host.experience.section.pricingHelp':
+    'Kişi başı fiyatı kendi para biriminde gir. Tahsilat daima bu para biriminde yapılıyor; gezgin başka bir para birimi seçerse yalnızca gösterim çevriliyor.',
+
+  'host.pricing.currency.label': 'Tahsilat para birimi',
+  'host.pricing.currency.help':
+    'Paranın sana ulaşacağı para birimi. Yayınladıktan sonra değiştirilemiyor — önce arşivlemen gerekir.',
+  'host.pricing.currency.locked': 'İlan yayında olduğu için para birimi kilitli.',
+  'host.pricing.currency.placeholder': 'Seç',
+
+  'host.pricing.adult.label': 'Yetişkin (kişi başı)',
+  'host.pricing.adult.help': 'Zorunlu. Kartlarda ve aramada görünen “şu fiyattan başlayan” tutar bu.',
+  'host.pricing.child.label': 'Çocuk (kişi başı)',
+  'host.pricing.child.help': 'Boş bırakırsan çocuk kademesi sunulmuyor. Ücretsizse 0 yaz.',
+  'host.pricing.infant.label': 'Bebek (kişi başı)',
+  'host.pricing.infant.help': 'Boş bırakırsan bebek kademesi sunulmuyor. Ücretsizse 0 yaz.',
+
+  'host.pricing.saved': 'Fiyat kaydedildi.',
+  'host.pricing.empty': 'Henüz fiyat girilmedi. Fiyatsız bir ilan yayınlanamıyor.',
+
+  'host.pricing.error.currency': 'Geçerli bir para birimi seç.',
+  'host.pricing.error.currencyLocked':
+    'Yayındaki bir ilanın para birimi değiştirilemez. Önce arşivle.',
+  'host.pricing.error.adult': 'Yetişkin fiyatı zorunlu ve geçerli bir tutar olmalı.',
+  'host.pricing.error.child': 'Çocuk fiyatı geçerli bir tutar olmalı.',
+  'host.pricing.error.infant': 'Bebek fiyatı geçerli bir tutar olmalı.',
+  'host.pricing.error.range':
+    'Tutar ödeme sağlayıcısının kabul ettiği aralığın dışında. Çok küçük ya da çok büyük bir fiyat girdin.',
+
 } as const

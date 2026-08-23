@@ -11,13 +11,18 @@ import { getTranslator } from '@/features/i18n/translator'
 import { resolveCity } from '@/features/places/api'
 import { path } from '@/lib/routes'
 import {
+  ADULT_PRICE_FIELD,
   CAPACITY_FIELD,
   CATEGORY_FIELD,
+  CHILD_PRICE_FIELD,
+  CURRENCY_FIELD,
   CITY_FIELD,
   DESCRIPTION_FIELD,
   DURATION_FIELD,
   EXPERIENCE_ID_FIELD,
+  INFANT_PRICE_FIELD,
   SECTION_FIELD,
+  parseMinorAmount,
   SPOKEN_LANGUAGE_FIELD,
   TAGS_FIELD,
   TEXT_LANGUAGE_FIELD,
@@ -31,6 +36,7 @@ import {
   createExperience,
   createMediaUpload,
   deleteMedia,
+  fetchCurrencies,
   fetchHostExperience,
   hostExperiencePath,
   publishExperience,
@@ -38,6 +44,7 @@ import {
   requirementMessageKey,
   setExperienceTranslation,
   setMediaCover,
+  setPricing,
   updateExperience,
   type HostExperiencePatch,
   type MediaUpload,
@@ -813,4 +820,134 @@ const MEDIA_ERROR_KEYS: Record<string, SimpleMessageKey> = {
   'media-too-large': 'host.media.error.tooLarge',
   'media-limit-reached': 'host.media.error.limit',
   'media-last-of-published': 'host.media.error.lastOfPublished',
+}
+
+// ---------------------------------------------------------------------------
+// Fiyat (PLAN Blok 7)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fiyatı kaydeder.
+ *
+ * <b>`updateExperienceAction`'a bir `bolum` olarak EKLENMEDİ</b> ve sebebi
+ * sözleşme: o eylem `PATCH /api/host/experiences/{id}` ucuna gidiyor ve gerçek
+ * bir delta gönderiyor. Fiyat ise ayrı bir uca (`PUT .../pricing`) ve TAM
+ * DEĞİŞTİRME ile gidiyor — gövdede olmayan kademe siliniyor. İki farklı
+ * sözleşmeyi tek eylemin `buildPatch`'ine sıkıştırmak, "boş alan = dokunma" ile
+ * "boş alan = sil" kurallarını aynı fonksiyonda yan yana koymak olurdu.
+ *
+ * `ExperienceFormState` aynı, yani `ExperienceForm` bileşeni değişmeden
+ * çalışıyor.
+ */
+export async function updatePricingAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(lang)
+
+  const experienceId = readField(formData, EXPERIENCE_ID_FIELD)
+  if (!experienceId) {
+    return fail(t, 'host.experience.error.notFound')
+  }
+
+  const here = hostExperiencePath(lang, experienceId)
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, here), RedirectType.replace)
+  }
+
+  const currency = readField(formData, CURRENCY_FIELD)
+  if (!currency) {
+    return fail(t, 'host.pricing.error.currency')
+  }
+
+  // Üs KAYIT DEFTERİNDEN, istemciden değil: form "2 ondalık" varsayarsa JPY'de
+  // 100 kat, KWD'de 10 kat yanlış tutar kaydedilir ve hiçbir yerde hata vermez.
+  let minorUnits: number
+  try {
+    const currencies = await fetchCurrencies()
+    const match = currencies.find((item) => item.code === currency)
+
+    if (!match) return fail(t, 'host.pricing.error.currency')
+
+    minorUnits = match.minorUnits
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      redirect(accessHref(lang, error, here), RedirectType.replace)
+    }
+    throw error
+  }
+
+  const rules: { guestType: string; unitAmountMinor: number }[] = []
+
+  // Yetişkin ZORUNLU: kartta ve listede gösterilen "kişi başı" tutar o ve
+  // sunucu da onsuz kabul etmiyor. Diğer ikisi boş bırakılabilir — boş "bu
+  // kademe sunulmuyor" demek, "bedava" değil (bedava = 0 yazmak).
+  const adult = parseMinorAmount(formData.get(ADULT_PRICE_FIELD)?.toString() ?? '', minorUnits)
+  if (adult === null) {
+    return fail(t, 'host.pricing.error.adult')
+  }
+
+  rules.push({ guestType: 'adult', unitAmountMinor: adult })
+
+  for (const [field, guestType, errorKey] of [
+    [CHILD_PRICE_FIELD, 'child', 'host.pricing.error.child'],
+    [INFANT_PRICE_FIELD, 'infant', 'host.pricing.error.infant'],
+  ] as const) {
+    const raw = formData.get(field)?.toString().trim() ?? ''
+    if (raw.length === 0) continue
+
+    const amount = parseMinorAmount(raw, minorUnits)
+    if (amount === null) {
+      return fail(t, errorKey)
+    }
+
+    rules.push({ guestType, unitAmountMinor: amount })
+  }
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await setPricing(accessToken, experienceId, { currency, rules })
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return pricingFailure(t, error)
+    }
+  }
+
+  if (access) {
+    redirect(accessHref(lang, access, here), RedirectType.replace)
+  }
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.pricing.saved'))
+}
+
+/**
+ * Fiyat ucunun hatalarını ekrana çevirir.
+ *
+ * <c>writeFailure</c>'dan AYRI çünkü 409'un anlamı farklı: orada "yayındaki ilan
+ * bu alanı kaybedemez", burada "para birimi kilitli". İkisine aynı cümleyi
+ * göstermek host'u yanlış çözüme (alanı doldurmaya) yönlendirirdi.
+ */
+function pricingFailure(t: Translate, error: unknown): ExperienceFormState {
+  if (error instanceof ApiError) {
+    if (error.status === 404) return fail(t, 'host.experience.error.notFound')
+
+    // Tek 409 kaynağı para birimi kilidi; çözümü arşivlemek.
+    if (error.status === 409) return fail(t, 'host.pricing.error.currencyLocked')
+
+    // 400: ödeme sağlayıcısının alt/üst sınırı ya da gövde doğrulaması. Sunucunun
+    // cümlesi GÖSTERİLMİYOR (dili kullanıcının dili olmak zorunda değil); sınırın
+    // sayısal değeri de gösterilmiyor çünkü para birimine göre değişiyor ve
+    // arayüzde bir tablo tutmak ikinci bir doğruluk kaynağı olurdu.
+    if (error.status === 400) return fail(t, 'host.pricing.error.range')
+  }
+
+  throw error
 }

@@ -172,6 +172,7 @@ const REQUIREMENT_MESSAGE_KEYS: Record<string, SimpleMessageKey> = {
   capacity: 'host.experience.missing.capacity',
   duration: 'host.experience.missing.duration',
   cover: 'host.experience.missing.cover',
+  price: 'host.experience.missing.price',
 }
 
 export function requirementMessageKey(code: string): SimpleMessageKey {
@@ -481,6 +482,42 @@ export async function fetchCategorySlugs(): Promise<string[]> {
   return payload.map((item) => item.slug)
 }
 
+export type CurrencyOption = {
+  /** ISO 4217 alfabetik kod. */
+  code: string
+  /** İngilizce ad — seçicide kodun yanında. Yerelleştirilmiş ad YOK (bkz. not). */
+  englishName: string
+  /** ISO 4217 üssü: JPY 0, KWD 3, çoğunluk 2. Tutar girişinin adımını bu belirliyor. */
+  minorUnits: number
+  symbol: string | null
+}
+
+/**
+ * Para birimi kayıt defteri — fiyat formundaki seçici.
+ *
+ * **Yerelleştirilmiş ad taşımıyor** ve bu Blok 4'ün şehir kararının aynısı:
+ * kayıt defterinde adın tek yazımı var (İngilizce) ve 58 para biriminin adını
+ * arayüz sözlüğüne kopyalamak, sözlüğü iki katına çıkarıp hiçbir şey
+ * kazandırmazdı — seçicide asıl tanınan şey KOD (`EUR`, `TRY`) ve sembol.
+ *
+ * `fetchCategorySlugs` ile aynı ev, aynı gerekçe: bu bir kayıt defteri kapısı
+ * ve ikinci tüketicisi çıkana kadar kendi modülünü hak etmiyor.
+ */
+export async function fetchCurrencies(): Promise<CurrencyOption[]> {
+  const response = await fetch(`${apiBaseUrl()}/api/currencies`, {
+    headers: { Accept: 'application/json' },
+    next: { revalidate: CATEGORY_REVALIDATE_SECONDS },
+  })
+
+  if (!response.ok) {
+    // Hata YUTULMUYOR: boş liste, fiyat formunu seçeneksiz bırakır ve host
+    // fiyat giremediği için ilanını hiç yayınlayamaz (CLAUDE.md #1).
+    throw await problemOf(response)
+  }
+
+  return (await response.json()) as CurrencyOption[]
+}
+
 /**
  * Düzenleme ekranının yolu.
  *
@@ -588,4 +625,297 @@ export async function deleteMedia(
   })
 
   return (await response.json()) as HostExperience
+}
+
+// ---------------------------------------------------------------------------
+// Takvim ve fiyat (PLAN Blok 7)
+// ---------------------------------------------------------------------------
+//
+// AYRI bir dosya AÇILMADI ve gerekçesi şu: bu uçlar aynı kaynağın altında
+// (`/api/host/experiences/{id}/…`), aynı rol kapısının arkasında ve aynı
+// 401/403 → `HostExperienceAccessError` çevrimini istiyor. Ayrı dosya,
+// `apiBaseUrl` + `problemOf` + `send` üçlüsünün BEŞİNCİ kopyası demekti —
+// dosyanın başındaki not zaten o kopyalanmayı bir borç olarak sayıyor ve
+// borcu artırmanın anlamı yok.
+
+/** Sunucudaki `SlotStatus` — camelCase METİN (CLAUDE.md #8). */
+export type SlotStatus = 'open' | 'closed'
+
+/** Seansı kimin kapattığı. Blackout kaldırılınca yalnız `blackout` olanlar açılıyor. */
+export type SlotClosedReason = 'host' | 'blackout'
+
+export type HostSlot = {
+  slotId: string
+  /** Kesin an. Sıralama ve "geçti mi" kontrolü bununla. */
+  startsAtUtc: string
+  /**
+   * Deneyimin saat dilimindeki duvar saati, EK OLMADAN: `2026-10-13T14:00`.
+   * `new Date()` ile AYRIŞTIRMA — `formatWallClock` kullan (bkz. o fonksiyonun notu).
+   */
+  startsAtLocal: string
+  utcOffsetMinutes: number
+  endsAtUtc: string
+  durationMinutes: number
+  capacity: number
+  remainingCapacity: number
+  status: SlotStatus
+  closedReason: SlotClosedReason | null
+  /** Dolu ise seans bir haftalık kuraldan doğdu ve SİLİNEMEZ (kapatılabilir). */
+  recurrenceTemplateId: string | null
+}
+
+export type HostRecurrence = {
+  id: string
+  /** `"monday"` … `"sunday"` — küçük harf, sayı değil (CLAUDE.md #8). */
+  dayOfWeek: string
+  /** `"14:00"` */
+  startTimeLocal: string
+  startsOnLocal: string
+  endsOnLocal: string | null
+  dstOverlap: 'first' | 'second'
+  status: 'active' | 'stopped'
+}
+
+export type HostBlackout = {
+  id: string
+  startsOnLocal: string
+  /** Gün DÂHİL. */
+  endsOnLocal: string
+  note: string | null
+}
+
+export type HostPriceRule = {
+  /** `"adult" | "child" | "infant"` */
+  guestType: string
+  /** MİNÖR birim tam sayısı (CLAUDE.md #7). `formatMinorMoney` ile göster. */
+  unitAmountMinor: number
+}
+
+export type HostPricing = {
+  currency: string
+  /** ISO 4217 üssü — JPY 0, KWD 3. Biçimlendirme bunu İSTİYOR. */
+  minorUnits: number
+  /** Yayındaki ilanda para birimi değişmiyor; arayüz seçiciyi bununla kilitliyor. */
+  currencyLocked: boolean
+  rules: HostPriceRule[]
+}
+
+/** Üretilemeyen occurrence. Sessizce atlanmıyor: host "neden o gün yok" diye sorabilmeli. */
+export type SkippedOccurrence = {
+  localStart: string
+  /** `"dst-gap"` (yaz saati boşluğu) | `"blackout"` */
+  reason: string
+  /** Yaz saati boşluğunda ilk geçerli saat; diğer sebeplerde `null`. */
+  firstValidLocal: string | null
+}
+
+export type ScheduleGenerationReport = {
+  createdSlotCount: number
+  skipped: SkippedOccurrence[]
+}
+
+export type HostSchedule = {
+  /** `"Europe/Prague"`. Saatler bununla çiziliyor, TARAYICININ dilimiyle değil. */
+  timeZoneId: string
+  durationMinutes: number
+  capacity: number
+  from: string
+  to: string
+  generatedThroughLocalDate: string | null
+  /** `ScheduleRequirement` kodları: `time-zone` | `duration` | `capacity`. */
+  missingScheduleRequirements: string[]
+  recurrences: HostRecurrence[]
+  blackouts: HostBlackout[]
+  slots: HostSlot[]
+  /** Host hiç fiyat girmemişse `null` — hata değil, tamamlanmamış adım. */
+  pricing: HostPricing | null
+}
+
+/**
+ * Takvim + fiyat, TEK çağrıda. Ön koşul eksik olsa da 200 dönüyor: host
+ * eksikleri `missingScheduleRequirements` içinde görüp tamamlayabilmeli.
+ */
+export async function fetchHostSchedule(
+  accessToken: string,
+  id: string,
+  window?: { from?: string; to?: string },
+): Promise<HostSchedule> {
+  const query = new URLSearchParams()
+  if (window?.from) query.set('from', window.from)
+  if (window?.to) query.set('to', window.to)
+
+  const suffix = query.size > 0 ? '?' + query.toString() : ''
+
+  const response = await send({
+    accessToken,
+    method: 'GET',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/schedule${suffix}`,
+  })
+
+  return (await response.json()) as HostSchedule
+}
+
+export type CreateRecurrenceInput = {
+  /** `["tuesday", "thursday"]` — her gün AYRI bir kural satırı oluyor. */
+  daysOfWeek: string[]
+  startTimeLocal: string
+  startsOnLocal: string
+  endsOnLocal?: string | null
+}
+
+/**
+ * Haftalık kural açar ve AYNI istekte ufka kadar seans üretir — host "her salı
+ * 14:00" yazdıktan sonra takvimini boş görmemeli.
+ */
+export async function createRecurrence(
+  accessToken: string,
+  id: string,
+  input: CreateRecurrenceInput,
+): Promise<{ templates: HostRecurrence[]; report: ScheduleGenerationReport }> {
+  const response = await send({
+    accessToken,
+    method: 'POST',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/recurrences`,
+    body: input,
+  })
+
+  return (await response.json()) as {
+    templates: HostRecurrence[]
+    report: ScheduleGenerationReport
+  }
+}
+
+/** Kuralı DURDURUR (silmez) ve ondan doğmuş gelecek seansları kapatır. */
+export async function stopRecurrence(
+  accessToken: string,
+  id: string,
+  recurrenceId: string,
+): Promise<{ closedSlotCount: number; keptSlotCount: number }> {
+  const response = await send({
+    accessToken,
+    method: 'DELETE',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/recurrences/${encodeURIComponent(recurrenceId)}`,
+  })
+
+  return (await response.json()) as { closedSlotCount: number; keptSlotCount: number }
+}
+
+/**
+ * Tek seferlik seans. Yaz saati boşluğuna denk gelirse **400** — şablonda
+ * atlanıyor, burada reddediliyor çünkü host o saati açıkça istedi.
+ */
+export async function createSlot(
+  accessToken: string,
+  id: string,
+  startsAtLocal: string,
+): Promise<HostSlot> {
+  const response = await send({
+    accessToken,
+    method: 'POST',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/slots`,
+    body: { startsAtLocal },
+  })
+
+  return (await response.json()) as HostSlot
+}
+
+/** Seansı açar/kapatır. Kapasite ve başlangıç bu uçtan DEĞİŞMİYOR. */
+export async function setSlotStatus(
+  accessToken: string,
+  id: string,
+  slotId: string,
+  status: SlotStatus,
+): Promise<HostSlot> {
+  const response = await send({
+    accessToken,
+    method: 'PATCH',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/slots/${encodeURIComponent(slotId)}`,
+    body: { status },
+  })
+
+  return (await response.json()) as HostSlot
+}
+
+/** Yalnız ELLE eklenmiş, gelecekteki, satılmamış seanslar. Şablondan doğan 409. */
+export async function deleteSlot(accessToken: string, id: string, slotId: string): Promise<void> {
+  await send({
+    accessToken,
+    method: 'DELETE',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/slots/${encodeURIComponent(slotId)}`,
+  })
+}
+
+/** "Şu tarihlerde yokum." Aralığa düşen açık ve satılmamış seansları kapatıyor. */
+export async function createBlackout(
+  accessToken: string,
+  id: string,
+  input: { startsOnLocal: string; endsOnLocal: string; note?: string | null },
+): Promise<{ blackout: HostBlackout; closedSlotCount: number; skippedSoldSlotCount: number }> {
+  const response = await send({
+    accessToken,
+    method: 'POST',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/blackouts`,
+    body: input,
+  })
+
+  return (await response.json()) as {
+    blackout: HostBlackout
+    closedSlotCount: number
+    skippedSoldSlotCount: number
+  }
+}
+
+/** Aralığı kaldırır ve YALNIZ onun kapattığı seansları geri açar. */
+export async function deleteBlackout(
+  accessToken: string,
+  id: string,
+  blackoutId: string,
+): Promise<{ reopenedSlotCount: number }> {
+  const response = await send({
+    accessToken,
+    method: 'DELETE',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/blackouts/${encodeURIComponent(blackoutId)}`,
+  })
+
+  return (await response.json()) as { reopenedSlotCount: number }
+}
+
+/** Takvim ufkunu ilerletir. İdempotent; ikinci çağrı yeni satır üretmiyor. */
+export async function extendSchedule(
+  accessToken: string,
+  id: string,
+  throughLocalDate?: string,
+): Promise<{ generatedThroughLocalDate: string; report: ScheduleGenerationReport }> {
+  const response = await send({
+    accessToken,
+    method: 'POST',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/schedule/extend`,
+    body: { throughLocalDate: throughLocalDate ?? null },
+  })
+
+  return (await response.json()) as {
+    generatedThroughLocalDate: string
+    report: ScheduleGenerationReport
+  }
+}
+
+/**
+ * Fiyatı TAM DEĞİŞTİRME ile yazar: gövdedeki liste kademelerin son hâli.
+ *
+ * **Gövdede olmayan kademe SİLİNİYOR.** Formu kayıtlı değeri okumadan boş
+ * göndermek mevcut fiyatları siler; okuma yolu `fetchHostSchedule().pricing`.
+ */
+export async function setPricing(
+  accessToken: string,
+  id: string,
+  input: { currency: string; rules: HostPriceRule[] },
+): Promise<HostPricing> {
+  const response = await send({
+    accessToken,
+    method: 'PUT',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/pricing`,
+    body: input,
+  })
+
+  return (await response.json()) as HostPricing
 }

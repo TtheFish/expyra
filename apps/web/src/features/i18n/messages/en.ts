@@ -442,6 +442,7 @@ export const en = {
   'host.experience.missing.capacity': 'a capacity',
   'host.experience.missing.duration': 'a duration',
   'host.experience.missing.cover': 'a cover photo',
+  'host.experience.missing.price': 'a price',
   'host.experience.missing.unknown': 'an unfinished field',
 
   'host.experience.publish': 'Publish',
@@ -511,6 +512,36 @@ export const en = {
   'category.photography': 'Photography',
   'category.tours-walks': 'Tours and walks',
   'category.local-life': 'Local life',
+  // --- Pricing (PLAN Blok 7) ---
+  'host.experience.section.pricing': 'Price',
+  'host.experience.section.pricingHelp':
+    'Set your per-person price in your own currency. You are always paid in this currency; if a traveller picks another one, only the display is converted.',
+
+  'host.pricing.currency.label': 'Payout currency',
+  'host.pricing.currency.help':
+    'The currency the money reaches you in. It cannot be changed once the listing is published — archive it first.',
+  'host.pricing.currency.locked': 'The currency is locked because the listing is live.',
+  'host.pricing.currency.placeholder': 'Choose',
+
+  'host.pricing.adult.label': 'Adult (per person)',
+  'host.pricing.adult.help': 'Required. This is the “from” price shown on cards and in search.',
+  'host.pricing.child.label': 'Child (per person)',
+  'host.pricing.child.help': 'Leave empty if you do not offer a child rate. Enter 0 if it is free.',
+  'host.pricing.infant.label': 'Infant (per person)',
+  'host.pricing.infant.help': 'Leave empty if you do not offer an infant rate. Enter 0 if it is free.',
+
+  'host.pricing.saved': 'Price saved.',
+  'host.pricing.empty': 'No price yet. A listing without a price cannot be published.',
+
+  'host.pricing.error.currency': 'Choose a valid currency.',
+  'host.pricing.error.currencyLocked':
+    'The currency of a live listing cannot be changed. Archive it first.',
+  'host.pricing.error.adult': 'The adult price is required and must be a valid amount.',
+  'host.pricing.error.child': 'The child price must be a valid amount.',
+  'host.pricing.error.infant': 'The infant price must be a valid amount.',
+  'host.pricing.error.range':
+    'That amount is outside the range the payment provider accepts — it is either too small or too large.',
+
 } as const satisfies Dictionary<'en'>
 
 /**
