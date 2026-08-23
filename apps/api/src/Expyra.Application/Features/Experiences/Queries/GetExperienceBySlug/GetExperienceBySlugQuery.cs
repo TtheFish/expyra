@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Expyra.Application.Common.Exceptions;
 using Expyra.Application.Common.Interfaces;
+using Expyra.Application.Features.Pricing;
 
 namespace Expyra.Application.Features.Experiences.Queries.GetExperienceBySlug;
 
@@ -23,8 +24,10 @@ namespace Expyra.Application.Features.Experiences.Queries.GetExperienceBySlug;
 /// hreflang halkası kurulabiliyor.
 /// </param>
 /// <param name="Language">Metnin istendiği dil — bkz. <c>GetExperiencesQuery.Language</c>.</param>
-public sealed record GetExperienceBySlugQuery(string Slug, string? Language = null)
-    : IRequest<GuestExperienceDetailResponse>;
+public sealed record GetExperienceBySlugQuery(
+    string Slug,
+    string? Language = null,
+    string? Currency = null) : IRequest<GuestExperienceDetailResponse>;
 
 internal sealed class GetExperienceBySlugQueryHandler(IAppDbContext dbContext, IObjectStorage storage)
     : IRequestHandler<GetExperienceBySlugQuery, GuestExperienceDetailResponse>
@@ -92,7 +95,29 @@ internal sealed class GetExperienceBySlugQueryHandler(IAppDbContext dbContext, I
             .LoadHostAsync(dbContext, storage, row.HostId, cancellationToken)
             .ConfigureAwait(false);
 
+        var pricing = await GuestPricingStore
+            .LoadAsync(dbContext, row.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        // Kur çevrimi YALNIZ detayda ve teklifte: listede yirmi dört farklı tahsilat
+        // para birimi olabilir ve hepsi için çapraz oran çözmek, kartlar için ödenecek
+        // bir bedel değil (GetExperiencesQuery'deki notun karşılığı).
+        var display = pricing is null
+            ? null
+            : await ExchangeRateStore
+                .ResolveAsync(
+                    dbContext, pricing.ChargeCurrency, pricing.ChargeMinorUnits,
+                    request.Currency, cancellationToken)
+                .ConfigureAwait(false);
+
         return GuestExperienceQuery.ToDetail(
-            row, texts[row.Id], spokenLanguages, tags, images, host, language);
+            row,
+            texts[row.Id],
+            spokenLanguages,
+            tags,
+            images,
+            host,
+            pricing is null ? null : GuestPricingStore.ToResponse(pricing, display),
+            language);
     }
 }

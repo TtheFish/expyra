@@ -21,6 +21,13 @@
     <EmbeddedResource Include="..\..\..\..\docs\categories.json"
                       LogicalName="Expyra.Infrastructure.Seed.categories.json" />
     <!--
+      Kur anlık görüntüsünün seed verisi. Gerçek kur servisi Faz 7'de; o gelene kadar
+      sabit oranlar. Hepsi 1.0 olsaydı kur çevriminin bozukluğu hiçbir testte
+      görünmezdi.
+    -->
+    <EmbeddedResource Include="..\..\..\..\docs\exchange-rates.json"
+                      LogicalName="Expyra.Infrastructure.Seed.exchange-rates.json" />
+    <!--
       Ödeme sağlayıcısının para birimi kısıtları. Seed DEĞİL — veritabanına
       yazılmıyor, açılışta belleğe okunup PaymentCurrencyRules'a veriliyor.
       Aynı klasörde çünkü kaynağı da aynı: docs/ altındaki elle bakılan tablolar.

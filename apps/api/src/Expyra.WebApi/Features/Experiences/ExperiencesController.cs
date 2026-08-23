@@ -1,16 +1,20 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Expyra.Application.Features.Experiences;
+using Expyra.Application.Features.Experiences.Queries.GetAvailability;
 using Expyra.Application.Features.Experiences.Queries.GetExperienceBySlug;
 using Expyra.Application.Features.Experiences.Queries.GetExperiences;
+using Expyra.Application.Features.Experiences.Queries.GetQuote;
 using Expyra.WebApi.Common;
 
 namespace Expyra.WebApi.Features.Experiences;
 
 /// <summary>
-/// Misafirin gördüğü deneyimler. Uçların ikisi de <b>ANONİM</b> — <c>[Authorize]</c> yok
+/// Misafirin gördüğü deneyimler. Uçların <b>hepsi ANONİM</b> — <c>[Authorize]</c> yok
 /// ve Program.cs'te fallback policy de yok, yani varsayılan anonim. Keşif, giriş yapmamış
-/// misafirin gördüğü ilk şey; oturum istemek vitrini kilitlerdi.
+/// misafirin gördüğü ilk şey; oturum istemek vitrini kilitlerdi. Fiyat ve müsaitlik de
+/// aynı kapıda: tarih ve tutarı görmek için hesap açtırmak, satın alma kararından
+/// önce bir duvar örmek olurdu.
 ///
 /// <para>Host'un kendi ilanları burada DEĞİL — onlar <c>/api/host/experiences</c> altında
 /// ve rol kapısının arkasında. İki uç kümesinin ayrı controller'larda olması bir düzen
@@ -69,6 +73,11 @@ public sealed class ExperiencesController(ISender mediator) : ApiControllerBase(
     /// <c>/en/experience/{slug}</c> aynı kaynağı gösteriyor ve hreflang halkası kurulabiliyor.
     /// </param>
     /// <param name="lang">Bkz. <c>GET /api/experiences</c>.</param>
+    /// <param name="currency">
+    /// Fiyatın ayrıca gösterileceği para birimi (ISO 4217). Verilmezse çevrim yok.
+    /// Çevrilen tutar <b>yalnız gösterim</b>; tahsilat daima host'un para biriminde
+    /// ve yanıtta o da yazıyor.
+    /// </param>
     /// <remarks>
     /// Taslak, arşiv, banlı host'un yayını ve olmayan slug — dördü de <b>404</b> ve
     /// mesajları da aynı. Farklı bir yanıt, yayınlanmamış ilanların varlığını haritalamaya
@@ -81,9 +90,76 @@ public sealed class ExperiencesController(ISender mediator) : ApiControllerBase(
     public async Task<ActionResult<GuestExperienceDetailResponse>> Get(
         string slug,
         CancellationToken cancellationToken,
-        [FromQuery] string? lang = null)
+        [FromQuery] string? lang = null,
+        [FromQuery] string? currency = null)
     {
-        var result = await Mediator.Send(new GetExperienceBySlugQuery(slug, lang), cancellationToken);
+        var result = await Mediator.Send(
+            new GetExperienceBySlugQuery(slug, lang, currency), cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Seçilebilir seanslar ve fiyat — detay sayfasının takvim bölümünün TEK çağrısı.
+    /// </summary>
+    /// <param name="from">
+    /// Deneyimin saat dilimindeki yerel tarih. Verilmezse orada bugün. <b>İstemcinin
+    /// saat diliminden türetilmiyor</b>: Prag'daki bir tur, misafir İstanbul'dan baksa
+    /// da Prag gününe göre listeleniyor.
+    /// </param>
+    /// <param name="to">Verilmezse <c>from + 30 gün</c>. Pencere en fazla 62 gün.</param>
+    /// <param name="currency">
+    /// Misafirin görmek istediği para birimi (ISO 4217). Verilmezse çevrim yok.
+    /// Çevrilen tutar <b>yalnız gösterim</b>; tahsilat daima host'un para biriminde.
+    /// </param>
+    /// <remarks>
+    /// Kapalı, dolu ve <b>geçmiş</b> seanslar dönmüyor (PLAN Blok 7 kabul kriteri 4).
+    /// Host kendi takviminde hepsini görüyor — o ayrı bir uç ve ayrı bir soru.
+    /// </remarks>
+    [HttpGet("{slug}/availability")]
+    [ProducesResponseType<GuestAvailabilityResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<GuestAvailabilityResponse>> Availability(
+        string slug,
+        CancellationToken cancellationToken,
+        [FromQuery] DateOnly? from = null,
+        [FromQuery] DateOnly? to = null,
+        [FromQuery] string? currency = null)
+    {
+        var result = await Mediator.Send(
+            new GetAvailabilityQuery(slug, from, to, currency), cancellationToken);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// "Bu seansa şu kadar kişi kaç eder?" Toplam SUNUCUDA hesaplanıyor — istemci
+    /// kalem toplasaydı yuvarlama ve kur kuralları iki yerde yaşar, biri bir gün
+    /// ayrışır ve misafir gördüğünden farklı bir tutar öderdi.
+    /// </summary>
+    /// <remarks>
+    /// <b>Hiçbir şey rezerve etmiyor.</b> Kapasite kontrol ediliyor ama koltuk
+    /// tutulmuyor; koltuğu kilitleyen yazma Blok 9'da.
+    /// </remarks>
+    [HttpGet("{slug}/quote")]
+    [ProducesResponseType<GuestQuoteResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<GuestQuoteResponse>> Quote(
+        string slug,
+        [FromQuery] Guid slotId,
+        CancellationToken cancellationToken,
+        [FromQuery] int adults = 0,
+        [FromQuery] int children = 0,
+        [FromQuery] int infants = 0,
+        [FromQuery] string? currency = null)
+    {
+        var result = await Mediator.Send(
+            new GetQuoteQuery(slug, slotId, adults, children, infants, currency), cancellationToken);
+
         return Ok(result);
     }
 }

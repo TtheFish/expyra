@@ -78,13 +78,14 @@ internal static class SeedCommand
 
         app.Logger.LogInformation(
             "Referans veri seed edildi — {Countries} ülke, {Cities} şehir, {Aliases} alias, " +
-            "{Currencies} para birimi, {Categories} kategori. Değişen satır: {Changed} " +
-            "(ikinci koşuda 0 bekleniyor).",
+            "{Currencies} para birimi, {Categories} kategori, {Rates} kur satırı. " +
+            "Değişen satır: {Changed} (ikinci koşuda 0 bekleniyor).",
             result.Countries,
             result.Cities,
             result.CityAliases,
             result.Currencies,
             result.Categories,
+            result.ExchangeRates,
             result.ChangedRows);
 
         return 0;

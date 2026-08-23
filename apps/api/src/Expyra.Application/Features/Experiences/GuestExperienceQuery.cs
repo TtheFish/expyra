@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using Microsoft.EntityFrameworkCore;
 using Expyra.Application.Common.Interfaces;
+using Expyra.Application.Features.Pricing;
 using Expyra.Domain.Experiences;
 using Expyra.Domain.Languages;
 using Expyra.Domain.Places;
@@ -299,6 +300,7 @@ internal static class GuestExperienceQuery
         GuestExperienceRow row,
         ExperienceTextRow text,
         GuestExperienceImageResponse? cover,
+        GuestPricingResponse? pricing,
         string? requestedLanguage)
         => new(
             row.Slug,
@@ -312,6 +314,7 @@ internal static class GuestExperienceQuery
                 IsFallback(text.Language, requestedLanguage),
                 text.Source.ToString()),
             cover,
+            pricing,
             row.PublishedAtUtc);
 
     internal static GuestExperienceDetailResponse ToDetail(
@@ -321,6 +324,7 @@ internal static class GuestExperienceQuery
         IReadOnlyList<string> tags,
         IReadOnlyList<GuestExperienceImageResponse> images,
         GuestExperienceHostResponse host,
+        GuestPricingResponse? pricing,
         string? requestedLanguage)
         => new(
             row.Slug,
@@ -338,6 +342,7 @@ internal static class GuestExperienceQuery
                 text.Source.ToString()),
             images,
             host,
+            pricing,
             row.PublishedAtUtc);
 
     /// <summary>

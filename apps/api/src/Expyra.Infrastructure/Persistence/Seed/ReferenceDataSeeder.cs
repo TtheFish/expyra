@@ -59,6 +59,8 @@ public static class ReferenceDataSeeder
         var (cities, aliases) = await SeedCitiesAsync(dbContext, countryCodes, cancellationToken)
             .ConfigureAwait(false);
 
+        var rates = await SeedExchangeRatesAsync(dbContext, cancellationToken).ConfigureAwait(false);
+
         var changed = await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
@@ -69,6 +71,7 @@ public static class ReferenceDataSeeder
             CityAliases: aliases,
             Currencies: currencies,
             Categories: categories,
+            ExchangeRates: rates,
             ChangedRows: changed);
     }
 
@@ -157,6 +160,95 @@ public static class ReferenceDataSeeder
         }
 
         return seen.Count;
+    }
+
+    /// <summary>
+    /// Kur anlık görüntüsü. <b>Diğer seed'lerden farklı davranıyor</b>: mevcut satırlar
+    /// GÜNCELLENMİYOR, yalnız hiç <see cref="ExchangeRateSource.Seed"/> anlık görüntüsü
+    /// yoksa bir tane yazılıyor.
+    ///
+    /// <para>Gerekçe: bu tablo bir kayıt defteri değil, <b>zaman serisi</b>. Ülke listesi
+    /// "en güncel hâli doğru" mantığıyla üzerine yazılabilir; bir kur ölçümü ise
+    /// geçmişte kalmış bir olgudur ve Blok 9 rezervasyona <c>snapshot_id</c> yazacak.
+    /// Üzerine yazılsaydı, geçmiş bir rezervasyonun "o an hangi kuru gösterdik"
+    /// cevabı geriye dönük değişirdi.</para>
+    ///
+    /// <para>Gerçek servis geldiğinde (Faz 7) o yeni anlık görüntüler ekleyecek ve
+    /// çözücü en yenisini okuyor; bu satırlar kendiliğinden devre dışı kalacak.</para>
+    /// </summary>
+    private static async Task<int> SeedExchangeRatesAsync(
+        AppDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        var exists = await dbContext.ExchangeRateSnapshots
+            .AnyAsync(x => x.Source == ExchangeRateSource.Seed, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (exists)
+        {
+            return 0;
+        }
+
+        var file = SeedResource.Load<ExchangeRateFile>("exchange-rates.json");
+        Require(file.Rates.Count > 0, "exchange-rates.json içinde hiç kur yok.");
+
+        var pivot = CurrencyCode.Normalize(file.Pivot);
+
+        // Pivot'un kendi satırı olmadan çözücü "kaynak pivot mu" diye dallanmak zorunda
+        // kalırdı; o dal bir gün unutulur ve EUR→EUR çevrimi patlardı.
+        Require(
+            file.Rates.ContainsKey(pivot),
+            $"exchange-rates.json: pivot '{pivot}' kendi oran satırına sahip değil.");
+
+        // Gelecek damgalı bir anlık görüntü asla bayatlamaz ve sonraki tüm gerçek
+        // çekimleri kalıcı olarak gölgelerdi (ExchangeRateSnapshot sınıf notu).
+        var now = DateTimeOffset.UtcNow;
+        Require(
+            file.CapturedAtUtc <= now,
+            $"exchange-rates.json: capturedAtUtc gelecekte ({file.CapturedAtUtc:O}).");
+
+        var known = await dbContext.Currencies
+            .Select(x => x.Code)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var registry = new HashSet<string>(known, StringComparer.Ordinal);
+
+        var snapshot = new ExchangeRateSnapshot
+        {
+            Id = Guid.CreateVersion7(),
+            PivotCurrencyCode = pivot,
+            CapturedAtUtc = file.CapturedAtUtc,
+            Source = ExchangeRateSource.Seed,
+            CreatedAtUtc = now,
+        };
+
+        dbContext.ExchangeRateSnapshots.Add(snapshot);
+
+        var written = 0;
+
+        foreach (var (rawCode, rate) in file.Rates)
+        {
+            var code = CurrencyCode.Normalize(rawCode);
+
+            // Kayıt defterinde olmayan kod FK'ye çarpardı; hata orada "insert or update
+            // violates foreign key" derdi ve hangi satır olduğunu söylemezdi.
+            Require(registry.Contains(code), $"exchange-rates.json: '{code}' currencies.json'da yok.");
+
+            // Sıfır ya da negatif oran bölme hatası ya da negatif fiyat üretirdi.
+            Require(rate > 0, $"exchange-rates.json: '{code}' oranı pozitif olmalı ({rate}).");
+
+            dbContext.ExchangeRates.Add(new ExchangeRate
+            {
+                SnapshotId = snapshot.Id,
+                CurrencyCode = code,
+                RatePerPivot = rate,
+            });
+
+            written++;
+        }
+
+        return written;
     }
 
     private static async Task<int> SeedCategoriesAsync(
@@ -437,6 +529,16 @@ public static class ReferenceDataSeeder
 
     private sealed record CurrencySeedRow(string Code, string EnglishName, int MinorUnits, string? Symbol);
 
+    /// <param name="Rates">
+    /// <c>{ "TRY": 47.8 }</c> — "1 ana birim pivot = bu kadar ana birim TRY". Sözlük,
+    /// liste değil: aynı kodun iki kez yazılması JSON düzeyinde zaten anlamsız ve
+    /// tekrar kontrolü için ayrıca kod yazmaya gerek kalmıyor.
+    /// </param>
+    private sealed record ExchangeRateFile(
+        [property: JsonPropertyName("pivot")] string Pivot,
+        [property: JsonPropertyName("capturedAtUtc")] DateTimeOffset CapturedAtUtc,
+        [property: JsonPropertyName("rates")] IReadOnlyDictionary<string, decimal> Rates);
+
     private sealed record CategoryFile(
         [property: JsonPropertyName("categories")] IReadOnlyList<CategorySeedRow> Categories);
 
@@ -460,10 +562,16 @@ public static class ReferenceDataSeeder
 /// <c>SaveChanges</c>'in bildirdiği etkilenen satır sayısı. <b>İkinci koşuda 0 olmalı</b> —
 /// idempotentliğin tek satırlık kanıtı budur.
 /// </param>
+/// <param name="ExchangeRates">
+/// Yazılan kur satırı sayısı. <b>İkinci koşuda 0</b> ve bu diğer sayaçlardan farklı
+/// bir anlam taşıyor: kur tablosu bir zaman serisi, üzerine yazılmıyor — mevcut bir
+/// seed anlık görüntüsü varsa hiç dokunulmuyor.
+/// </param>
 public sealed record ReferenceDataSeedResult(
     int Countries,
     int Cities,
     int CityAliases,
     int Currencies,
     int Categories,
+    int ExchangeRates,
     int ChangedRows);

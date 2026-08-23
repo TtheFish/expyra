@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Expyra.Application.Common.Exceptions;
 using Expyra.Application.Common.Interfaces;
+using Expyra.Application.Features.Pricing;
 using Expyra.Domain.Places;
 
 namespace Expyra.Application.Features.Experiences.Queries.GetExperiences;
@@ -121,12 +122,25 @@ internal sealed class GetExperiencesQueryHandler(IAppDbContext dbContext, IObjec
             .LoadCoversAsync(dbContext, storage, page, cancellationToken)
             .ConfigureAwait(false);
 
+        // Fiyat da sayfanın tamamı için toplu: kart başına sorgu, yirmi dört kartlık
+        // bir sayfada kırk sekiz tur demekti.
+        var pricing = await GuestPricingStore
+            .LoadManyAsync(dbContext, [.. page.Select(x => x.Id)], cancellationToken)
+            .ConfigureAwait(false);
+
+        // Listede kur ÇEVRİMİ YOK ve bu bilinçli: bir sayfada yirmi dört farklı
+        // tahsilat para birimi olabilir ve hepsini çevirmek yirmi dört çapraz oran
+        // demek. Kartta yazan tutar host'un para biriminde, yanında kodu ile; çevrim
+        // detay ve teklif uçlarında, misafir tek bir ilana odaklandığında yapılıyor.
         var items = page
             .Select(row => GuestExperienceQuery.ToSummary(
                 row,
                 texts[row.Id],
                 // Blok 6 öncesinde yayınlanmış kapaksız satırlar burada null'a düşüyor.
                 covers.TryGetValue(row.Id, out var cover) ? cover : null,
+                pricing.TryGetValue(row.Id, out var price)
+                    ? GuestPricingStore.ToResponse(price, null)
+                    : null,
                 language))
             .ToList();
 

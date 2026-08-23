@@ -39,6 +39,10 @@ namespace Expyra.Application.Features.Experiences;
 /// panelinde kırık küçük resim olurdu. Yükleme ile kayıt arasındaki geçici durumu
 /// istemci kendi belleğinde tutuyor — kimliği zaten yükleme ucundan aldı.
 /// </param>
+/// <param name="InfantCountsTowardCapacity">
+/// Bebek koltuk tüketiyor mu. Arayüz anahtarı bununla çiziyor; misafir yanıtında YOK
+/// çünkü misafirin gördüğü şey kararın kendisi değil sonucu (teklifteki <c>seats</c>).
+/// </param>
 public sealed record HostExperienceResponse(
     Guid Id,
     string? Slug,
@@ -47,6 +51,7 @@ public sealed record HostExperienceResponse(
     string? CategorySlug,
     int DurationMinutes,
     int Capacity,
+    bool InfantCountsTowardCapacity,
     string? TimeZoneId,
     string OriginalLanguage,
     IReadOnlyList<string> SpokenLanguages,
@@ -198,6 +203,7 @@ internal static class HostExperienceProjection
             experience.CategorySlug,
             experience.DurationMinutes,
             experience.Capacity,
+            experience.InfantCountsTowardCapacity,
             experience.TimeZoneId,
             experience.OriginalLanguage,
             spokenLanguages,

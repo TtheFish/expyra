@@ -26,6 +26,11 @@ namespace Expyra.Application.Features.Experiences.Commands.UpdateExperience;
 /// Gövdeden DEĞİL, yoldan doldurulur (controller <c>with</c> ile yazıyor). İstemci
 /// gövdeye başka bir id koysa bile üzerine yazılır.
 /// </param>
+/// <param name="InfantCountsTowardCapacity">
+/// Bebek koltuk tüketiyor mu. Karar HOST'un çünkü fiziksel sınırı bilen o: teknede
+/// her baş sayılır, yürüyüş turunda kucaktaki bebek saymayabilir. Varsayılan
+/// <c>true</c> — güvenli taraf, kapasiteyi aşmayan taraf.
+/// </param>
 /// <param name="SpokenLanguages">
 /// Deneyim sırasında konuşulan diller. <b>Çeviri dili değil</b> (docs/I18N.md §3):
 /// Prag'daki host ilanını İngilizce yazıp turu Çekçe anlatabilir.
@@ -36,6 +41,7 @@ public sealed record UpdateExperienceCommand(
     string? CategorySlug,
     int? DurationMinutes,
     int? Capacity,
+    bool? InfantCountsTowardCapacity,
     IReadOnlyList<string>? SpokenLanguages,
     IReadOnlyList<string>? Tags) : IRequest<HostExperienceResponse>;
 
@@ -83,6 +89,11 @@ internal sealed class UpdateExperienceCommandHandler(
         if (request.Capacity is { } capacity)
         {
             experience.Capacity = capacity;
+        }
+
+        if (request.InfantCountsTowardCapacity is { } infantsCount)
+        {
+            experience.InfantCountsTowardCapacity = infantsCount;
         }
 
         if (request.SpokenLanguages is not null)

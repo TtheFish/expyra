@@ -1,3 +1,5 @@
+using Expyra.Application.Features.Pricing;
+
 namespace Expyra.Application.Features.Experiences;
 
 /// <summary>
@@ -47,6 +49,11 @@ public sealed record GuestExperiencePageResponse(
 /// <para>Yalnız kapak: kart bir tane görsel çiziyor, galerinin tamamını listede
 /// taşımak sayfa başına on kat veri demek olurdu.</para>
 /// </param>
+/// <param name="Pricing">
+/// Kişi başı fiyat, tahsilat para biriminde ve (istenmişse) misafirin para biriminde.
+/// Host henüz fiyat girmemişse <c>null</c> — bu bir hata değil, tamamlanmamış bir adım
+/// ve arayüz "fiyat için sorun" durumuna düşüyor.
+/// </param>
 public sealed record GuestExperienceSummaryResponse(
     string Slug,
     GuestExperienceCityResponse City,
@@ -55,6 +62,7 @@ public sealed record GuestExperienceSummaryResponse(
     int Capacity,
     GuestExperienceTextResponse Text,
     GuestExperienceImageResponse? Cover,
+    GuestPricingResponse? Pricing,
     DateTimeOffset PublishedAtUtc);
 
 /// <summary>
@@ -71,6 +79,7 @@ public sealed record GuestExperienceSummaryResponse(
 /// Host'un yazdığı serbest etiketler, yazdığı hâliyle. Kategori değil — o bizim kapalı
 /// listemiz ve adı arayüz sözlüğünde.
 /// </param>
+/// <param name="Pricing">Bkz. <c>GuestExperienceSummaryResponse.Pricing</c>.</param>
 public sealed record GuestExperienceDetailResponse(
     string Slug,
     GuestExperienceCityResponse City,
@@ -82,6 +91,7 @@ public sealed record GuestExperienceDetailResponse(
     GuestExperienceDetailTextResponse Text,
     IReadOnlyList<GuestExperienceImageResponse> Images,
     GuestExperienceHostResponse Host,
+    GuestPricingResponse? Pricing,
     DateTimeOffset PublishedAtUtc);
 
 /// <summary>

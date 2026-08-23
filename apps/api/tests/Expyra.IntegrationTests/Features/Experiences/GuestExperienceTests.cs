@@ -6,8 +6,10 @@ using Microsoft.EntityFrameworkCore;
 using Shouldly;
 using Expyra.Application.Features.Experiences;
 using Expyra.Application.Features.Experiences.Queries.GetExperiences;
+using Expyra.Domain.Common;
 using Expyra.Domain.Experiences;
 using Expyra.Domain.Places;
+using Expyra.Domain.Pricing;
 using Expyra.Domain.Users;
 using Expyra.IntegrationTests.Common;
 
@@ -56,8 +58,10 @@ public sealed class GuestExperienceTests(ApiFactory factory)
 
         var page = await ListAsync("cz-prague");
 
-        var item = page.Items.ShouldHaveSingleItem();
-        item.Slug.ShouldBe(slug);
+        // Satır KENDİ slug'ıyla seçiliyor, "tek satır" varsayılmıyor: testler veritabanını
+        // paylaşıyor ve başka bir dosyanın aynı şehre ilan yayınlaması bu testi kırardı —
+        // bir kez kırdı da.
+        var item = page.Items.Where(x => x.Slug == slug).ShouldHaveSingleItem();
         item.CategorySlug.ShouldBe(Category);
         item.DurationMinutes.ShouldBe(120);
         item.Capacity.ShouldBe(8);
@@ -410,16 +414,20 @@ public sealed class GuestExperienceTests(ApiFactory factory)
     {
         var host = await NewHostAsync();
 
-        await SeedAsync(host, "cz-ceske-budejovice", "cs", [("cs", "Budvar turu", null)]);
+        await SeedAsync(
+            host, "cz-ceske-budejovice", "cs", [("cs", "Budvar turu", null)],
+            price: ("CZK", 90_000));
 
         for (var index = 0; index < 5; index++)
         {
-            await SeedAsync(host, "de-leipzig", "cs",
-            [
-                ("cs", $"Lipsko {index}", "Popis."),
-                ("de", $"Leipzig {index}", "Beschreibung."),
-                ("en", $"Leipzig {index}", "Description."),
-            ]);
+            await SeedAsync(
+                host, "de-leipzig", "cs",
+                [
+                    ("cs", $"Lipsko {index}", "Popis."),
+                    ("de", $"Leipzig {index}", "Beschreibung."),
+                    ("en", $"Leipzig {index}", "Description."),
+                ],
+                price: ("EUR", 4_500));
         }
 
         // Isınma: ilk çağrı EF'in sorgu derlemesini ve bağlantı havuzunu hazırlıyor.
@@ -433,12 +441,13 @@ public sealed class GuestExperienceTests(ApiFactory factory)
         // geçer ve test hiçbir şey ölçmeden yeşil kalırdı.
         one.ShouldBeGreaterThan(0);
 
-        // 1 satır ile 5 satır AYNI maliyette: sayfa + metinler + kapaklar. Testin
-        // koruduğu şey tavanın kendisi değil, tavanın SATIR SAYISINDAN BAĞIMSIZ olması —
-        // N+1 buradan girer. Blok 6'da kapak sorgusu eklendi ve sayı 2'den 3'e çıktı;
-        // yükselen tavan, düşen değil, çünkü kapaklar da tek sorguda geliyor.
+        // 1 satır ile 5 satır AYNI maliyette: sayfa + metinler + kapaklar + fiyatlar.
+        // Testin koruduğu şey tavanın kendisi değil, tavanın SATIR SAYISINDAN BAĞIMSIZ
+        // olması — N+1 buradan girer. Tavan Blok 6'da 2'den 3'e (kapaklar), Blok 7'de
+        // 3'ten 4'e (fiyatlar) çıktı; her seferinde yükseldi çünkü yeni veri de tek
+        // sorguda geliyor.
         many.ShouldBe(one);
-        one.ShouldBeLessThanOrEqualTo(3);
+        one.ShouldBeLessThanOrEqualTo(4);
     }
 
     [Fact]
@@ -446,7 +455,9 @@ public sealed class GuestExperienceTests(ApiFactory factory)
     {
         var host = await NewHostAsync();
 
-        var lean = await SeedAsync(host, "de-nuremberg", "cs", [("cs", "Norimberk krátce", null)]);
+        var lean = await SeedAsync(
+            host, "de-nuremberg", "cs", [("cs", "Norimberk krátce", null)],
+            price: ("EUR", 3_000));
 
         var rich = await SeedAsync(
             host, "de-nuremberg", "cs",
@@ -456,12 +467,15 @@ public sealed class GuestExperienceTests(ApiFactory factory)
                 ("en", "Nuremberg brewery", "Description."),
             ],
             spokenLanguages: ["cs", "de", "en"],
-            tags: [("bira", "Bira"), ("gezi", "Gezi"), ("tarih", "Tarih")]);
+            tags: [("bira", "Bira"), ("gezi", "Gezi"), ("tarih", "Tarih")],
+            price: ("CZK", 75_000));
 
         await GetDetailAsync(lean);
 
-        var leanCount = await CountCommandsAsync(() => GetDetailAsync(lean, "de-AT"));
-        var richCount = await CountCommandsAsync(() => GetDetailAsync(rich, "de-AT"));
+        // Para birimi İSTENEREK ölçülüyor: kur çözümü de sorgu açıyor ve testin
+        // ölçmesi gereken şey en pahalı yol.
+        var leanCount = await CountCommandsAsync(() => GetDetailAsync(lean, "de-AT", "TRY"));
+        var richCount = await CountCommandsAsync(() => GetDetailAsync(rich, "de-AT", "TRY"));
 
         // Sayaç gerçekten sayıyor mu — bkz. liste testindeki aynı satır.
         leanCount.ShouldBeGreaterThan(0);
@@ -471,9 +485,10 @@ public sealed class GuestExperienceTests(ApiFactory factory)
         // + host kartı. Üç görselli ilan da bir görselli ilan da aynı sayıda sorgu koşuyor.
         richCount.ShouldBe(leanCount);
 
-        // Tavan Blok 6'da 4'ten 6'ya çıktı (galeri ve host sorguları). Asıl korunan şey
-        // bu sayı değil, üstteki eşitlik: içerik büyüdükçe sorgu sayısı SABİT kalıyor.
-        leanCount.ShouldBeLessThanOrEqualTo(6);
+        // Tavan Blok 6'da 4'ten 6'ya (galeri ve host), Blok 7'de 6'dan 9'a çıktı
+        // (fiyat + kur anlık görüntüsü + oranlar). Asıl korunan şey bu sayı değil,
+        // üstteki eşitlik: içerik büyüdükçe sorgu sayısı SABİT kalıyor.
+        leanCount.ShouldBeLessThanOrEqualTo(9);
     }
 
     // -----------------------------------------------------------------------
@@ -514,21 +529,26 @@ public sealed class GuestExperienceTests(ApiFactory factory)
         return client.GetAsync(path);
     }
 
-    private async Task<GuestExperienceDetailResponse> GetDetailAsync(string slug, string? language = null)
+    private async Task<GuestExperienceDetailResponse> GetDetailAsync(
+        string slug, string? language = null, string? currency = null)
     {
-        var response = await GetDetailResponseAsync(slug, language);
+        var response = await GetDetailResponseAsync(slug, language, currency);
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         return (await response.Content.ReadFromJsonAsync<GuestExperienceDetailResponse>(AuthApi.Json))!;
     }
 
-    private Task<HttpResponseMessage> GetDetailResponseAsync(string slug, string? language = null)
+    private Task<HttpResponseMessage> GetDetailResponseAsync(
+        string slug, string? language = null, string? currency = null)
     {
-        var path = language is null
-            ? $"{BasePath}/{Uri.EscapeDataString(slug)}"
-            : $"{BasePath}/{Uri.EscapeDataString(slug)}?lang={Uri.EscapeDataString(language)}";
+        var query = new List<string>(2);
 
-        return client.GetAsync(path);
+        if (language is not null) query.Add($"lang={Uri.EscapeDataString(language)}");
+        if (currency is not null) query.Add($"currency={Uri.EscapeDataString(currency)}");
+
+        var path = $"{BasePath}/{Uri.EscapeDataString(slug)}";
+
+        return client.GetAsync(query.Count == 0 ? path : $"{path}?{string.Join('&', query)}");
     }
 
     /// <summary>ProblemDetails gövdesinin <c>title</c> alanı — hata mesajının kendisi.</summary>
@@ -593,7 +613,8 @@ public sealed class GuestExperienceTests(ApiFactory factory)
         ExperienceStatus status = ExperienceStatus.Published,
         DateTimeOffset? publishedAt = null,
         IReadOnlyList<string>? spokenLanguages = null,
-        IReadOnlyList<(string Normalized, string Display)>? tags = null)
+        IReadOnlyList<(string Normalized, string Display)>? tags = null,
+        (string Currency, long AdultMinor)? price = null)
         => factory.QueryAsync(async db =>
         {
             CityKey.TryParse(cityKey, out var countryCode, out var citySlug).ShouldBeTrue();
@@ -656,6 +677,24 @@ public sealed class GuestExperienceTests(ApiFactory factory)
                         DisplayTag = display,
                     });
                 }
+            }
+
+            if (price is { } tariff)
+            {
+                var page = new ExperiencePrice
+                {
+                    ExperienceId = experience.Id,
+                    CurrencyCode = tariff.Currency,
+                };
+
+                db.ExperiencePrices.Add(page);
+
+                db.PriceRules.Add(new PriceRule
+                {
+                    ExperiencePriceId = page.Id,
+                    GuestType = GuestType.Adult,
+                    UnitPrice = new Money(tariff.AdultMinor, tariff.Currency),
+                });
             }
 
             await db.SaveChangesAsync();
