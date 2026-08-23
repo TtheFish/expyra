@@ -59,7 +59,7 @@
 | Şehir seçer (gerçek şehir) | Şehir/kategori seçer | ✅ TAMAM | 4 |
 | Deneyimi listede görür + **detayını açar** | Deneyim taslağı yazar, yayınlar | ✅ TAMAM | 5 |
 | Görselleri görür | Görsel yükler, kapak seçer | ✅ TAMAM | 6 |
-| Tarih-saat seçer, fiyatı kendi para biriminde görür | Takvim + fiyat girer | ❌ yok | **7** |
+| Tarih-saat seçer, fiyatı kendi para biriminde görür | Takvim + fiyat girer | ⚠️ API tamam, ekran yok (7d) | **7** |
 | Arar, filtreler, boş sonuçta yönlendirilir | (tek taraflı) | ⚠️ prototip | **8** |
 | Rezervasyon yapar | Gelen rezervasyonu görür/onaylar | ❌ yok | **9** |
 | Onay e-postası alır | "Yeni rezervasyon" e-postası alır | ❌ yok | **10** |
@@ -621,12 +621,12 @@ yazılmadı — doğrulanmamış bir kısıt, geçerli fiyatları sessizce redde
 
 | Bağımlılık | Neyi bloke ediyor | Şu an ne yapılabilir |
 |---|---|---|
-| **Postgres yok** (bu makinede) — `docker-compose.yml` **yok**, `scripts/db-up.sh` Homebrew'a bağlı (`brew services start postgresql@16`), platform Windows | **Blok 4'ten itibaren her şeyin doğrulanması.** Migration `dotnet ef migrations add` ile üretilebilir ama uygulanamaz; integration testler (kabul kriterlerinin çoğu) çalışmaz | **İlk iş bu:** ya `docker-compose.yml` + `db-up` betiğinin Windows/Docker yolu, ya yerel Postgres kurulumu. Bu olmadan Blok 9'un eşzamanlılık testi, Blok 8'in FTS davranışı **hiç doğrulanamaz** — planın en riskli iki noktası |
+| ~~**Postgres yok**~~ — **ÇÖZÜLDÜ** | — | Yerel Postgres 18, port **5433** (17 kalabilir, 5432'ye dokunulmadı). `docker-compose.yml` var, `db-up` Windows yolunu biliyor. Integration testler gerçek veritabanına karşı koşuyor; test veritabanı `EXPYRA_TEST_DB` ile seçiliyor (docs/DATABASE.md) |
 | **`gh` oturumu yok** | CLAUDE.md ve FEATURE-WORKFLOW §2.1 "her iş bir issue" kuralı | Blok listesi issue taslağı olarak sırada tutulur ("bu işe dahil değil" satırları bu raporda hazır), oturum gelince toplu açılır |
 | **S3/R2 hesabı yok** | Blok 6 (görsel + avatar) | `IObjectStorage` + `FileSystemObjectStorage` (dev) önce yazılır — `IEmailSender`/`FileSystemEmailSender` kalıbının aynısı. Hesap geldiğinde yalnız ikinci implementasyon eklenir, Blok 6 gecikmez |
 | **Gerçek e-posta sağlayıcısı yok** (prod'da `UnconfiguredEmailSender` bilerek patlıyor) | Blok 10'un prod tarafı | Outbox + `BackgroundService` + şablonlar `FileSystemEmailSender` ile uçtan uca yazılıp test edilebilir |
 | **Stripe / şirket kaydı yok** | Blok 18, lansman | Blok 11 `FakePaymentProvider` ile tam yazılır. **Kısayol alınmazsa** Blok 18 gerçekten "ikinci implementasyon" olur |
-| **Kur oranı kaynağı yok** | Blok 7'nin görüntüleme çevirisi | `exchange_rate_snapshot` tablosu + elle/stub oranlarla yazılır; tahsilat zaten host'un para biriminde, gerçek kur servisi lansman öncesi eklenir |
+| ~~**Kur oranı kaynağı yok**~~ — **ÇÖZÜLDÜ (stub)** | — | `exchange_rate_snapshot` + `exchange_rate` yazıldı; oranlar `docs/exchange-rates.json`'dan `pnpm api:seed` ile geliyor (pivot EUR, 58 para birimi). Tahsilat zaten host'un para biriminde. **Gerçek kur servisi lansman öncesi** — o geldiğinde yalnız yeni snapshot ekleyecek, çözücü en yenisini okuyor |
 | **Apple Wallet sertifikası yok** | 7.3 (`.pkpass`) | MVP dışına alındı |
 | **Arz odağı şehir kararı yok** (VISION §9) | Blok 4'ün seed kapsamı, Blok 8'in FTS/trigram testi (Çekçe stemmer'ı yok — I18N §4) | Ülke tablosu tam, şehir tablosu dar seed'le başlar; karar gelince satır eklenir (migration değil) |
 | **`packages/shared-types` OpenAPI üretimi kurulmamış** | Blok 19 (mobil) ve web'in tip güvenliği | Blok 5 biter bitmez `pnpm types:generate` bir kez çalıştırılıp CI'a bağlanmalı |

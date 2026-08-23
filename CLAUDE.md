@@ -18,7 +18,12 @@ pnpm api            # API'yi çalıştır
 pnpm web            # web'i çalıştır
 pnpm db:up          # local postgres hazırla (kurulum: docs/DATABASE.md)
 pnpm api:migrate    # migration uygula
+pnpm api:seed       # referans veri (ülke/şehir/para birimi/kategori/kur)
+pnpm api:test       # yalnız API testleri
 ```
+
+`api:seed` **atlanmamalı**: kur satırları oradan geliyor ve onlarsız misafirin
+para birimi çevrimi 409 döner. İdempotent — ikinci koşuda 0 satır yazar.
 
 ## Bu repoda uyulması gereken kurallar
 
@@ -37,6 +42,20 @@ Kod yazarken bunları ihlal etme:
    "oku-değiştir-yaz" akışları `BeginTransactionAsync` olmadan yazılmaz.
 6. **`TreatWarningsAsErrors` açık.** Analyzer uyarısı build'i kırar; bastırmak
    yerine düzelt. Gerçekten gereksizse `.editorconfig`'e gerekçesiyle ekle.
+7. **Para tel üzerinde MİNÖR BİRİM tam sayısı.** `4500` = 45,00 €. API hiçbir
+   yerde ondalık para metni ayrıştırmıyor ve `decimal Price` diye bir sütun yok —
+   `Money(AmountMinor, CurrencyCode)`. Üs para birimine göre değişiyor
+   (JPY 0, KWD 3) ve kayıt defteri `currency.minor_units`; kopyalama.
+8. **Enum tel üzerinde camelCase METİN.** `"tuesday"`, `"open"`, `"adult"` —
+   sayı değil. .NET'te Pazar = 0 ama ISO 8601'de Pazartesi = 1; sayı gönderen bir
+   istemci "salı" derken "çarşamba" alır. Yanıtlarda enum'u elle metne çevirirken
+   de küçük harf kullan (`ScheduleFormat.Name`), aksi halde aynı API iki farklı
+   düzen konuşur.
+
+## Plan ve sıra
+
+Blok sırası, kabul kriterleri ve "şu an bloke olanlar": `docs/PLAN.md`.
+Yolculuk haritası (hangi adım hazır, hangisi değil) o dosyanın başında.
 
 ## Feature eklerken
 
@@ -54,8 +73,11 @@ Bileşenler: `apps/web/src/components/ui/`.
 - Yeni yüzey `GlassSurface` üzerine kurulur, elle `backdrop-filter` yazılmaz.
 - Cam ancak arkasında renk varsa görünür — zemindeki mesh gradient buna hizmet eder.
 - Kontrast WCAG AA altına düşerse `--veil` artırılır, metin rengi değiştirilmez.
-- Metin hardcode edilmez; arayüz çevirisi Faz 8'de geliyor, yeni metinleri o yapıya
-  hazır yaz. Dil listesi koda gömülmez — `docs/I18N.md`.
+- **Metin hardcode edilmez.** Arayüz sözlüğü Blok 3'te geldi ve yaşıyor:
+  kaynak `apps/web/src/features/i18n/messages/tr.ts`, çeviri `.../en.ts`.
+  Yeni metin İKİSİNE birden eklenir — `en.ts`'te eksik anahtar **derlemeyi kırar**,
+  ama hiç anahtarlanmamış bir dizgeyi hiçbir şey yakalamaz. Dil listesi koda
+  gömülmez — `docs/I18N.md`.
 
 ## Paket sürümleri
 

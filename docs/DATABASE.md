@@ -10,8 +10,14 @@ PostgreSQL. Bağlantı dizesi **repoda değil** — geliştirmede `dotnet user-s
 ```bash
 pnpm db:up          # sunucuyu bul/başlat + expyra_dev ve expyra_test'i oluştur
 pnpm api:migrate    # şemayı uygula — startup'ta ASLA otomatik değil (CLAUDE.md #2)
+pnpm api:seed       # referans veri: ülke, şehir, para birimi, kategori, kur
 pnpm api            # http://localhost:5205
 ```
+
+**Seed adımı atlanamaz.** Şehir listesi olmadan ilan oluşturulamaz, kur satırları
+olmadan misafirin para birimi çevrimi 409 döner. Komut idempotent: ikinci koşuda
+"Değişen satır: 0" yazar ve kur anlık görüntüsünün üzerine **yazmaz** (o bir zaman
+serisi, kayıt defteri değil).
 
 İlk kurulumda iki sır da verilmeli, yoksa uygulama **açılışta patlar** (bu kasıtlı;
 varsayılan anahtara düşmek sessiz bir güvenlik açığıdır):
@@ -125,6 +131,19 @@ uygulama açılışında migrate eden kod yok, yalnızca bekleyen migration vars
 | `experience_translation` | İlan metinleri, dil başına bir satır | Bileşik anahtar (`experience_id`, `language`) |
 | `experience_spoken_language`, `experience_tag` | Konuşulan diller, serbest etiketler | İkisi ayrı kavram |
 | `experience_media` | İlan görselleri | **Bayt tutmaz**: depo anahtarı + ölçü. Baytlar dev'de `.object-store`'da, üretimde S3/R2 |
+| `availability_slot` | Tek seans | Hem `starts_at_utc` hem `starts_at_local` + `utc_offset_minutes` tutuyor — sebebi aşağıda |
+| `recurrence_template` | "Her salı 14:00" kuralı | Gün başına AYRI satır; bitmask değil, yoksa tekillik kurulamaz |
+| `availability_blackout` | "Şu tarihlerde yokum" | Kapsayan gün **dâhil**; aralıklar çakışabilir (birleşim semantiği) |
+| `experience_price` | İlanın tahsilat para birimi | İlan başına en fazla bir satır |
+| `price_rule` | Kademe fiyatı (yetişkin/çocuk/bebek) | `Money` owned type → `unit_amount_minor` + `unit_currency_code` |
+| `exchange_rate_snapshot` | Bir ANIN tüm kurları | Kayıt defteri değil **zaman serisi**: üzerine yazılmıyor, Blok 9 rezervasyona `snapshot_id` yazacak |
+| `exchange_rate` | Snapshot'ın tek satırı | Oran `numeric` — kur bir TUTAR değil ORAN, minör birim kuralının dışında |
+
+**Seans neden iki zaman sütunu taşıyor:** `starts_at_utc` kesin an (sıralama,
+"geçmiş mi" kontrolü), `starts_at_local` ise host'un yazdığı duvar saati. Yalnız
+UTC tutulsaydı yaz saati geçişinde "her salı 14:00" kuralı 13:00'e kayardı; yalnız
+yerel tutulsaydı iki seansı karşılaştırmak imkânsız olurdu. `utc_offset_minutes`
+üçüncüsü değil, o ikisinin arasındaki ilişkinin **o günkü** hâli.
 
 Dikkat çeken index'ler:
 
@@ -140,6 +159,41 @@ Dikkat çeken index'ler:
 - `ix_experience_media_pending` — kısmi (`WHERE status='Pending'`): yükleme izni
   alınıp tamamlanmamış satırları taramadan bulmak için. Temizliği yapan zamanlayıcı
   Blok 10'da geliyor; o gelene kadar elle.
+- `ux_availability_slot_experience_start` — **durumdan bağımsız** tekillik:
+  kapatılmış bir seans da bir mezar taşı ve tekrar üretim onu diriltemez.
+  Bu index bir kez sessizce **hiç oluşmamıştı**: yapılandırmada aynı sütun çiftine
+  iki adsız `HasIndex` çağrısı vardı ve EF ikisini tek nesneye çöktürmüştü. İkinci
+  bir index aynı sütunlara kuruluyorsa **model adı** ver (`HasDatabaseName` yetmez),
+  aksi halde biri diğerini sessizce yutar.
+- `ix_availability_slot_open` — kısmi (`WHERE status='Open'`), **tekil değil**:
+  misafirin sorgusu için. Tekillik yukarıdaki index'in işi.
+- `ux_recurrence_template_active` — kısmi: aynı gün ve saatte iki aktif kural
+  olamaz. Kod da kontrol ediyor ama sebebi farklı — index ihlali 500 üretirdi,
+  kod hangi günün çakıştığını söyleyebiliyor.
+- `ux_price_rule_tier` — ilan başına kademe tekil. "Hepsini sil + yeniden ekle"
+  bu yüzden yasak: EF'in cümle sırası garanti değil.
+
+### Seed verisi nereden geliyor
+
+Kaynak dosyalar `docs/` altında yaşıyor ve koda **kopyalanmıyor** — csproj'da
+`EmbeddedResource` olarak bağlanıyorlar. Tek doğruluk kaynağı dokümanın yanında
+durur, kod onu okur.
+
+| Dosya | Ne | Nasıl uygulanıyor |
+|---|---|---|
+| `docs/languages.json` | 49 dil | Migration'a gömülü (`HasData`) — liste kısa ve donuk |
+| `docs/countries.json` | 249 ülke | `pnpm api:seed` |
+| `docs/cities.json` | 156 şehir + alias | `pnpm api:seed` |
+| `docs/currencies.json` | 58 para birimi + ISO üssü | `pnpm api:seed` |
+| `docs/categories.json` | 12 kategori (yalnız slug) | `pnpm api:seed` |
+| `docs/exchange-rates.json` | Kur anlık görüntüsü (pivot EUR) | `pnpm api:seed` — **üzerine yazmaz**, yalnız hiç `Seed` snapshot'ı yoksa ekler |
+| `docs/payment-constraints.json` | Ödeme sağlayıcısının para kısıtları | Seed **DEĞİL** — açılışta belleğe okunuyor (`PaymentCurrencyRules`) |
+
+Son iki satır diğerlerinden farklı davranıyor ve ikisinin de sebebi aynı cinsten:
+kur bir **zaman serisi** (geçmiş bir ölçüm geriye dönük değişemez, Blok 9
+rezervasyona `snapshot_id` yazacak), ödeme kısıtları ise **sağlayıcının
+dokümanından çıkarılmış bir sabit** — veritabanına yazılsaydı iki kopya olur ve
+hangisinin güncel olduğu belirsizleşirdi.
 
 ### Dev nesne deposu
 

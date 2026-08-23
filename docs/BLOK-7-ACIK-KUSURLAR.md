@@ -8,7 +8,7 @@ Bu dosya bitince silinir — maddeler ya düzeltilir ya da bir issue'ya taşın�
 
 ---
 
-## 1. Vaat edilen tekil index şemada YOK — `high`
+## 1. ~~Vaat edilen tekil index şemada YOK~~ — **KAPANDI** (1a082f3)
 
 `apps/api/src/Expyra.Infrastructure/Persistence/Configurations/SchedulingConfigurations.cs`
 satır 106-108 ve 115-117: **aynı sütun çiftine** (`ExperienceId`, `StartsAtUtc`)
@@ -39,7 +39,7 @@ geçtiğini doğrula.
 
 ---
 
-## 2. `RemainingCapacity` diriltme yolunda yazılıyor — `medium`
+## 2. ~~`RemainingCapacity` diriltme yolunda yazılıyor~~ — **KAPANDI** (1a082f3)
 
 PLAN kabul kriteri 5 (`docs/PLAN.md:275`): "`RemainingCapacity` bu blokta yalnız
 **okunur** (yazma Blok 9'da, kilitli)."
@@ -61,7 +61,7 @@ Asimetri de var — satılmış koltuk kontrolü üç yerde YAPILIYOR
 
 ---
 
-## 3. WCAG 2.2.2 duraklatma düğmesi fareyle tıklanamıyor — `high`
+## 3. ~~WCAG 2.2.2 duraklatma düğmesi fareyle tıklanamıyor~~ — **KAPANDI** (1a082f3)
 
 `9acd2ac` bu düğmeyi ekledi ama **iki bağımsız engel** var:
 
@@ -79,7 +79,7 @@ Yani `pointer-events: auto` eklemek **tek başına yetmez**; istifleme sırası 
 
 ---
 
-## 4. Host fiyatını geri okuyan uç yok — `high`, 7d'yi bloke ediyor
+## 4. ~~Host fiyatını geri okuyan uç yok~~ — **KAPANDI** (1a082f3)
 
 `HostScheduleController.cs:282` `PUT .../pricing`, `:308` `DELETE .../pricing`.
 **GET yok.**
@@ -100,7 +100,7 @@ takvim ekranı zaten fiyat formunu da barındıracak).
 
 ---
 
-## 5. 7d'ye girmeden bilinmesi gerekenler
+## 5. 7d'ye girmeden bilinmesi gerekenler — **AÇIK, 7d girdisi**
 
 - **`formatMoney` ana birimle çalışıyor.** API her yerde minör birim tam sayısı
   gönderiyor. Yeni bir formatlayıcı gerekiyor; eskisini çağırmak tutarı 100 kat
@@ -116,7 +116,9 @@ takvim ekranı zaten fiyat formunu da barındıracak).
 
 ---
 
-## 6. Doküman sapmaları
+## 6. ~~Doküman sapmaları~~ — **KAPANDI**
+
+Hepsi düzeltildi. Aşağıdaki tablo ne olduğunun kaydı.
 
 | Nerede | Ne diyor | Gerçek |
 |---|---|---|

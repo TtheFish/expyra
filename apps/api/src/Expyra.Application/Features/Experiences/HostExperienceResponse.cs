@@ -19,10 +19,16 @@ namespace Expyra.Application.Features.Experiences;
 /// Başlık ilk yazılana kadar <c>null</c>. Yayınlanmış bir ilanda daima dolu.
 /// </param>
 /// <param name="Status">
-/// METİN olarak: <c>"Draft" | "Published" | "Archived"</c>. Enum olarak bırakılsaydı
-/// System.Text.Json onu SAYIYA çevirirdi (projede <c>JsonStringEnumConverter</c> kayıtlı
-/// değil) ve sözleşme sessizce enum sırasına bağlanırdı — sıra değiştiği gün eski
-/// istemciler başka bir durumu okurdu. Sütunun metin olarak saklanmasıyla aynı gerekçe.
+/// METİN olarak: <c>"Draft" | "Published" | "Archived"</c>. Sözleşme enum SIRASINA
+/// bağlanmasın diye — sıra değiştiği gün eski istemciler başka bir durumu okurdu.
+/// Sütunun metin olarak saklanmasıyla aynı gerekçe.
+///
+/// <para><b>Büyük harfle</b> ve bu bir istisna: <c>Program.cs</c>'teki
+/// <c>JsonStringEnumConverter</c> camelCase üretiyor ve takvim/fiyat yanıtları da
+/// öyle (<c>"open"</c>, <c>"adult"</c>). Bu alan ondan ÖNCE yazıldı ve web
+/// (<c>experiences-api.ts</c>, <c>host/experience/[id]/page.tsx</c>) PascalCase
+/// karşılaştırıyor; değiştirmek istemciyi sessizce kırar. Hizalanacaksa iki taraf
+/// AYNI commit'te değişmeli.</para>
 /// </param>
 /// <param name="SpokenLanguages">
 /// Deneyim sırasında KONUŞULAN diller. <paramref name="Translations"/> ile karıştırılmaz —
