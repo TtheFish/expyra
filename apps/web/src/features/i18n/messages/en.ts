@@ -152,9 +152,24 @@ export const en = {
   'experience.detail.gallery.heading': 'Gallery',
   'experience.detail.host.heading': 'Hosted by',
   'experience.detail.host.anonymous': 'An Expyra host',
-  'experience.detail.booking.title': 'No dates or price yet',
-  'experience.detail.booking.body':
-    'Once this experience has a calendar and a price, booking opens right here.',
+  'experience.detail.booking.title': 'Dates and price',
+  'experience.detail.booking.noSlots':
+    'There are no open dates right now. They will show up here once the host updates the calendar.',
+  'experience.detail.booking.perPerson': 'per person',
+  'experience.detail.booking.pickDate': 'Pick a date',
+  'experience.detail.booking.timeZone': 'Times are in {bolge}.',
+  'experience.detail.booking.adults': 'Adults',
+  'experience.detail.booking.children': 'Children',
+  'experience.detail.booking.infants': 'Infants',
+  'experience.detail.booking.currency': 'Currency',
+  'experience.detail.booking.currencyNone': 'Host’s currency',
+  'experience.detail.booking.update': 'Calculate price',
+  'experience.detail.booking.total': 'Total',
+  'experience.detail.booking.displayTotal': 'About {tutar}',
+  'experience.detail.booking.chargedIn':
+    'You are charged in {paraBirimi}. If your card uses another currency, your bank applies its own rate.',
+  'experience.detail.booking.quoteFailed':
+    'We could not price that selection. The session may not have enough space, or it may have closed.',
   'experience.detail.cityLink': 'All experiences in {sehir}',
   'experience.detail.back': 'Back to Explore',
 

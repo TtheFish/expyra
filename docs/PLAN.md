@@ -59,7 +59,7 @@
 | Şehir seçer (gerçek şehir) | Şehir/kategori seçer | ✅ TAMAM | 4 |
 | Deneyimi listede görür + **detayını açar** | Deneyim taslağı yazar, yayınlar | ✅ TAMAM | 5 |
 | Görselleri görür | Görsel yükler, kapak seçer | ✅ TAMAM | 6 |
-| Tarih-saat seçer, fiyatı kendi para biriminde görür | Takvim + fiyat girer | ⚠️ API tamam, ekran yok (7d) | **7** |
+| Tarih-saat seçer, fiyatı kendi para biriminde görür | Takvim + fiyat girer | ✅ TAMAM | **7** |
 | Arar, filtreler, boş sonuçta yönlendirilir | (tek taraflı) | ⚠️ prototip | **8** |
 | Rezervasyon yapar | Gelen rezervasyonu görür/onaylar | ❌ yok | **9** |
 | Onay e-postası alır | "Yeni rezervasyon" e-postası alır | ❌ yok | **10** |

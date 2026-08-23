@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import type { ReactNode } from 'react'
 import { SiteFooter } from '@/components/brand/site-footer'
 import { SiteHeader } from '@/components/brand/site-header'
 import {
@@ -12,9 +13,20 @@ import {
   countryDisplayName,
   experienceAlternates,
   experiencePath,
+  fetchAvailability,
   fetchExperience,
+  fetchQuote,
+  type GuestAvailability,
+  type GuestExperienceDetail,
+  type GuestQuote,
 } from '@/features/experiences/api'
-import { categoryMessageKey } from '@/features/host/experiences-api'
+import {
+  categoryMessageKey,
+  fetchCurrencies,
+  type CurrencyOption,
+} from '@/features/host/experiences-api'
+import type { SimpleMessageKey, Translate } from '@/features/i18n/dictionary'
+import { formatMinorMoney, formatWallClock } from '@/features/i18n/format'
 import { getTranslator } from '@/features/i18n/translator'
 import { cityDisplayName, cityKeyOf } from '@/features/places/api'
 import { localNameOf } from '@/lib/languages'
@@ -76,13 +88,52 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
   }
 }
 
-export default async function ExperienceDetail({ params }: { params: PageParams }) {
-  const { lang, slug } = await params
+export default async function ExperienceDetail({
+  params,
+  searchParams,
+}: {
+  params: PageParams
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const [{ lang, slug }, query] = await Promise.all([params, searchParams])
   const [t, experience] = await Promise.all([getTranslator(lang), fetchExperience(slug, lang)])
 
   if (!experience) {
     notFound()
   }
+
+  const party = partyFrom(query)
+  const selectedSlotId = slotFrom(query)
+  const displayCurrency = currencyFrom(query)
+
+  /*
+    Müsaitlik ve teklif AYRI çağrılar ve teklif SEANS SEÇİLİNCE geliyor: seçim
+    yokken hesaplanacak bir toplam da yok. İkisini tek uca sıkıştırmak, sayfayı
+    her açılışta gereksiz bir hesap yaptırırdı.
+
+    Teklif hatası sayfayı DÜŞÜRMÜYOR: kapasite aşımı ve kapanmış seans normal
+    durumlar (409) ve panelin geri kalanı — tarihler, kişi seçimi — çalışmaya
+    devam etmeli. Beklenmeyen hata yine de loglanıyor (CLAUDE.md #1).
+  */
+  const availability = await fetchAvailability({ slug, currency: displayCurrency }).catch(
+    (error: unknown) => {
+      console.error('experience.availability.failed', error)
+      return null
+    },
+  )
+
+  const quote =
+    selectedSlotId === null
+      ? null
+      : await fetchQuote({
+          slug,
+          slotId: selectedSlotId,
+          ...party,
+          currency: displayCurrency,
+        }).catch(() => null)
+
+  // Para birimi kayıt defteri: anonim ve bir saat önbellekli, yani seçici bedava.
+  const currencies = await fetchCurrencies()
 
   const categoryKey = categoryMessageKey(experience.categorySlug)
   const cityName = cityDisplayName(lang, experience.city)
@@ -303,16 +354,17 @@ export default async function ExperienceDetail({ params }: { params: PageParams 
               </Section>
             )}
 
-            {/*
-              Rezervasyon Blok 7 (takvim/fiyat) ve Blok 9 (rezervasyon) ile geliyor.
-              Sessiz bir boşluk bırakmak, misafire "bu sayfa yarım" dedirtirdi;
-              İÇ TERİM de kullanılmıyor ("Blok 7'de açılıyor" kimseye bir şey
-              anlatmaz, tr.ts yazım kuralı 4).
-            */}
-            <div className="mt-8 rounded-[var(--radius-glass)] border border-[rgb(var(--glass-tint)_/_0.18)] p-5">
-              <p className="text-sm font-semibold">{t('experience.detail.booking.title')}</p>
-              <p className="mt-1 text-sm text-fg-muted">{t('experience.detail.booking.body')}</p>
-            </div>
+            <BookingPanel
+              lang={lang}
+              experience={experience}
+              availability={availability}
+              quote={quote}
+              party={party}
+              selectedSlotId={selectedSlotId}
+              displayCurrency={displayCurrency}
+              currencies={currencies}
+              t={t}
+            />
           </div>
         </article>
 
@@ -389,3 +441,381 @@ function initialOf(name: string | null): string | null {
   // yarım bir surrogate üretirdi.
   return [...trimmed][0]?.toUpperCase() ?? null
 }
+
+
+/**
+ * Rezervasyon paneli URL parametreleri — TÜRKÇE, kanonik yol İngilizce olsa da.
+ *
+ * Gerekçe `route-map.json`'daki karar değil: bu parametreler kullanıcının
+ * gördüğü ve paylaştığı adresin parçası ve sayfanın dili Türkçe. İngilizce
+ * yol segmentiyle Türkçe parametre yan yana tuhaf durmuyor — segment kanonik
+ * kimlik, parametre ise bir form alanı (host formlarındaki `sure`, `kapasite`
+ * ile aynı aile).
+ */
+const SLOT_PARAM = 'seans'
+const ADULTS_PARAM = 'yetiskin'
+const CHILDREN_PARAM = 'cocuk'
+const INFANTS_PARAM = 'bebek'
+
+/**
+ * Misafirin GÖRÜNTÜLEME para birimi. Tahsilat para birimi DEĞİL — o host'un ve
+ * değişmiyor (PLAN Blok 7 kabul kriteri 3).
+ *
+ * Arayüz diline BAĞLANMIYOR: Türkçe okuyan biri euro ile düşünüyor olabilir,
+ * İngilizce okuyan biri Türk lirasıyla. Dilden para birimi türetmek, iki farklı
+ * soruyu tek cevaba bağlamak olurdu (docs/I18N.md §3'ün "konuşulan dil ≠ metin
+ * dili" ayrımıyla aynı aile).
+ */
+const CURRENCY_PARAM = 'para'
+
+function currencyFrom(query: Record<string, string | string[] | undefined>): string | null {
+  const value = query[CURRENCY_PARAM]
+  const single = Array.isArray(value) ? value[0] : value
+
+  // Üç harfli olmayan değer SESSİZCE yok sayılıyor: bozuk bir query için sayfayı
+  // düşürmek kullanıcıyı çıkmaza sokardı ve sunucu zaten kendi doğrulamasını
+  // yapıyor (tanınmayan kod → 400).
+  return single && /^[A-Za-z]{3}$/.test(single) ? single.toUpperCase() : null
+}
+
+/** Kademe başına tavan. Sunucunun `MaxPartySize`'ı 500; alan başına o kadar anlamsız. */
+const MAX_PARTY_PER_TIER = 20
+
+type PartySelection = { adults: number; children: number; infants: number }
+
+/**
+ * Kişi sayısı varsayılanı. **İki yetişkin** çünkü en sık seçim o ve boş bir
+ * form misafiri "kaç yazmalıyım" diye düşündürürdü.
+ */
+const DEFAULT_PARTY: PartySelection = { adults: 2, children: 0, infants: 0 }
+
+function partyFrom(query: Record<string, string | string[] | undefined>): PartySelection {
+  return {
+    adults: countFrom(query[ADULTS_PARAM], DEFAULT_PARTY.adults),
+    children: countFrom(query[CHILDREN_PARAM], DEFAULT_PARTY.children),
+    infants: countFrom(query[INFANTS_PARAM], DEFAULT_PARTY.infants),
+  }
+}
+
+/**
+ * Adres çubuğundaki sayı. **Bozuk değer sessizce varsayılana düşüyor** ve bu,
+ * "hata yutma yok" kuralının ihlali DEĞİL: burada bir işlem yapılmıyor, bir
+ * görünüm çiziliyor ve kullanıcının elle bozduğu bir query için hata sayfası
+ * göstermek onu bir çıkmaza sokardı. Yazma yolunda (teklif ucu) sunucu zaten
+ * kendi doğrulamasını yapıyor.
+ */
+function countFrom(raw: string | string[] | undefined, fallback: number): number {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  if (value === undefined) return fallback
+
+  const parsed = Number(value)
+
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= MAX_PARTY_PER_TIER
+    ? parsed
+    : fallback
+}
+
+function slotFrom(query: Record<string, string | string[] | undefined>): string | null {
+  const value = query[SLOT_PARAM]
+  const single = Array.isArray(value) ? value[0] : value
+
+  return single && single.length > 0 ? single : null
+}
+
+function bookingQuery(
+  input: PartySelection & { slotId: string; currency: string | null },
+): string {
+  const query = new URLSearchParams({
+    [SLOT_PARAM]: input.slotId,
+    [ADULTS_PARAM]: String(input.adults),
+    [CHILDREN_PARAM]: String(input.children),
+    [INFANTS_PARAM]: String(input.infants),
+  })
+
+  if (input.currency) query.set(CURRENCY_PARAM, input.currency)
+
+  return query.toString()
+}
+
+/**
+ * Tarih, kişi sayısı ve fiyat özeti.
+ *
+ * **Durum URL'de, istemci belleğinde DEĞİL** (`?seans=`, `?yetiskin=`,
+ * `?cocuk=`, `?bebek=`). Çeviri sekmelerinin kararıyla aynı ve aynı üç kazanç:
+ * JS olmadan çalışıyor, geri tuşu beklendiği gibi davranıyor ve her seçim
+ * sunucudan TAZE veri getiriyor — bayat bir `remainingCapacity` ile "son
+ * koltuk" gösterip rezervasyon adımında hata vermek yerine.
+ *
+ * **Hesap sunucuda.** Kalemleri istemcide toplasaydık yuvarlama ve kur
+ * kuralları iki yerde yaşar, biri bir gün ayrışır ve misafir gördüğünden
+ * farklı bir tutar öderdi.
+ *
+ * **Rezervasyon düğmesi YOK** ve bu dürüstlük: bu blokta rezervasyon uçları
+ * yok (Blok 9). Çalışmayan bir düğme koymak, misafire var olmayan bir söz
+ * vermek olurdu.
+ */
+function BookingPanel({
+  lang,
+  experience,
+  availability,
+  quote,
+  party,
+  selectedSlotId,
+  displayCurrency,
+  currencies,
+  t,
+}: {
+  lang: string
+  experience: GuestExperienceDetail
+  availability: GuestAvailability | null
+  quote: GuestQuote | null
+  party: PartySelection
+  selectedSlotId: string | null
+  displayCurrency: string | null
+  currencies: CurrencyOption[]
+  t: Translate
+}) {
+  const here = experiencePath(lang, experience.slug)
+
+  if (!availability || availability.slots.length === 0) {
+    return (
+      <BookingShell title={t('experience.detail.booking.title')}>
+        <p className="text-sm text-fg-muted">{t('experience.detail.booking.noSlots')}</p>
+      </BookingShell>
+    )
+  }
+
+  const pricing = availability.pricing
+
+  return (
+    <BookingShell title={t('experience.detail.booking.title')}>
+      {pricing ? (
+        <p className="text-sm">
+          <span className="font-semibold">
+            {formatMinorMoney(lang, pricing.fromAmountMinor, pricing.chargeCurrency, pricing.chargeMinorUnits)}
+          </span>{' '}
+          <span className="text-fg-muted">{t('experience.detail.booking.perPerson')}</span>
+        </p>
+      ) : null}
+
+      <div className="mt-4">
+        <p className="text-sm font-medium">{t('experience.detail.booking.pickDate')}</p>
+
+        {/*
+          Seans seçimi LİNK, form değil: bir seçim URL'yi değiştiriyor ve o URL
+          paylaşılabilir. Radyo düğmeli bir form aynı şeyi yapardı ama JS'siz
+          her seçimde ayrıca "uygula"ya basmak gerekirdi.
+        */}
+        <ul className="mt-2 flex flex-wrap gap-2">
+          {availability.slots.map((slot) => {
+            const selected = slot.slotId === selectedSlotId
+
+            return (
+              <li key={slot.slotId}>
+                <a
+                  href={`${here}?${bookingQuery({ ...party, slotId: slot.slotId, currency: displayCurrency })}`}
+                  aria-current={selected ? 'true' : undefined}
+                  className={`inline-flex flex-col rounded-[var(--radius-glass-sm)] border px-3 py-2 text-sm transition-colors ${
+                    selected
+                      ? 'border-[var(--focus-ring)] bg-[rgb(var(--glass-tint)_/_0.35)] font-semibold'
+                      : 'border-[var(--glass-border)] hover:bg-[rgb(var(--glass-tint)_/_0.22)]'
+                  }`}
+                >
+                  <span>
+                    {formatWallClock(lang, slot.startsAtLocal, {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </span>
+                  <span className="text-fg-muted">
+                    {formatWallClock(lang, slot.startsAtLocal, {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </a>
+              </li>
+            )
+          })}
+        </ul>
+
+        {/*
+          Saat dilimi AÇIKÇA yazıyor: saatler deneyimin şehrinin saatinde ve
+          misafir başka bir dilimde olabilir. Yazmasaydık, kendi saatiyle
+          okuyup uçağı kaçıran biri olurdu.
+        */}
+        <p className="mt-2 text-xs text-fg-muted">
+          {t('experience.detail.booking.timeZone', { bolge: availability.timeZoneId })}
+        </p>
+      </div>
+
+      {/*
+        Kişi sayısı GET formu: gönderim URL'yi güncelliyor, sunucu yeni teklifi
+        hesaplıyor. `method` verilmiyor çünkü varsayılan zaten GET.
+      */}
+      <form action={here} className="mt-5 grid gap-3 sm:grid-cols-4">
+        {selectedSlotId ? <input type="hidden" name={SLOT_PARAM} value={selectedSlotId} /> : null}
+
+        <PartyField
+          id="yetiskin"
+          name={ADULTS_PARAM}
+          label={t('experience.detail.booking.adults')}
+          value={party.adults}
+        />
+        <PartyField
+          id="cocuk"
+          name={CHILDREN_PARAM}
+          label={t('experience.detail.booking.children')}
+          value={party.children}
+        />
+        <PartyField
+          id="bebek"
+          name={INFANTS_PARAM}
+          label={t('experience.detail.booking.infants')}
+          value={party.infants}
+        />
+
+        <div>
+          <label className="auth-label" htmlFor="para">
+            {t('experience.detail.booking.currency')}
+          </label>
+          {/*
+            Boş seçenek = "çevirme". 1.0 oranlı sahte bir çevrim üretmek yerine
+            hiç çevirmemek, "çevrildi mi" sorusunu cevaplanabilir tutuyor.
+          */}
+          <select
+            id="para"
+            name={CURRENCY_PARAM}
+            className="auth-input"
+            defaultValue={displayCurrency ?? ''}
+          >
+            <option value="">{t('experience.detail.booking.currencyNone')}</option>
+            {currencies.map((item) => (
+              <option key={item.code} value={item.code}>
+                {item.symbol ? `${item.code} (${item.symbol})` : item.code}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="sm:col-span-3">
+          <GlassButton type="submit" size="sm">
+            {t('experience.detail.booking.update')}
+          </GlassButton>
+        </div>
+      </form>
+
+      {quote ? <QuoteSummary lang={lang} quote={quote} t={t} /> : null}
+
+      {selectedSlotId && !quote ? (
+        <p className="mt-4 text-sm text-fg-muted" role="status">
+          {t('experience.detail.booking.quoteFailed')}
+        </p>
+      ) : null}
+    </BookingShell>
+  )
+}
+
+function BookingShell({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="mt-8 rounded-[var(--radius-glass)] border border-[rgb(var(--glass-tint)_/_0.18)] p-5">
+      <p className="text-sm font-semibold">{title}</p>
+      <div className="mt-3">{children}</div>
+    </div>
+  )
+}
+
+function PartyField({
+  id,
+  name,
+  label,
+  value,
+}: {
+  id: string
+  name: string
+  label: string
+  value: number
+}) {
+  return (
+    <div>
+      <label className="auth-label" htmlFor={id}>
+        {label}
+      </label>
+      <input
+        id={id}
+        name={name}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={MAX_PARTY_PER_TIER}
+        className="auth-input"
+        defaultValue={value}
+      />
+    </div>
+  )
+}
+
+/**
+ * Teklif özeti.
+ *
+ * **Tahsilat ve gösterim AYRI satırlar** (PLAN Blok 7 kabul kriteri 3): misafir
+ * kendi para biriminde bir sayı görse bile paranın host'un para biriminde
+ * çekileceğini okumak zorunda. Tek bir tutar göstermek, ödeme ekranında sürpriz
+ * demek olurdu.
+ */
+function QuoteSummary({ lang, quote, t }: { lang: string; quote: GuestQuote; t: Translate }) {
+  return (
+    <div className="mt-5 border-t border-[rgb(var(--glass-tint)_/_0.18)] pt-4">
+      <ul className="grid gap-1 text-sm">
+        {quote.lines.map((line) => (
+          <li key={line.guestType} className="flex justify-between gap-4">
+            <span className="text-fg-muted">
+              {t(guestTypeMessageKey(line.guestType))} × {line.count}
+            </span>
+            <span>
+              {formatMinorMoney(lang, line.lineTotalMinor, quote.charge.currency, quote.charge.minorUnits)}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-3 flex justify-between gap-4 text-base font-semibold">
+        <span>{t('experience.detail.booking.total')}</span>
+        <span>
+          {formatMinorMoney(lang, quote.charge.amountMinor, quote.charge.currency, quote.charge.minorUnits)}
+        </span>
+      </p>
+
+      {quote.display ? (
+        <p className="mt-1 text-sm text-fg-muted">
+          {t('experience.detail.booking.displayTotal', {
+            tutar: formatMinorMoney(
+              lang,
+              quote.display.amountMinor,
+              quote.display.currency,
+              quote.display.minorUnits,
+            ),
+          })}
+        </p>
+      ) : null}
+
+      {/* Kabul kriteri 3: tahsilat para birimi EKRANDA yazmak zorunda. */}
+      <p className="mt-2 text-xs text-fg-muted">
+        {t('experience.detail.booking.chargedIn', { paraBirimi: quote.charge.currency })}
+      </p>
+    </div>
+  )
+}
+
+function guestTypeMessageKey(guestType: string): SimpleMessageKey {
+  switch (guestType) {
+    case 'adult':
+      return 'experience.detail.booking.adults'
+    case 'child':
+      return 'experience.detail.booking.children'
+    default:
+      return 'experience.detail.booking.infants'
+  }
+}
+

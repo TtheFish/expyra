@@ -302,9 +302,29 @@ export const tr = {
    * Takvim Blok 7, rezervasyon Blok 9. Sessiz bir boşluk "bu sayfa yarım"
    * dedirtirdi; iç terim de kullanılmıyor (yazım kuralı 4).
    */
-  'experience.detail.booking.title': 'Tarih ve fiyat henüz yok',
-  'experience.detail.booking.body':
-    'Bu deneyimin takvimi ve fiyatı girildiğinde rezervasyon buradan açılacak.',
+  'experience.detail.booking.title': 'Tarih ve fiyat',
+  /**
+   * Takvimi hiç kurulmamış ilan. Başlık artık "yok" demiyor çünkü çoğu ilanda
+   * tarihler VAR; bu metin yalnızca boş durumda görünüyor.
+   */
+  'experience.detail.booking.noSlots':
+    'Bu deneyim için şu an açık bir tarih yok. Host takvimini güncellediğinde burada görünecek.',
+  'experience.detail.booking.perPerson': 'kişi başı',
+  'experience.detail.booking.pickDate': 'Tarih seç',
+  'experience.detail.booking.timeZone': 'Saatler {bolge} saatiyle.',
+  'experience.detail.booking.adults': 'Yetişkin',
+  'experience.detail.booking.children': 'Çocuk',
+  'experience.detail.booking.infants': 'Bebek',
+  'experience.detail.booking.currency': 'Para birimi',
+  'experience.detail.booking.currencyNone': 'Host’un para birimi',
+  'experience.detail.booking.update': 'Fiyatı hesapla',
+  'experience.detail.booking.total': 'Toplam',
+  /** Gösterim para birimindeki karşılık — tahsilat DEĞİL (PLAN Blok 7, kriter 3). */
+  'experience.detail.booking.displayTotal': 'Yaklaşık {tutar}',
+  'experience.detail.booking.chargedIn':
+    'Tahsilat {paraBirimi} olarak yapılıyor. Kartının para birimi farklıysa bankan kendi kurunu uygular.',
+  'experience.detail.booking.quoteFailed':
+    'Bu seçim için fiyat hesaplanamadı. Seansta yeterli yer olmayabilir ya da seans kapanmış olabilir.',
   'experience.detail.cityLink': '{sehir} şehrindeki tüm deneyimler',
   'experience.detail.back': 'Keşfet’e dön',
 
