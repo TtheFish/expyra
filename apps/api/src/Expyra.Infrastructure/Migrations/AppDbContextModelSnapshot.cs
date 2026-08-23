@@ -77,6 +77,12 @@ namespace Expyra.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("host_id");
 
+                    b.Property<bool>("InfantCountsTowardCapacity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("infant_counts_toward_capacity");
+
                     b.Property<string>("OriginalLanguage")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1146,6 +1152,341 @@ namespace Expyra.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Expyra.Domain.Pricing.ExchangeRate", b =>
+                {
+                    b.Property<Guid>("SnapshotId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("snapshot_id");
+
+                    b.Property<string>("CurrencyCode")
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<decimal>("RatePerPivot")
+                        .HasColumnType("numeric(24,12)")
+                        .HasColumnName("rate_per_pivot");
+
+                    b.HasKey("SnapshotId", "CurrencyCode");
+
+                    b.HasIndex("CurrencyCode");
+
+                    b.ToTable("exchange_rate", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_exchange_rate_positive", "rate_per_pivot > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Pricing.ExchangeRateSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CapturedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("captured_at_utc");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("PivotCurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("pivot_currency_code");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("source");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CapturedAtUtc", "Id")
+                        .IsDescending()
+                        .HasDatabaseName("ix_exchange_rate_snapshot_newest");
+
+                    b.HasIndex("PivotCurrencyCode", "CapturedAtUtc")
+                        .IsUnique()
+                        .HasDatabaseName("ux_exchange_rate_snapshot_pivot_captured");
+
+                    b.ToTable("exchange_rate_snapshot", (string)null);
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Pricing.ExperiencePrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<Guid>("ExperienceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experience_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CurrencyCode")
+                        .HasDatabaseName("ix_experience_price_currency");
+
+                    b.HasIndex("ExperienceId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_experience_price_experience");
+
+                    b.ToTable("experience_price", (string)null);
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Pricing.PriceRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("ExperiencePriceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experience_price_id");
+
+                    b.Property<string>("GuestType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("guest_type");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExperiencePriceId", "GuestType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_price_rule_tier");
+
+                    b.ToTable("price_rule", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_price_rule_amount_range", "unit_amount_minor >= 0 AND unit_amount_minor <= 1000000000000");
+                        });
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Scheduling.AvailabilityBlackout", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateOnly>("EndsOnLocal")
+                        .HasColumnType("date")
+                        .HasColumnName("ends_on_local");
+
+                    b.Property<Guid>("ExperienceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experience_id");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("note");
+
+                    b.Property<DateOnly>("StartsOnLocal")
+                        .HasColumnType("date")
+                        .HasColumnName("starts_on_local");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExperienceId", "StartsOnLocal")
+                        .HasDatabaseName("ix_availability_blackout_experience_start");
+
+                    b.ToTable("availability_blackout", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_availability_blackout_range", "ends_on_local >= starts_on_local");
+                        });
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Scheduling.AvailabilitySlot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("integer")
+                        .HasColumnName("capacity");
+
+                    b.Property<DateTimeOffset?>("ClosedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at_utc");
+
+                    b.Property<string>("ClosedReason")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("closed_reason");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("integer")
+                        .HasColumnName("duration_minutes");
+
+                    b.Property<Guid>("ExperienceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experience_id");
+
+                    b.Property<Guid?>("RecurrenceTemplateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recurrence_template_id");
+
+                    b.Property<int>("RemainingCapacity")
+                        .HasColumnType("integer")
+                        .HasColumnName("remaining_capacity");
+
+                    b.Property<DateTime>("StartsAtLocal")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("starts_at_local");
+
+                    b.Property<DateTimeOffset>("StartsAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("starts_at_utc");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Open")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<short>("UtcOffsetMinutes")
+                        .HasColumnType("smallint")
+                        .HasColumnName("utc_offset_minutes");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecurrenceTemplateId")
+                        .HasDatabaseName("ix_availability_slot_template")
+                        .HasFilter("recurrence_template_id IS NOT NULL");
+
+                    b.HasIndex("ExperienceId", "StartsAtLocal")
+                        .HasDatabaseName("ix_availability_slot_experience_local");
+
+                    b.HasIndex("ExperienceId", "StartsAtUtc")
+                        .IsUnique()
+                        .HasDatabaseName("ix_availability_slot_open")
+                        .HasFilter("status = 'Open'");
+
+                    b.ToTable("availability_slot", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_availability_slot_capacity", "capacity > 0 AND capacity <= 500");
+
+                            t.HasCheckConstraint("ck_availability_slot_closed_fields", "(status = 'Closed') = (closed_reason IS NOT NULL) AND (status = 'Closed') = (closed_at_utc IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_availability_slot_duration", "duration_minutes > 0 AND duration_minutes <= 10080");
+
+                            t.HasCheckConstraint("ck_availability_slot_remaining", "remaining_capacity >= 0 AND remaining_capacity <= capacity");
+                        });
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Scheduling.RecurrenceTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<short>("DayOfWeek")
+                        .HasColumnType("smallint")
+                        .HasColumnName("day_of_week");
+
+                    b.Property<string>("DstOverlap")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("First")
+                        .HasColumnName("dst_overlap");
+
+                    b.Property<DateOnly?>("EndsOnLocal")
+                        .HasColumnType("date")
+                        .HasColumnName("ends_on_local");
+
+                    b.Property<Guid>("ExperienceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("experience_id");
+
+                    b.Property<TimeOnly>("StartTimeLocal")
+                        .HasColumnType("time without time zone")
+                        .HasColumnName("start_time_local");
+
+                    b.Property<DateOnly>("StartsOnLocal")
+                        .HasColumnType("date")
+                        .HasColumnName("starts_on_local");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Active")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExperienceId", "Status")
+                        .HasDatabaseName("ix_recurrence_template_experience_status");
+
+                    b.HasIndex("ExperienceId", "DayOfWeek", "StartTimeLocal")
+                        .IsUnique()
+                        .HasDatabaseName("ux_recurrence_template_active")
+                        .HasFilter("status = 'Active'");
+
+                    b.ToTable("recurrence_template", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_recurrence_template_day_of_week", "day_of_week BETWEEN 0 AND 6");
+
+                            t.HasCheckConstraint("ck_recurrence_template_range", "ends_on_local IS NULL OR ends_on_local >= starts_on_local");
+                        });
+                });
+
             modelBuilder.Entity("Expyra.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1355,6 +1696,122 @@ namespace Expyra.Infrastructure.Migrations
                         .HasConstraintName("fk_city_alias_city");
 
                     b.Navigation("City");
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Pricing.ExchangeRate", b =>
+                {
+                    b.HasOne("Expyra.Domain.Pricing.Currency", null)
+                        .WithMany()
+                        .HasForeignKey("CurrencyCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Expyra.Domain.Pricing.ExchangeRateSnapshot", null)
+                        .WithMany()
+                        .HasForeignKey("SnapshotId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Pricing.ExchangeRateSnapshot", b =>
+                {
+                    b.HasOne("Expyra.Domain.Pricing.Currency", null)
+                        .WithMany()
+                        .HasForeignKey("PivotCurrencyCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Pricing.ExperiencePrice", b =>
+                {
+                    b.HasOne("Expyra.Domain.Pricing.Currency", null)
+                        .WithMany()
+                        .HasForeignKey("CurrencyCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Expyra.Domain.Experiences.Experience", null)
+                        .WithMany()
+                        .HasForeignKey("ExperienceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Pricing.PriceRule", b =>
+                {
+                    b.HasOne("Expyra.Domain.Pricing.ExperiencePrice", null)
+                        .WithMany()
+                        .HasForeignKey("ExperiencePriceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsOne("Expyra.Domain.Common.Money", "UnitPrice", b1 =>
+                        {
+                            b1.Property<Guid>("PriceRuleId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<long>("AmountMinor")
+                                .HasColumnType("bigint")
+                                .HasColumnName("unit_amount_minor");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("character varying(3)")
+                                .HasColumnName("unit_currency_code");
+
+                            b1.HasKey("PriceRuleId");
+
+                            b1.HasIndex("Currency")
+                                .HasDatabaseName("ix_price_rule_currency");
+
+                            b1.ToTable("price_rule");
+
+                            b1.HasOne("Expyra.Domain.Pricing.Currency", null)
+                                .WithMany()
+                                .HasForeignKey("Currency")
+                                .OnDelete(DeleteBehavior.Restrict)
+                                .IsRequired()
+                                .HasConstraintName("fk_price_rule_currency");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PriceRuleId");
+                        });
+
+                    b.Navigation("UnitPrice")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Scheduling.AvailabilityBlackout", b =>
+                {
+                    b.HasOne("Expyra.Domain.Experiences.Experience", null)
+                        .WithMany()
+                        .HasForeignKey("ExperienceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Scheduling.AvailabilitySlot", b =>
+                {
+                    b.HasOne("Expyra.Domain.Experiences.Experience", null)
+                        .WithMany()
+                        .HasForeignKey("ExperienceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Expyra.Domain.Scheduling.RecurrenceTemplate", null)
+                        .WithMany()
+                        .HasForeignKey("RecurrenceTemplateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Expyra.Domain.Scheduling.RecurrenceTemplate", b =>
+                {
+                    b.HasOne("Expyra.Domain.Experiences.Experience", null)
+                        .WithMany()
+                        .HasForeignKey("ExperienceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Expyra.Domain.Users.User", b =>

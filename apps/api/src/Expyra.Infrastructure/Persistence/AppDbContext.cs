@@ -12,6 +12,7 @@ using Expyra.Domain.Identity;
 using Expyra.Domain.Languages;
 using Expyra.Domain.Places;
 using Expyra.Domain.Pricing;
+using Expyra.Domain.Scheduling;
 using Expyra.Domain.Users;
 
 namespace Expyra.Infrastructure.Persistence;
@@ -49,6 +50,20 @@ public sealed class AppDbContext(
     public DbSet<ExperienceTag> ExperienceTags => Set<ExperienceTag>();
 
     public DbSet<ExperienceMedia> ExperienceMedia => Set<ExperienceMedia>();
+
+    public DbSet<AvailabilitySlot> AvailabilitySlots => Set<AvailabilitySlot>();
+
+    public DbSet<RecurrenceTemplate> RecurrenceTemplates => Set<RecurrenceTemplate>();
+
+    public DbSet<AvailabilityBlackout> AvailabilityBlackouts => Set<AvailabilityBlackout>();
+
+    public DbSet<ExperiencePrice> ExperiencePrices => Set<ExperiencePrice>();
+
+    public DbSet<PriceRule> PriceRules => Set<PriceRule>();
+
+    public DbSet<ExchangeRateSnapshot> ExchangeRateSnapshots => Set<ExchangeRateSnapshot>();
+
+    public DbSet<ExchangeRate> ExchangeRates => Set<ExchangeRate>();
 
     public DbSet<User> Users => Set<User>();
 

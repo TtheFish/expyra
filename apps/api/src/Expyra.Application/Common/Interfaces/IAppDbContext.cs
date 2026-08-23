@@ -6,6 +6,7 @@ using Expyra.Domain.Identity;
 using Expyra.Domain.Languages;
 using Expyra.Domain.Places;
 using Expyra.Domain.Pricing;
+using Expyra.Domain.Scheduling;
 using Expyra.Domain.Users;
 
 namespace Expyra.Application.Common.Interfaces;
@@ -60,6 +61,30 @@ public interface IAppDbContext
     /// misafire gösterilenler <see cref="MediaStatus.Active"/> olanlar.
     /// </summary>
     DbSet<ExperienceMedia> ExperienceMedia { get; }
+
+    /// <summary>
+    /// Misafirin seçebileceği seanslar. <b>Blok 9'un kilitleyeceği satırlar</b> —
+    /// bu yüzden materyalize (şablondan okuma anında üretilmiyor).
+    /// </summary>
+    DbSet<AvailabilitySlot> AvailabilitySlots { get; }
+
+    /// <summary>Haftalık kurallar ("her salı 14:00"). Seansları bunlar üretiyor.</summary>
+    DbSet<RecurrenceTemplate> RecurrenceTemplates { get; }
+
+    /// <summary>"Şu tarihlerde yokum" — ileriye dönük kural, tek seans kapatmadan farklı.</summary>
+    DbSet<AvailabilityBlackout> AvailabilityBlackouts { get; }
+
+    /// <summary>Fiyat sayfası, deneyim başına en fazla bir satır. Para birimi burada.</summary>
+    DbSet<ExperiencePrice> ExperiencePrices { get; }
+
+    /// <summary>Kademe başına kişi başı fiyat. Tutar <c>Money</c> owned type.</summary>
+    DbSet<PriceRule> PriceRules { get; }
+
+    /// <summary>Bir anın tüm kurları. <b>Yalnız gösterim</b> — tahsilat host'un para biriminde.</summary>
+    DbSet<ExchangeRateSnapshot> ExchangeRateSnapshots { get; }
+
+    /// <summary>Bir snapshot'ın satırları. Bileşik anahtar → <c>FindForUpdateAsync</c> ÇALIŞMAZ.</summary>
+    DbSet<ExchangeRate> ExchangeRates { get; }
 
     /// <summary>Kullanıcı hesapları. Tablo adı app_user — "user" Postgres'te ayrılmış kelime.</summary>
     DbSet<User> Users { get; }

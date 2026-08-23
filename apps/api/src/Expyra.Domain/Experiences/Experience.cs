@@ -87,6 +87,22 @@ public sealed class Experience : BaseAuditableEntity
     public int Capacity { get; set; }
 
     /// <summary>
+    /// Bebek (0-2 yaş) bir koltuk tüketiyor mu. <b>Karar host'un</b> çünkü fiziksel
+    /// sınırı bilen o: teknede ve araçta her baş sayılır, yürüyüş turunda kucaktaki
+    /// bebek saymayabilir.
+    ///
+    /// <para>Varsayılan <c>true</c> — güvenli taraf. Yanlış <c>false</c> bir teknede
+    /// kapasitenin üstünde yolcu demek; yanlış <c>true</c> yalnız birkaç koltuğun
+    /// boşa gitmesi. İki hatanın bedeli eşit değil.</para>
+    ///
+    /// <para>Kademe başına genel bir bayrak (<c>counts_toward_capacity</c>) DEĞİL:
+    /// yetişkin ve çocuğun koltuk tükettiği tartışmasız ve o esneklik, hiçbir
+    /// gerçek ihtiyaca karşılık gelmeyen bir kapasite matematiği dallanması
+    /// getirirdi.</para>
+    /// </summary>
+    public bool InfantCountsTowardCapacity { get; set; } = true;
+
+    /// <summary>
     /// Host'un ilanı İLK yazdığı dil. Fallback zincirinin üçüncü adımı ve slug'ın kaynağı
     /// (docs/I18N.md §2).
     ///

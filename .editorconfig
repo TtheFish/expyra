@@ -74,3 +74,7 @@ csharp_style_namespace_declarations = file_scoped:silent
 dotnet_diagnostic.IDE0161.severity = none
 # CA1861: seed verisi sabit dizi olarak gömülüyor (InsertData) — kasıtlı.
 dotnet_diagnostic.CA1861.severity = none
+# CA1825: `IsDescending(true, true)` çağrısı için EF `new bool[0]` üretiyor.
+# Array.Empty<bool>() yazmak doğru olurdu ama bu dosyayı biz yazmıyoruz: bir
+# sonraki `migrations add` aynı satırı yeniden basar.
+dotnet_diagnostic.CA1825.severity = none

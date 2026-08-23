@@ -56,6 +56,13 @@ internal sealed class ExperienceConfiguration : IEntityTypeConfiguration<Experie
             .HasColumnName("capacity")
             .IsRequired();
 
+        // Varsayılan true — güvenli taraf. Yanlış false bir teknede kapasitenin
+        // üstünde yolcu demek; yanlış true yalnız birkaç boş koltuk.
+        builder.Property(x => x.InfantCountsTowardCapacity)
+            .HasColumnName("infant_counts_toward_capacity")
+            .HasDefaultValue(true)
+            .IsRequired();
+
         builder.Property(x => x.OriginalLanguage)
             .HasColumnName("original_language")
             .HasMaxLength(LanguageCode.MaxLength)
