@@ -32,7 +32,10 @@ public sealed record GetQuoteQuery(
     int Infants,
     string? Currency) : IRequest<GuestQuoteResponse>;
 
-internal sealed class GetQuoteQueryHandler(IAppDbContext dbContext, IDateTimeProvider clock)
+internal sealed class GetQuoteQueryHandler(
+    IAppDbContext dbContext,
+    IDateTimeProvider clock,
+    PaymentCurrencyRules paymentRules)
     : IRequestHandler<GetQuoteQuery, GuestQuoteResponse>
 {
     public async Task<GuestQuoteResponse> Handle(
@@ -89,6 +92,34 @@ internal sealed class GetQuoteQueryHandler(IAppDbContext dbContext, IDateTimePro
             pricing.ChargeCurrency, pricing.UnitPrices, party, display?.Conversion);
 
         var quote = result.Value ?? throw Reject(result);
+
+        // Toplam tahsilat sağlayıcının alt sınırının altında kalamaz.
+        //
+        // <b>Kalem kontrolü (SetPricingCommand) bunu tek başına GARANTİ EDİYOR gibi
+        // görünüyor</b> ve bugünkü veriyle ediyor da: sıfır olmayan her kalem sınırın
+        // üstündeyse, en az bir kişilik her toplam da üstünde olur. Bu kontrol o
+        // muhakemenin BOZULDUĞU tek durum için var — <c>payment-constraints.json</c>
+        // güncellenip alt sınır YÜKSELDİĞİNDE. Kalem kontrolü yazma anında, eski
+        // sınırla çalışmıştı; kayıtlı fiyatlar geriye dönük doğrulanmıyor.
+        //
+        // O gün olmadan buraya düşülmez. Olduğunda ise alternatif, ödemenin misafir
+        // "öde"ye bastıktan SONRA reddedilmesi olurdu.
+        //
+        // SIFIR muaf: tamamen bedava bir rezervasyon (yalnız ücretsiz bebek) hiç
+        // tahsilat üretmiyor, yani sağlayıcıya hiç gitmiyor.
+        if (quote.Charge.AmountMinor > 0)
+        {
+            var floor = paymentRules.MinimumChargeIsoMinor(
+                pricing.ChargeCurrency, pricing.ChargeMinorUnits);
+
+            if (floor is { } minimum && quote.Charge.AmountMinor < minimum)
+            {
+                throw new ConflictException(
+                    $"Toplam tutar ödeme sağlayıcısının alt sınırının altında "
+                    + $"({minimum} minör birim {pricing.ChargeCurrency}).",
+                    PricingConflict.BelowMinimumCharge);
+            }
+        }
 
         // Bebeğin koltuk tüketip tüketmediği DENEYİME bağlı: teknede her baş sayılır,
         // yürüyüş turunda kucaktaki bebek saymayabilir.

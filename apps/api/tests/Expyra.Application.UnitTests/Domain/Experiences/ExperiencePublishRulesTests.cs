@@ -23,7 +23,7 @@ public sealed class ExperiencePublishRulesTests
 
     [Fact]
     public void Missing_TamIlan_BosDoner()
-        => ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: true, hasCoverMedia: true)
+        => ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: true, hasCoverMedia: true, hasPrice: true)
             .ShouldBeEmpty();
 
     [Fact]
@@ -31,7 +31,7 @@ public sealed class ExperiencePublishRulesTests
     {
         // docs/I18N.md §2: OriginalLanguage için çeviri satırı ZORUNLU — fallback
         // zincirinin sonu o satır. Başka dilde çeviri olması bunu KARŞILAMAZ.
-        var missing = ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: false, hasCoverMedia: true);
+        var missing = ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: false, hasCoverMedia: true, hasPrice: true);
 
         missing.ShouldHaveSingleItem().ShouldBe(ExperiencePublishRequirement.Translation);
     }
@@ -43,7 +43,7 @@ public sealed class ExperiencePublishRulesTests
         experience.CityId = null;
         experience.TimeZoneId = null;
 
-        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true)
+        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true, hasPrice: true)
             .ShouldHaveSingleItem()
             .ShouldBe(ExperiencePublishRequirement.City);
     }
@@ -54,7 +54,7 @@ public sealed class ExperiencePublishRulesTests
         var experience = Complete();
         experience.CategorySlug = null;
 
-        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true)
+        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true, hasPrice: true)
             .ShouldHaveSingleItem()
             .ShouldBe(ExperiencePublishRequirement.Category);
     }
@@ -69,7 +69,7 @@ public sealed class ExperiencePublishRulesTests
         var experience = Complete();
         experience.Capacity = capacity;
 
-        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true)
+        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true, hasPrice: true)
             .ShouldHaveSingleItem()
             .ShouldBe(ExperiencePublishRequirement.Capacity);
     }
@@ -80,7 +80,7 @@ public sealed class ExperiencePublishRulesTests
         var draft = new Experience { HostId = Guid.CreateVersion7(), OriginalLanguage = "tr" };
 
         // Sıra SABİT: arayüz sihirbaz adımlarını bu diziye göre işaretliyor.
-        ExperiencePublishRules.Missing(draft, hasOriginalLanguageTranslation: false, hasCoverMedia: false)
+        ExperiencePublishRules.Missing(draft, hasOriginalLanguageTranslation: false, hasCoverMedia: false, hasPrice: true)
             .ShouldBe(
             [
                 ExperiencePublishRequirement.Translation,
@@ -97,7 +97,7 @@ public sealed class ExperiencePublishRulesTests
     {
         // PLAN Blok 6 kabul kriteri 3. Görselsiz ilan listede gri bir kutu olur ve
         // paylaşıldığında önizlemesi boş çıkar.
-        ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: true, hasCoverMedia: false)
+        ExperiencePublishRules.Missing(Complete(), hasOriginalLanguageTranslation: true, hasCoverMedia: false, hasPrice: true)
             .ShouldHaveSingleItem()
             .ShouldBe(ExperiencePublishRequirement.Cover);
     }
@@ -111,8 +111,47 @@ public sealed class ExperiencePublishRulesTests
         var experience = Complete();
         experience.DurationMinutes = 0;
 
-        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true)
+        ExperiencePublishRules.Missing(experience, hasOriginalLanguageTranslation: true, hasCoverMedia: true, hasPrice: true)
             .ShouldHaveSingleItem()
             .ShouldBe(ExperiencePublishRequirement.Duration);
+    }
+
+    [Fact]
+    public void Missing_FiyatYok_TekEksik()
+    {
+        // Fiyat Blok 7'de koşul OLDU. Fiyatsız bir ilan yayında görünür, misafir
+        // tarih seçer ve teklif ucu 409 verir — yani satın alınamaz bir vitrin.
+        // Kapasitenin sıfır olmasıyla aynı sınıfta bir kusur ve o zaten kapıda.
+        ExperiencePublishRules.Missing(
+            Complete(), hasOriginalLanguageTranslation: true, hasCoverMedia: true, hasPrice: false)
+            .ShouldHaveSingleItem()
+            .ShouldBe(ExperiencePublishRequirement.Price);
+    }
+
+    [Fact]
+    public void Missing_SiraSABIT_EksikKumeAyniDiziyiUretiyor()
+    {
+        // Sıra sözleşmenin parçası: arayüz eksikleri bu sırada çiziyor ve testler
+        // sıralamaya güveniyor. Yeni bir koşul eklendiğinde bu test onun nereye
+        // girdiğini görünür kılıyor.
+        var experience = Complete();
+        experience.CityId = null;
+        experience.TimeZoneId = null;
+        experience.CategorySlug = null;
+        experience.Capacity = 0;
+        experience.DurationMinutes = 0;
+
+        ExperiencePublishRules.Missing(
+            experience, hasOriginalLanguageTranslation: false, hasCoverMedia: false, hasPrice: false)
+            .ShouldBe(
+            [
+                ExperiencePublishRequirement.Translation,
+                ExperiencePublishRequirement.City,
+                ExperiencePublishRequirement.Category,
+                ExperiencePublishRequirement.Capacity,
+                ExperiencePublishRequirement.Duration,
+                ExperiencePublishRequirement.Cover,
+                ExperiencePublishRequirement.Price,
+            ]);
     }
 }

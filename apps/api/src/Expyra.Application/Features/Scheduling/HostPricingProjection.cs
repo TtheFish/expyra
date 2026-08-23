@@ -75,11 +75,11 @@ internal static class HostPricingProjection
             first.CurrencyCode,
             first.MinorUnits,
 
-            // Kilit YAYIN DAMGASINA bakıyor, duruma değil — SetPricingCommand ile
+            // Kilit DURUMA bakıyor — SetPricingCommand ile
             // birebir aynı koşul. Arayüz para birimi seçicisini bu bayrakla
             // kilitliyor; `publishedAtUtc`'yi kendi yorumlasaydı kural değiştiğinde
             // iki yerde birden değişmesi gerekirdi.
-            experience.PublishedAtUtc is not null,
+            experience.Status == ExperienceStatus.Published,
             rules);
     }
 }

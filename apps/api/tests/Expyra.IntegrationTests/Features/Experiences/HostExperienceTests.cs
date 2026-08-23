@@ -109,7 +109,9 @@ public sealed class HostExperienceTests(ApiFactory factory)
         });
         await PutTranslationAsync(client, token, draft.Id, "tr", "İzmir Gezisi");
 
-        // Kapak yükleniyor ki kalan TEK eksik kapasite olsun — testin ölçtüğü şey bu.
+        // Kapak ve fiyat veriliyor ki kalan TEK eksik kapasite olsun — testin
+        // ölçtüğü şey bu.
+        await HostApi.SetMinimalPriceAsync(client, token, draft.Id);
         await MediaApi.UploadAsync(client, token, draft.Id);
 
         var before = await GetAsync<HostExperienceResponse[]>(client, token, BasePath);
@@ -611,6 +613,9 @@ public sealed class HostExperienceTests(ApiFactory factory)
         });
 
         await PutTranslationAsync(client, token, draft.Id, "tr", title, "Açıklama metni.");
+
+        // Fiyat Blok 7'de koşul oldu — kapakla aynı hikâye, aynı yardımcı güncellendi.
+        await HostApi.SetMinimalPriceAsync(client, token, draft.Id);
 
         return await MediaApi.UploadAsync(client, token, draft.Id);
     }

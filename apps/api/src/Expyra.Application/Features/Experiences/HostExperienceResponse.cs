@@ -165,6 +165,18 @@ internal static class HostExperienceProjection
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // Fiyatı OLAN ilanların kimlikleri. Kural satırı olmayan bir fiyat sayfası
+        // sayılmıyor — o "fiyat girilmedi" demek (GuestPricingStore ile aynı ayrım).
+        // Tutarlar çekilmiyor, yalnız varlık: yayın kapısının sorduğu soru bu.
+        var priced = (await dbContext.ExperiencePrices
+            .AsNoTracking()
+            .Where(x => ids.Contains(x.ExperienceId)
+                && dbContext.PriceRules.Any(rule => rule.ExperiencePriceId == x.Id))
+            .Select(x => x.ExperienceId)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false))
+            .ToHashSet();
+
         var translationsById = translations.ToLookup(x => x.ExperienceId);
         var spokenById = spoken.ToLookup(x => x.ExperienceId);
         var tagsById = tags.ToLookup(x => x.ExperienceId);
@@ -185,7 +197,8 @@ internal static class HostExperienceProjection
                         x.Height,
                         x.SortOrder,
                         x.IsCover))
-                    .ToList()))
+                    .ToList(),
+                priced.Contains(experience.Id)))
             .ToList();
     }
 
@@ -194,7 +207,8 @@ internal static class HostExperienceProjection
         IReadOnlyList<ExperienceTranslation> translations,
         IReadOnlyList<string> spokenLanguages,
         IReadOnlyList<string> tags,
-        IReadOnlyList<HostExperienceMediaResponse> media)
+        IReadOnlyList<HostExperienceMediaResponse> media,
+        bool hasPrice)
     {
         // Yayın kuralı Domain'de ve TEK yerde: yayın ucu da, bu liste de aynı kodu
         // çağırıyor (ExperiencePublishRules sınıf notu).
@@ -223,7 +237,8 @@ internal static class HostExperienceProjection
                     x.UpdatedAtUtc))
                 .ToList(),
             media,
-            ExperiencePublishRules.Missing(experience, hasOriginalTranslation, media.Any(x => x.IsCover)),
+            ExperiencePublishRules.Missing(
+                experience, hasOriginalTranslation, media.Any(x => x.IsCover), hasPrice),
             experience.CreatedAtUtc,
             experience.UpdatedAtUtc,
             experience.PublishedAtUtc);

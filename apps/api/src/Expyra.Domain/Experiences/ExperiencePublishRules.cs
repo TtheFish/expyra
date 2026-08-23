@@ -6,9 +6,10 @@ namespace Expyra.Domain.Experiences;
 /// hem yayın ucunda hem de host listesinde AYNI kod çalışıyor — sihirbazın "yayınla"
 /// düğmesini kapatan koşullar ile sunucunun reddettiği koşullar ayrışamıyor.
 ///
-/// <para>Liste PLAN'ın açıkça saydığı koşullardan ibaret ve keyfî büyümüyor: Blok 5
-/// kabul kriteri 1 dördünü, Blok 6 kabul kriteri 3 kapak görselini ekliyor. Buraya
-/// PLAN'da yazmayan bir kural koymak yayın kapısını sessizce genişletir.</para>
+/// <para>Liste PLAN'ın saydığı koşullardan ibaret ve keyfî büyümüyor: Blok 5
+/// kabul kriteri 1 dördünü, Blok 6 kabul kriteri 3 kapak görselini, Blok 7 ise
+/// fiyatı ekliyor. Buraya PLAN'da yazmayan bir kural koymak yayın kapısını
+/// sessizce genişletir — üç genişletmenin de gerekçesi ilgili satırda yazılı.</para>
 ///
 /// <para><b>Süre sonradan koşul OLDU</b> ve bu bilinçli bir kapsam genişletmesi:
 /// Blok 7 seansların bitiş saatini <see cref="Experience.DurationMinutes"/>'ten
@@ -31,10 +32,15 @@ public static class ExperiencePublishRules
     /// satır var mı. <c>Pending</c> sayılmaz: imzalı adres alınmış ama yüklenmemiş bir
     /// görsel, kartta boş bir kutu demek.
     /// </param>
+    /// <param name="hasPrice">
+    /// Fiyat sayfası VE en az bir kademe satırı var mı. Yalnız sayfanın varlığı
+    /// yetmiyor: kural satırı olmayan bir sayfa "fiyat girilmedi" demek.
+    /// </param>
     public static IReadOnlyList<string> Missing(
         Experience experience,
         bool hasOriginalLanguageTranslation,
-        bool hasCoverMedia)
+        bool hasCoverMedia,
+        bool hasPrice)
     {
         ArgumentNullException.ThrowIfNull(experience);
 
@@ -80,14 +86,29 @@ public static class ExperiencePublishRules
             missing.Add(ExperiencePublishRequirement.Cover);
         }
 
+        // PLAN Blok 7. Fiyatsız bir ilan yayınlanabiliyordu ve sonucu şuydu: kart
+        // fiyatsız görünüyor, misafir tarih seçiyor, teklif ucu 409 veriyor. Yani
+        // yayında ama SATIN ALINAMAZ bir şey — kapasitenin sıfır olmasıyla aynı
+        // sınıfta bir kusur ve o zaten kapıda.
+        //
+        // PLAN bu kararı açıkça vermemişti; kapı burada kapanıyor çünkü Blok 9
+        // rezervasyonu fiyatın üzerine kuracak ve o gün fiyatsız yayınlar geriye
+        // dönük düzeltilmek zorunda kalırdı — süre koşulunun eklenmesiyle aynı
+        // gerekçe.
+        if (!hasPrice)
+        {
+            missing.Add(ExperiencePublishRequirement.Price);
+        }
+
         return missing;
     }
 
     public static bool CanPublish(
         Experience experience,
         bool hasOriginalLanguageTranslation,
-        bool hasCoverMedia)
-        => Missing(experience, hasOriginalLanguageTranslation, hasCoverMedia).Count == 0;
+        bool hasCoverMedia,
+        bool hasPrice)
+        => Missing(experience, hasOriginalLanguageTranslation, hasCoverMedia, hasPrice).Count == 0;
 }
 
 /// <summary>
@@ -113,4 +134,7 @@ public static class ExperiencePublishRequirement
 
     /// <summary>Süre hiç girilmemiş (0). Blok 7 seans bitişini bundan hesaplıyor.</summary>
     public const string Duration = "duration";
+
+    /// <summary>Fiyat hiç girilmemiş. Fiyatsız ilan yayında görünür ama satın alınamaz.</summary>
+    public const string Price = "price";
 }

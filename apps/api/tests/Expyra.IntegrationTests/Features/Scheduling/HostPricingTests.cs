@@ -6,6 +6,7 @@ using Expyra.Application.Features.Experiences;
 using Expyra.Application.Features.Host.Commands.ActivateHost;
 using Expyra.Application.Features.Scheduling;
 using Expyra.Application.Features.Scheduling.Commands.SetPricing;
+using Expyra.Domain.Common;
 using Expyra.Domain.Pricing;
 using Expyra.IntegrationTests.Common;
 
@@ -303,6 +304,56 @@ public sealed class HostPricingTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task ARSIVLENMIS_Ilanda_ParaBirimiDEGISTIRILEBILIR()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var experience = await PublishedAsync(client, token);
+
+        await SetPricingAsync(client, token, experience, "EUR", (GuestType.Adult, 4500));
+
+        // Kilidin hata mesajı "Önce arşivleyin" diyor. Koşul PublishedAtUtc damgasına
+        // baksaydı bu cümle YALAN olurdu: arşivleme damgaya dokunmuyor, yani kilit
+        // asla açılmazdı. Test tam olarak mesajın doğruluğunu ölçüyor.
+        (await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{experience}/archive", token))
+            .StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var response = await SetPricingAsync(client, token, experience, "USD", (GuestType.Adult, 4500));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await RuleRowsAsync(experience)).ShouldAllBe(x => x.UnitPrice.Currency == "USD");
+
+        // Kilit bayrağı da düştü: arayüz seçiciyi yeniden açıyor.
+        (await response.Content.ReadFromJsonAsync<PricingResponse>(AuthApi.Json))!
+            .CurrencyLocked.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Teklif_AltSinirSONRADAN_Yukselirse_409()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await DraftAsync(client, token);
+
+        // Kalem kontrolünü BYPASS ederek sınırın altında bir fiyat yazıyoruz. Bu
+        // durum gerçekte payment-constraints.json güncellenip alt sınır yükseldiğinde
+        // doğuyor: kayıtlı fiyatlar geriye dönük doğrulanmıyor. Yazma ucundan
+        // üretilemediği için satır doğrudan kuruluyor.
+        await WritePriceDirectlyAsync(draft, "EUR", 10);
+
+        // Teklif ucu yayındaki ilan istiyor; taslak misafire görünmez. Bu yüzden
+        // kontrolün kendisi burada değil, teklif akışında sınanıyor — aşağıdaki
+        // satır yalnız fiyatın gerçekten sınırın altında yazıldığını doğruluyor.
+        var rows = await RuleRowsAsync(draft);
+        rows.ShouldHaveSingleItem().UnitPrice.AmountMinor.ShouldBe(10);
+
+        // Ve normal yoldan aynı tutar REDDEDİLİYOR — bypass gerçekten bypass.
+        (await SetPricingAsync(client, token, draft, "EUR", (GuestType.Adult, 10)))
+            .StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task BaskaHostunFiyati_404()
     {
         var client = factory.CreateClient();
@@ -355,6 +406,9 @@ public sealed class HostPricingTests(ApiFactory factory)
 
         await MediaApi.UploadAsync(client, token, id);
 
+        // Fiyat yayın koşulu; testlerin çoğu bunun ÜZERİNE yazacak.
+        await HostApi.SetMinimalPriceAsync(client, token, id);
+
         var published = await MediaApi.SendAsync(
             client, HttpMethod.Post, $"{BasePath}/{id}/publish", token);
 
@@ -384,6 +438,32 @@ public sealed class HostPricingTests(ApiFactory factory)
                     })
                     .ToArray(),
             });
+
+    /// <summary>
+    /// Fiyatı DOĞRUDAN yazar, yazma ucunun alt sınır kontrolünü atlayarak. Gerçekte
+    /// bu duruma alt sınır sonradan yükseldiğinde düşülüyor.
+    /// </summary>
+    private Task<bool> WritePriceDirectlyAsync(Guid experienceId, string currency, long adultMinor)
+        => factory.QueryAsync(async db =>
+        {
+            var page = new ExperiencePrice
+            {
+                ExperienceId = experienceId,
+                CurrencyCode = currency,
+            };
+
+            db.ExperiencePrices.Add(page);
+            db.PriceRules.Add(new PriceRule
+            {
+                ExperiencePriceId = page.Id,
+                GuestType = GuestType.Adult,
+                UnitPrice = new Money(adultMinor, currency),
+            });
+
+            await db.SaveChangesAsync();
+
+            return true;
+        });
 
     private Task<List<PriceRule>> RuleRowsAsync(Guid experienceId)
         => factory.QueryAsync(db =>

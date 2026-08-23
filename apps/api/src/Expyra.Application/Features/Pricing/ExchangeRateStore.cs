@@ -124,4 +124,7 @@ public static class PricingConflict
 {
     /// <summary>İstenen çift için kur satırı yok — veri eksiği, kullanıcı hatası değil.</summary>
     public const string NoExchangeRates = "pricing-no-exchange-rate";
+
+    /// <summary>Toplam tutar ödeme sağlayıcısının alt sınırının altında.</summary>
+    public const string BelowMinimumCharge = "pricing-below-minimum";
 }

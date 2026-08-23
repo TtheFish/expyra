@@ -573,6 +573,10 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
             client, HttpMethod.Put, $"{BasePath}/{draft.Id}/translations/tr", token,
             new { title, description = "Açıklama." });
 
+        // Fiyat da Blok 7'de yayın koşulu oldu; bu yardımcının adı "kapak dışında
+        // TÜM koşullar" ve o söz tutulmalı.
+        await HostApi.SetMinimalPriceAsync(client, token, draft.Id);
+
         return draft;
     }
 

@@ -244,10 +244,14 @@ public sealed class GuestAvailabilityTests(ApiFactory factory)
         var listing = await PublishedListingAsync(client);
 
         await CreateRecurrenceAsync(client, listing, DayOfWeek.Thursday, "09:00");
+        await StripPricingAsync(listing.Id);
 
         var availability = await AvailabilityAsync(client, listing.Slug);
 
-        // Fiyatsız ilan bir hata değil, tamamlanmamış bir adım: seanslar yine dönüyor.
+        // Fiyatsız YAYINDA bir ilan artık API'den üretilemiyor — fiyat Blok 7'de
+        // yayın koşulu oldu. Ama kuraldan ÖNCE yayınlanmış satırlar fiyatsız duruyor
+        // ve misafir ucu onları çizebilmeli; satır bu yüzden doğrudan siliniyor.
+        // Kapak koşulunun geriye dönük uygulanamamasıyla aynı durum.
         availability.Pricing.ShouldBeNull();
         availability.Slots.ShouldNotBeEmpty();
     }
@@ -402,6 +406,10 @@ public sealed class GuestAvailabilityTests(ApiFactory factory)
 
         await CreateRecurrenceAsync(client, listing, DayOfWeek.Wednesday, "17:00");
 
+        // Bkz. Musaitlik_FiyatGirilmemisse_PricingNULL: bu durum artık yalnız
+        // kuraldan önce yayınlanmış satırlarda var.
+        await StripPricingAsync(listing.Id);
+
         var slot = (await SlotRowsAsync(listing.Id))[0];
 
         (await QuoteResponseAsync(client, listing.Slug, slot.Id, adults: 1))
@@ -477,8 +485,13 @@ public sealed class GuestAvailabilityTests(ApiFactory factory)
     {
         var listing = await DraftListingAsync(client);
 
-        // Kapak Blok 6'da yayın koşulu oldu.
+        // Kapak Blok 6'da, fiyat Blok 7'de yayın koşulu oldu.
+        //
+        // Para birimi CZK: testlerin çoğu fiyatın ÜZERİNE yazıyor ve yayından sonra
+        // para birimi KİLİTLİ. Burada EUR yazılsaydı sonraki her SetPricingAsync(CZK)
+        // 409 alırdı — kilidin kendisi doğru çalışıyor, kurulum yanlış olurdu.
         await MediaApi.UploadAsync(client, listing.Token, listing.Id);
+        await HostApi.SetMinimalPriceAsync(client, listing.Token, listing.Id, "CZK", 90_000);
 
         var published = await MediaApi.SendAsync(
             client, HttpMethod.Post, $"{HostPath}/{listing.Id}/publish", listing.Token);
@@ -577,6 +590,25 @@ public sealed class GuestAvailabilityTests(ApiFactory factory)
 
         return client.GetAsync($"{GuestPath}/{slug}/quote?{query}");
     }
+
+    /// <summary>
+    /// Fiyat satırlarını DOĞRUDAN siler. Fiyat yayın koşulu olduğundan bu durumu
+    /// API üretemiyor;  de yayındaki ilanda 409 veriyor (para
+    /// birimi kilidinin bypass'ını kapatmak için). Yine de test edilmesi gerekiyor:
+    /// kuraldan önce yayınlanmış satırlar fiyatsız duruyor.
+    /// </summary>
+    private Task<bool> StripPricingAsync(Guid experienceId)
+        => factory.QueryAsync(async db =>
+        {
+            var pages = await db.ExperiencePrices
+                .Where(x => x.ExperienceId == experienceId)
+                .ToListAsync();
+
+            db.ExperiencePrices.RemoveRange(pages);
+            await db.SaveChangesAsync();
+
+            return true;
+        });
 
     private Task<List<AvailabilitySlot>> SlotRowsAsync(Guid experienceId)
         => factory.QueryAsync(db => db.AvailabilitySlots

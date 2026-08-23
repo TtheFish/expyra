@@ -133,7 +133,19 @@ Hepsi düzeltildi. Aşağıdaki tablo ne olduğunun kaydı.
 
 ---
 
-## 7. Karara bağlanmamış
+## 7. ~~Karara bağlanmamış~~ — **KARARA BAĞLANDI**
+
+Dördü de kapandı. Kararlar ve gerekçeleri:
+
+| Soru | Karar | Nerede |
+|---|---|---|
+| Fiyat yayın koşulu mu? | **Evet.** Fiyatsız ilan yayında görünür ama satın alınamaz — kapasitenin sıfır olmasıyla aynı sınıfta. Kural yalnız yayın anında çalışıyor; önceki satırlar yayında kalıyor | ,  Blok 7 |
+| Para birimi kilidi geri alınamaz | **Koşul  oldu**,  değil. Damga arşivlerken temizlenmiyor, yani ona bakan kilit asla açılmazdı ve mesajdaki "önce arşivleyin" yalan olurdu. Blok 9 bunu "rezervasyon var mı"ya daraltacak | , ,  |
+| Fiyatta tarih aralığı kuralı | **MVP dışına.** Mevsimsel fiyatlandırma ve bloğun kendi "dahil değil" listesi onu zaten dışarıda bırakıyordu — iki ad, aynı özellik |  Blok 7 |
+| Toplam asgari tahsilat kontrolü | **Yazıldı**, ama gerekçesi ilk sanılan değil: kalem kontrolü bugünkü veriyle toplamı zaten garanti ediyor. Kontrol,  güncellenip alt sınır YÜKSELDİĞİNDE kayıtlı fiyatların geriye dönük doğrulanmamasını yakalıyor |  |
+
+### Eski hâli (kayıt için)
+
 
 - **Fiyat yayın koşulu mu?** Bugün fiyatsız ilan yayınlanabiliyor ve misafir teklif
   ucu 409 veriyor. PLAN bu kararı hiç vermemiş.

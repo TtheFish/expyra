@@ -5,6 +5,7 @@ using Expyra.Application.Common.Exceptions;
 using Expyra.Application.Common.Interfaces;
 using Expyra.Application.Features.Experiences;
 using Expyra.Domain.Common;
+using Expyra.Domain.Experiences;
 using Expyra.Domain.Pricing;
 using Expyra.Domain.Scheduling;
 
@@ -98,13 +99,23 @@ internal sealed class SetPricingCommandHandler(
             dbContext.ExperiencePrices.Add(page);
         }
         else if (!string.Equals(page.CurrencyCode, currency, StringComparison.Ordinal)
-            && experience.PublishedAtUtc is not null)
+            && experience.Status == ExperienceStatus.Published)
         {
             // Şehir kilidiyle aynı aile: dışarı çıkmış bir ilanın para birimini
             // değiştirmek, yayınlanmış bir fiyatın anlamını geriye dönük değiştirir
             // ve Blok 9'un donduracağı tutarlarla çelişir.
+            //
+            // Koşul DURUMA bakıyor, PublishedAtUtc damgasına değil: damga arşivlerken
+            // temizlenmiyor (bilerek — "ne zaman yayınlandı" tarihsel bir olgu), yani
+            // ona bakan bir kilit ASLA açılmazdı ve mesajdaki "önce arşivleyin" var
+            // olmayan bir çıkış yolu gösterirdi. Arşivlenmiş ilan misafire görünmüyor,
+            // dolayısıyla para birimini değiştirmek kimsenin gördüğü bir sayıyı
+            // geriye dönük değiştirmiyor.
+            //
+            // Blok 9 bunu daraltacak: kilidin gerçek koşulu "rezervasyon var" olacak,
+            // "yayında" değil. Bugün rezervasyon tablosu yok.
             throw new ConflictException(
-                "Yayınlanmış bir ilanın tahsilat para birimi değiştirilemez. Önce arşivleyin.",
+                "Yayındaki bir ilanın tahsilat para birimi değiştirilemez. Önce arşivleyin.",
                 ScheduleConflict.PricingCurrencyLocked);
         }
         else
@@ -124,7 +135,7 @@ internal sealed class SetPricingCommandHandler(
         return new PricingResponse(
             currency,
             registry.MinorUnits,
-            experience.PublishedAtUtc is not null,
+            experience.Status == ExperienceStatus.Published,
             request.Rules
                 // Kademe adı KÜÇÜK HARF: enum sözleşmesinin geri kalanıyla aynı düzen
                 // (bkz. Program.cs'teki JsonStringEnumConverter ve ScheduleFormat.Name).
@@ -149,8 +160,13 @@ internal sealed class SetPricingCommandHandler(
         foreach (var rule in rules)
         {
             // SIFIR muaf: bedava bebek geçerli bir fiyat ve o satır tek başına
-            // tahsilat üretmiyor. Alt sınır TOPLAM tahsilata değil kaleme
-            // bakıyor — toplam kontrolü teklif anında (Blok 7c).
+            // tahsilat üretmiyor.
+            //
+            // Sınır KALEME bakıyor ve bu yeterli: sıfır olmayan her kalem sınırın
+            // üstündeyse en az bir kişilik her TOPLAM da üstünde olur. Teklif
+            // ucundaki toplam kontrolü bunun yedeği değil — o, alt sınır SONRADAN
+            // yükseldiğinde kayıtlı fiyatların geriye dönük doğrulanmamasını
+            // yakalıyor (GetQuoteQuery).
             if (rule.UnitAmountMinor == 0) continue;
 
             if (minimum is { } floor && rule.UnitAmountMinor < floor)

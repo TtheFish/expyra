@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Expyra.Application.Common.Exceptions;
 using Expyra.Application.Common.Interfaces;
 using Expyra.Application.Features.Experiences;
+using Expyra.Domain.Experiences;
 using Expyra.Domain.Scheduling;
 
 namespace Expyra.Application.Features.Scheduling.Commands.DeletePricing;
@@ -50,10 +51,14 @@ internal sealed class DeletePricingCommandHandler(
             return;
         }
 
-        if (experience.PublishedAtUtc is not null)
+        // DURUMA bakıyor, PublishedAtUtc damgasına değil: damga arşivlerken
+        // temizlenmiyor, yani ona bakan bir kapı asla açılmaz ve mesajdaki
+        // "önce arşivleyin" var olmayan bir çıkış yolu gösterirdi
+        // (SetPricingCommand'daki aynı koşulun gerekçesi orada uzun uzun yazılı).
+        if (experience.Status == ExperienceStatus.Published)
         {
             throw new ConflictException(
-                "Yayınlanmış bir ilanın fiyatı silinemez. Önce arşivleyin.",
+                "Yayındaki bir ilanın fiyatı silinemez. Önce arşivleyin.",
                 ScheduleConflict.PricingLockedAfterPublish);
         }
 

@@ -259,7 +259,11 @@
 
 **Ön koşul:** Blok 5 (Blok 6'dan bağımsız, paralel gidebilir).
 
-**Host tarafı:** `POST/PATCH/DELETE /api/host/experiences/{id}/slots`, `POST .../recurrence` (haftalık şablon), `POST .../blackouts`, `PUT .../pricing`. Web: takvim ekranı (ay görünümü + seans ekleme), fiyat formu (para birimi seçici + yetişkin/çocuk/bebek + tarih aralığı kuralı).
+**Host tarafı:** `POST/PATCH/DELETE /api/host/experiences/{id}/slots`, `POST .../recurrence` (haftalık şablon), `POST .../blackouts`, `PUT .../pricing`. Web: takvim ekranı (ay görünümü + seans ekleme), fiyat formu (para birimi seçici + yetişkin/çocuk/bebek).
+
+> **Fiyatta "tarih aralığı kuralı" MVP dışına alındı.** Bu satır önce "tarih aralığı kuralı" da vaat ediyordu; o mevsimsel fiyatlandırmadır ve bu bloğun kendi "dahil değil" listesi zaten dinamik fiyatlandırmayı dışarıda bırakıyor — ikisi aynı özelliğin iki adı. Bugünkü model kademe başına TEK fiyat tutuyor; tarih aralığı, `price_rule`'a geçerlilik penceresi eklemek ve teklif anında hangi kuralın uygulandığını seçmek demek. Gerçek bir ihtiyaç doğduğunda ayrı bir blok olarak açılır.
+
+> **Fiyat YAYIN KOŞULU oldu.** PLAN bu kararı açıkça vermemişti ve fiyatsız ilan yayınlanabiliyordu: kart fiyatsız görünüyor, misafir tarih seçiyor, teklif ucu 409 veriyor — yayında ama satın alınamaz bir vitrin. Kapasitenin sıfır olmasıyla aynı sınıfta bir kusur ve o zaten kapıdaydı. Kural yalnız YAYIN anında çalışıyor; ondan önce yayınlanmış fiyatsız satırlar yayında kalıyor (kapak koşulunun eklenmesiyle aynı durum).
 
 **Misafir tarafı:** `GET /api/experiences/{slug}/availability?from=&to=`, `GET /api/experiences/{slug}/quote?slotId=&adults=&children=`. Web: detay sayfasında takvim + kişi seçimi + fiyat özeti; "tahsilat host'un para biriminde yapılır" notu.
 
@@ -272,7 +276,7 @@
 2. Sistemde `decimal Price` diye tek sütun yoktur; her tutar `(AmountMinor, CurrencyCode)`.
 3. Misafir EUR görüntüleme seçince fiyat çevrilir, ekranda tahsilat para birimi de yazar; çevrilen tutar hiçbir yerde tahsilata girmez.
 4. Geçmiş tarihli seans misafir API'sinden dönmez.
-5. `RemainingCapacity` bu blokta yalnız **okunur** (yazma Blok 9'da, kilitli).
+5. `RemainingCapacity` bu blokta yalnız **okunur** (yazma Blok 9'da, kilitli). Tek atama, kapalı bir seans yeniden açılırken satırı yeni kapasiteyle kurmak; o yol satılmış koltuk varsa **409** veriyor, yani canlı bir sayaç değişmiyor.
 
 **Riskler / tuzaklar:** `RemainingCapacity` denormalize mi, `booking` sayımıyla mı hesaplanacak — Blok 9 bu satırı kilitleyeceği için **denormalize öner**, ama kararı burada ver. Zaman dilimi `experience.TimeZoneId`'den (şehirden türeyen) gelir; istemcinin saat diliminden asla türetilmez. Kur snapshot'ı gösterim içindir, `booking` satırına yazılacak "o anki kur" alanı Blok 9'da eklenir.
 

@@ -197,4 +197,23 @@ internal static class HostExperienceStore
             .AnyAsync(
                 x => x.ExperienceId == experienceId && x.IsCover && x.Status == MediaStatus.Active,
                 cancellationToken);
+
+    /// <summary>
+    /// İlanın satılabilir bir fiyatı var mı — yayın kapısının sorduğu soru.
+    ///
+    /// <para><b>Kural SATIRI aranıyor, sayfa değil:</b> kural satırı olmayan bir
+    /// <c>experience_price</c> "fiyat girilmedi" demek. Yalnız sayfaya bakılsaydı
+    /// para birimi seçip kademeleri boş bırakan bir ilan yayın kapısını geçerdi ve
+    /// misafir tarafında teklif ucu 409 verirdi.</para>
+    /// </summary>
+    internal static Task<bool> HasPriceAsync(
+        IAppDbContext dbContext,
+        Guid experienceId,
+        CancellationToken cancellationToken)
+        => dbContext.ExperiencePrices
+            .AsNoTracking()
+            .AnyAsync(
+                x => x.ExperienceId == experienceId
+                    && dbContext.PriceRules.Any(rule => rule.ExperiencePriceId == x.Id),
+                cancellationToken);
 }

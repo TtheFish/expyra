@@ -86,10 +86,17 @@ internal sealed class PublishExperienceCommandHandler(
             .HasActiveCoverAsync(dbContext, experience.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        // PLAN Blok 5 kabul kriteri 1 + Blok 6 kabul kriteri 3. Host listesindeki
-        // "eksikler" rozeti de aynı fonksiyondan geçiyor, yani arayüzün gösterdiği
-        // eksikler ile sunucunun reddettiği eksikler ayrışamıyor.
-        var missing = ExperiencePublishRules.Missing(experience, originalTitle is not null, hasCover);
+        // Fiyat da yayın koşulu (Blok 7): fiyatsız bir ilan yayında görünür ama
+        // teklif ucu 409 verir — satın alınamaz bir vitrin.
+        var hasPrice = await HostExperienceStore
+            .HasPriceAsync(dbContext, experience.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        // PLAN Blok 5 kabul kriteri 1 + Blok 6 kabul kriteri 3 + Blok 7. Host
+        // listesindeki "eksikler" rozeti de aynı fonksiyondan geçiyor, yani arayüzün
+        // gösterdiği eksikler ile sunucunun reddettiği eksikler ayrışamıyor.
+        var missing = ExperiencePublishRules.Missing(
+            experience, originalTitle is not null, hasCover, hasPrice);
 
         if (missing.Count > 0)
         {

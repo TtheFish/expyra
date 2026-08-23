@@ -327,7 +327,12 @@ internal sealed class UpdateExperienceCommandHandler(
             .HasActiveCoverAsync(dbContext, experience.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        var missing = ExperiencePublishRules.Missing(experience, hasTranslation, hasCover);
+        // Fiyat da aynı korumanın parçası: yayındaki bir ilan fiyatını kaybedemez.
+        var hasPrice = await HostExperienceStore
+            .HasPriceAsync(dbContext, experience.Id, cancellationToken)
+            .ConfigureAwait(false);
+
+        var missing = ExperiencePublishRules.Missing(experience, hasTranslation, hasCover, hasPrice);
 
         if (missing.Count > 0)
         {
