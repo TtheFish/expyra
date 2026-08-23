@@ -474,6 +474,36 @@
 
 ---
 
+### Stripe'ın para modeli — Blok 7'de sabitlendi
+
+Sağlayıcı **Stripe** olarak kesinleşti. Para modeli şanslı bir hizada: Stripe da
+tutarları **minör birim tam sayısı** olarak alıyor, yani `Money(AmountMinor, Currency)`
+zaten sağlayıcının beklediği şekil — çevirme katmanı gerekmiyor.
+
+İki yerde ISO'dan **ayrışıyor** ve ikisi de `docs/payment-constraints.json` +
+`PaymentCurrencyRules`'da kayıtlı (kaynak: docs.stripe.com/currencies, 23 Ağu 2026):
+
+1. **ISK yüz kat tuzağı.** ISO'ya göre İzlanda kronunun küsuratı yok (üs 0) ve kayıt
+   defterimiz doğru olarak öyle diyor. Stripe geriye dönük uyumluluk için ISK'yi İKİ
+   ondalıklı bekliyor: 5 ISK için `amount = 500`. Fiyatı ISO minör biriminde saklayıp
+   olduğu gibi göndermek **yüzde bir tahsil etmek** demek. Dönüşümün tek yeri
+   `PaymentCurrencyRules.ToProviderAmount`; `IPaymentProvider` implementasyonu
+   tutarı ORADAN geçirmek zorunda. UGX aynı durumda (kayıt defterimizde henüz yok).
+2. **Asgari tahsilat.** Para birimi başına alt sınır var (0,50 EUR · 50 JPY · 15 CZK ·
+   0,30 GBP · 175 HUF). Altında fiyat verilen ilan yayınlanır ama **her ödeme
+   reddedilir** — Blok 7'de yazılan veri Blok 18'de patlardı. Fiyat doğrulaması bu
+   sınırı uyguluyor.
+
+Ayrıca: HUF ve TWD **payout** tutarının 100'e tam bölünmesini istiyor (tahsilatı
+değil — Blok 18'in işi). Üst sınır çoğu para biriminde 8 hane; IDR/COP/INR istisna.
+
+**Doğrulanamayan bir iddia koda girmedi:** üç ondalıklı para birimlerinde (KWD, BHD,
+JOD, OMR, TND) tutarın 10'a bölünmesi gerektiği yaygın bir bilgi ama Stripe'ın kendi
+dokümanında teyidini bulamadım. Beşinin desteklendiği teyitli; bölünebilirlik kuralı
+yazılmadı — doğrulanmamış bir kısıt, geçerli fiyatları sessizce reddederdi.
+
+---
+
 ### Blok 18 — Gerçek Stripe Connect · L · ⏸ **BLOKE (şirket kaydı)**
 
 **Ne:** Misafir gerçek kartla öder ↔ host gerçekten para alır.
