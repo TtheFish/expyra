@@ -520,6 +520,91 @@ public sealed class HostScheduleTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task AyniBaslangicaIkinciSatir_VERITABANI_Reddediyor()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var experience = await SchedulableExperienceAsync(client, token);
+
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{experience}/slots", token,
+            new { startsAtLocal = $"{TodayInPrague().AddDays(30):yyyy-MM-dd}T11:00" });
+
+        var slot = (await SlotRowsAsync(experience)).ShouldHaveSingleItem();
+
+        // Satır KAPATILIYOR: tekillik DURUMDAN BAĞIMSIZ olmalı. Şema yalnız "Open"
+        // filtreli bir tekil index taşısaydı bu ekleme başarılı olur ve host'un
+        // kapattığı gün bir sonraki üretimde geri gelirdi.
+        await MediaApi.SendAsync(
+            client, HttpMethod.Patch, $"{BasePath}/{experience}/slots/{slot.Id}", token,
+            new { status = "closed" });
+
+        // Kod yolundan DEĞİL doğrudan veritabanına yazılıyor: burada sınanan şey
+        // uygulamanın kontrolü değil, ux_availability_slot_experience_start index'inin
+        // gerçekten var olup olmadığı. O index bir kez sessizce oluşmamıştı — aynı
+        // sütun çiftine iki adsız HasIndex çağrısı EF'te tek nesneye çöküyor.
+        var duplicate = await Should.ThrowAsync<DbUpdateException>(() => factory.QueryAsync(async db =>
+        {
+            db.AvailabilitySlots.Add(new AvailabilitySlot
+            {
+                Id = Guid.CreateVersion7(),
+                ExperienceId = experience,
+                StartsAtUtc = slot.StartsAtUtc,
+                StartsAtLocal = slot.StartsAtLocal,
+                UtcOffsetMinutes = slot.UtcOffsetMinutes,
+                DurationMinutes = slot.DurationMinutes,
+                Capacity = slot.Capacity,
+                RemainingCapacity = slot.Capacity,
+                Status = SlotStatus.Open,
+            });
+
+            await db.SaveChangesAsync();
+
+            return true;
+        }));
+
+        duplicate.InnerException?.Message.ShouldContain("ux_availability_slot_experience_start");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task RezervasyonluKapaliSeans_YenidenACILAMAZ()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var experience = await SchedulableExperienceAsync(client, token);
+
+        var stamp = $"{TodayInPrague().AddDays(31):yyyy-MM-dd}T12:00";
+
+        var created = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{experience}/slots", token,
+            new { startsAtLocal = stamp });
+
+        var slot = (await created.Content.ReadFromJsonAsync<SlotResponse>(AuthApi.Json))!;
+
+        await MediaApi.SendAsync(
+            client, HttpMethod.Patch, $"{BasePath}/{experience}/slots/{slot.SlotId}", token,
+            new { status = "closed" });
+
+        // Satılmış koltuk taklidi. Rezervasyon Blok 9'da; burada sınanan şey
+        // diriltmenin o sayacı EZMEMESİ.
+        await SetRemainingAsync(slot.SlotId, 5);
+
+        var revive = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{experience}/slots", token,
+            new { startsAtLocal = stamp });
+
+        revive.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+
+        // Sayaç DOKUNULMAMIŞ olmalı. Kontrol olmasaydı 5 → 8 olurdu: satılmış üç
+        // koltuk geri gelir ve aynı yer ikinci kez satılabilirdi.
+        var after = (await SlotRowsAsync(experience)).Single(x => x.Id == slot.SlotId);
+        after.RemainingCapacity.ShouldBe(5);
+        after.Status.ShouldBe(SlotStatus.Closed);
+    }
+
+    [Fact]
     public async Task ElleEklenenSeans_SILINEBILIR()
     {
         var client = factory.CreateClient();
@@ -791,6 +876,21 @@ public sealed class HostScheduleTests(ApiFactory factory)
 
         return (await response.Content.ReadFromJsonAsync<ExtendScheduleResponse>(AuthApi.Json))!;
     }
+
+    /// <summary>
+    /// Kalan koltuğu doğrudan yazar — rezervasyon taklidi. Rezervasyon Blok 9'da;
+    /// bu blokta sayacı azaltan bir uç yok ve testin ihtiyacı olan şey tam olarak
+    /// "azalmış bir sayaç".
+    /// </summary>
+    private Task<bool> SetRemainingAsync(Guid slotId, int remaining)
+        => factory.QueryAsync(async db =>
+        {
+            var slot = await db.AvailabilitySlots.SingleAsync(x => x.Id == slotId);
+            slot.RemainingCapacity = remaining;
+            await db.SaveChangesAsync();
+
+            return true;
+        });
 
     private Task<List<AvailabilitySlot>> SlotRowsAsync(Guid experienceId)
         => factory.QueryAsync(db => db.AvailabilitySlots

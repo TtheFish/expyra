@@ -625,10 +625,20 @@ body::after {
   sönük ama okunur, hover ve odakta belirginleşiyor.
 */
 .hero-wallpaper-toggle {
-  position: absolute;
+  /* `fixed` ve `absolute` DEĞİL: düğme artık `.hero-wallpaper`ın kardeşi, içinde
+     değil. İçindeyken o kapsayıcının `pointer-events: none`unu miras alıyordu ve
+     kapsayıcının kendi istifleme bağlamı yüzünden buradaki z-index içerik
+     katmanına karşı hiçbir şey ifade etmiyordu — düğme fareyle ölüydü. */
+  position: fixed;
   right: max(1.25rem, env(safe-area-inset-right));
   bottom: max(1.25rem, env(safe-area-inset-bottom));
-  z-index: 3;
+
+  /* İçerik katmanının (z-10) ve bugünkü en yüksek katmanın (z-30) üstünde. */
+  z-index: 40;
+
+  /* Kardeş olduğu için artık miras almıyor; yine de AÇIKÇA yazılı — bu düğme bir
+     kez duvar kağıdının içine taşındığı için sessizce tıklanamaz hale gelmişti. */
+  pointer-events: auto;
 
   display: inline-flex;
   align-items: center;

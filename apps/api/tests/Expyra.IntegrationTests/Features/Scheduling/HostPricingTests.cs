@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Shouldly;
 using Expyra.Application.Features.Experiences;
 using Expyra.Application.Features.Host.Commands.ActivateHost;
+using Expyra.Application.Features.Scheduling;
 using Expyra.Application.Features.Scheduling.Commands.SetPricing;
 using Expyra.Domain.Pricing;
 using Expyra.IntegrationTests.Common;
@@ -47,6 +48,73 @@ public sealed class HostPricingTests(ApiFactory factory)
         var rows = await RuleRowsAsync(draft);
         rows.Single(x => x.GuestType == GuestType.Adult).UnitPrice.AmountMinor.ShouldBe(4500);
         rows.Single(x => x.GuestType == GuestType.Adult).UnitPrice.Currency.ShouldBe("EUR");
+    }
+
+    [Fact]
+    public async Task Fiyat_GERI_OKUNABILIYOR_TakvimYanitinda()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await DraftAsync(client, token);
+
+        await SetPricingAsync(client, token, draft, "EUR", (GuestType.Adult, 4500), (GuestType.Child, 2500));
+
+        // Okuma yolu OLMADAN fiyat formu kayıtlı değeri gösteremez ve PUT tam
+        // değiştirme olduğu için boş açılıp kaydedilen bir form kademeleri silerdi.
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Get, $"{BasePath}/{draft}/schedule", token);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var schedule = (await response.Content.ReadFromJsonAsync<HostScheduleResponse>(AuthApi.Json))!;
+        var pricing = schedule.Pricing.ShouldNotBeNull();
+
+        pricing.Currency.ShouldBe("EUR");
+        pricing.MinorUnits.ShouldBe(2);
+        pricing.CurrencyLocked.ShouldBeFalse();
+
+        // Kademe sırası SABİT: yetişkin önce. Sıra veritabanından gelseydi form
+        // satırları rastgele sırada çizerdi.
+        pricing.Rules.Count.ShouldBe(2);
+        pricing.Rules[0].GuestType.ShouldBe("adult");
+        pricing.Rules[0].UnitAmountMinor.ShouldBe(4500);
+        pricing.Rules[1].GuestType.ShouldBe("child");
+        pricing.Rules[1].UnitAmountMinor.ShouldBe(2500);
+    }
+
+    [Fact]
+    public async Task Fiyat_GirilmemisseTakvimYanitinda_NULL()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await DraftAsync(client, token);
+
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Get, $"{BasePath}/{draft}/schedule", token);
+
+        // Boş kademe listesi DEĞİL null: boş liste formda "0" gösterirdi ve
+        // "fiyatsız" ile "bedava" ayrımı kaybolurdu.
+        (await response.Content.ReadFromJsonAsync<HostScheduleResponse>(AuthApi.Json))!
+            .Pricing.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task Fiyat_YayindanSonraOkumada_KilitBayragiDOLU()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var experience = await PublishedAsync(client, token);
+
+        await SetPricingAsync(client, token, experience, "EUR", (GuestType.Adult, 4500));
+
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Get, $"{BasePath}/{experience}/schedule", token);
+
+        var schedule = (await response.Content.ReadFromJsonAsync<HostScheduleResponse>(AuthApi.Json))!;
+
+        // Arayüz para birimi seçicisini bu bayrakla kilitliyor; publishedAtUtc'yi
+        // kendi yorumlamıyor. Yazma ucundaki koşulun aynısı.
+        schedule.Pricing.ShouldNotBeNull().CurrencyLocked.ShouldBeTrue();
     }
 
     [Fact]

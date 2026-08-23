@@ -17,7 +17,8 @@ namespace Expyra.Application.Features.Scheduling.Commands.CreateSlot;
 ///
 /// <para><b>Kapalı bir seans yeniden AÇILIYOR</b>, ikinci satır eklenmiyor:
 /// tekillik durumdan bağımsız (<c>ux_availability_slot_experience_start</c>) ve
-/// "aynı saate tekrar seans aç" isteğinin makul karşılığı diriltmek.</para>
+/// "aynı saate tekrar seans aç" isteğinin makul karşılığı diriltmek. Satılmış
+/// koltuğu olan seans bunun DIŞINDA — o 409 alıyor.</para>
 /// </summary>
 public sealed record CreateSlotCommand(
     Guid ExperienceId,
@@ -107,6 +108,22 @@ internal sealed class CreateSlotCommandHandler(
                     "Bu saatte zaten bir seans var.", ScheduleConflict.SlotExists);
             }
 
+            // Satılmış koltuğu olan seans bu yoldan DİRİLTİLMİYOR. Aşağıdaki
+            // tazeleme sayacı ezerdi ve satılmış koltuklar sessizce kaybolurdu —
+            // üstelik azaltarak değil ARTIRARAK, yani aynı koltuk ikinci kez
+            // satılabilir hale gelirdi.
+            //
+            // Silme (SlotLifecycle), kural durdurma (StopRecurrence) ve kapalı
+            // aralık (BlackoutLifecycle) aynı kontrolü zaten yapıyordu; bu yol
+            // atlanmıştı. Koltuk taşıyan bir seansın yeniden açılması Blok 9'un
+            // işi (kabul kriteri 5: bu blokta RemainingCapacity yalnız okunuyor).
+            if (existing.RemainingCapacity != existing.Capacity)
+            {
+                throw new ConflictException(
+                    "Rezervasyonu olan bir seans yeniden açılamaz.",
+                    ScheduleConflict.SlotHasBookings);
+            }
+
             existing.Status = SlotStatus.Open;
             existing.ClosedReason = null;
             existing.ClosedAtUtc = null;
@@ -114,6 +131,10 @@ internal sealed class CreateSlotCommandHandler(
             // Kapasite ve süre TAZELENİYOR: satır kapatıldıktan sonra host bunları
             // değiştirmiş olabilir ve dirilen bir seansın eski koşullarla açılması,
             // ekranda görünmeyen bir tutarsızlık olurdu.
+            //
+            // Üstteki kontrol sayesinde RemainingCapacity zaten Capacity'ye eşit;
+            // yani buradaki atama canlı bir sayacı değiştirmiyor, dokunulmamış bir
+            // satırı yeni kapasiteyle yeniden kuruyor.
             existing.DurationMinutes = experience.DurationMinutes;
             existing.Capacity = experience.Capacity;
             existing.RemainingCapacity = experience.Capacity;

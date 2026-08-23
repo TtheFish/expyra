@@ -57,6 +57,13 @@ public sealed class AvailabilitySlot : BaseAuditableEntity
     /// oluşturmada <c>= Capacity</c> yazılıyor ve azaltan tek bir yol yok. Düşüm
     /// Blok 9'da, satır kilidi altında.
     ///
+    /// <para><b>Tek istisna</b> ve neden istisna sayılmadığı: kapalı bir seans
+    /// yeniden açılırken (<c>CreateSlotCommand</c>) bu alan yeni kapasiteyle
+    /// yeniden kuruluyor. O yol, satırda koltuk satılmışsa <b>409 veriyor</b>, yani
+    /// atama yalnız <c>RemainingCapacity == Capacity</c> iken çalışıyor — canlı bir
+    /// sayacı değiştirmiyor. Kontrol kaldırılırsa satılmış koltuk sessizce geri
+    /// gelir ve aynı yer ikinci kez satılır.</para>
+    ///
     /// <para>Denormalize tutuluyor, <c>booking</c> sayımından hesaplanmıyor: Blok 9
     /// bu satırı zaten kilitleyecek ve kilit altındaki bir sayaç, her okumada
     /// COUNT çalıştırmaktan hem ucuz hem de yarışa kapalı.</para>

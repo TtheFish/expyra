@@ -295,40 +295,49 @@ export function HeroWallpaper({ labels }: { labels: WallpaperLabels }) {
   }, [reduceParallax])
 
   return (
-    // `aria-hidden` artık KAPSAYICIDA değil: durdurma düğmesi burada yaşıyor ve
-    // içeride kalsaydı klavye ve ekran okuyucu onu hiç görmezdi — "kontrol var"
-    // demek kâğıt üzerinde kalırdı (WCAG 2.2.2). Dekoratif katmanlar tek tek
-    // gizleniyor.
-    <div className="hero-wallpaper">
-      <div className="hero-wallpaper-media" aria-hidden="true">
-        <video
-          ref={aRef}
-          className={`hero-wallpaper-video ${active === 0 ? 'is-active' : ''}`}
-          muted
-          playsInline
-          preload="auto"
-          poster="/brand/wallpaper-dusk.jpg"
-        />
-        <video
-          ref={bRef}
-          className={`hero-wallpaper-video ${active === 1 ? 'is-active' : ''}`}
-          muted
-          playsInline
-          preload="auto"
-        />
-      </div>
+    // Düğme duvar kağıdının DIŞINDA, kardeşi olarak duruyor. İçerideyken iki ayrı
+    // sebeple fareyle tıklanamıyordu ve ikisi de tek başına yeterliydi:
+    //
+    //   1. `.hero-wallpaper` üzerindeki `pointer-events: none` kalıtsal ve düğme
+    //      onu sıfırlamıyordu — isabet testinde ölüydü.
+    //   2. `.hero-wallpaper` `position: fixed; z-index: 0` ile KENDİ istifleme
+    //      bağlamını kuruyor, yani düğmedeki z-index yalnız o bağlamın içinde
+    //      geçerliydi. Kardeş içerik katmanı (`site-chrome.tsx`, z-10) tüm görünüm
+    //      alanını, düğmenin oturduğu köşe dahil kaplıyordu.
+    //
+    // Klavye yolu çalıştığı için hata gözden kaçmıştı: `sr-only` bir düğme fare
+    // kullanıcısına hiçbir şey sunmaz ve WCAG 2.2.2 "mekanizma" istiyor, "klavye
+    // mekanizması" değil.
+    <>
+      {/* Kapsayıcının tamamı dekoratif — düğme dışarı çıktığı için `aria-hidden`
+          buraya geri döndü ve katmanların tek tek gizlenmesine gerek kalmadı. */}
+      <div className="hero-wallpaper" aria-hidden="true">
+        <div className="hero-wallpaper-media">
+          <video
+            ref={aRef}
+            className={`hero-wallpaper-video ${active === 0 ? 'is-active' : ''}`}
+            muted
+            playsInline
+            preload="auto"
+            poster="/brand/wallpaper-dusk.jpg"
+          />
+          <video
+            ref={bRef}
+            className={`hero-wallpaper-video ${active === 1 ? 'is-active' : ''}`}
+            muted
+            playsInline
+            preload="auto"
+          />
+        </div>
 
-      <div className="hero-wallpaper-parallax" aria-hidden="true" />
-      <div className="hero-wallpaper-veil" aria-hidden="true" />
-      <div className="hero-wallpaper-glow" aria-hidden="true" />
+        <div className="hero-wallpaper-parallax" />
+        <div className="hero-wallpaper-veil" />
+        <div className="hero-wallpaper-glow" />
 
-      {/* Altyazı dekoratif: adı ekran okuyucuya duyurulsa her sayfada gürültü olurdu. */}
-      <div
-        aria-hidden="true"
-        className={`hero-wallpaper-caption ${labelVisible ? 'is-visible' : ''}`}
-      >
-        <p className="hero-wallpaper-place">{caption?.place}</p>
-        <p className="hero-wallpaper-label">{caption?.label}</p>
+        <div className={`hero-wallpaper-caption ${labelVisible ? 'is-visible' : ''}`}>
+          <p className="hero-wallpaper-place">{caption?.place}</p>
+          <p className="hero-wallpaper-label">{caption?.label}</p>
+        </div>
       </div>
 
       {/*
@@ -347,7 +356,7 @@ export function HeroWallpaper({ labels }: { labels: WallpaperLabels }) {
         <span className="sr-only">{playing === true ? labels.pause : labels.play}</span>
         <span aria-hidden="true">{playing === true ? '❚❚' : '▶'}</span>
       </button>
-    </div>
+    </>
   )
 }
 

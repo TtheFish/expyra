@@ -103,6 +103,18 @@ internal sealed class GetHostScheduleQueryHandler(
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // Fiyat da bu yanıtta ve bunun bir OKUMA YOLU olması şart: `PUT .../pricing`
+        // tam değiştirme yapıyor, yani kayıtlı değeri okuyamayan bir form boş açılıp
+        // kaydedilirse mevcut kademeleri gerçekten siler. Ayrı bir `GET .../pricing`
+        // ucu açılmadı çünkü fiyat formu takvim ekranının bir bölümü — ikinci uç,
+        // aynı ekranda ikinci bir istek ve aralarında tutarsız bir an demekti.
+        //
+        // Takvim ön koşullarından BAĞIMSIZ: şehri olmayan bir taslakta seans yok ama
+        // fiyat girilmiş olabilir ve host onu görebilmeli.
+        var pricing = await HostPricingProjection
+            .LoadAsync(dbContext, experience, cancellationToken)
+            .ConfigureAwait(false);
+
         return new HostScheduleResponse(
             experience.TimeZoneId ?? string.Empty,
             experience.DurationMinutes,
@@ -113,6 +125,7 @@ internal sealed class GetHostScheduleQueryHandler(
             missing,
             recurrences.Select(ScheduleFormat.Recurrence).ToList(),
             blackouts.Select(ScheduleFormat.Blackout).ToList(),
-            slots.Select(ScheduleFormat.Slot).ToList());
+            slots.Select(ScheduleFormat.Slot).ToList(),
+            pricing);
     }
 }

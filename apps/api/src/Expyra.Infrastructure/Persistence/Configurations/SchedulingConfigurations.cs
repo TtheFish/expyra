@@ -103,7 +103,14 @@ internal sealed class AvailabilitySlotConfiguration : IEntityTypeConfiguration<A
         // DURUMDAN BAĞIMSIZ tekillik: kapatılmış seans da bir mezar taşı ve tekrar
         // üretim onu diriltemez. Kısmi index (yalnız Open) yazılsaydı, host'un
         // kapattığı gün bir sonraki üretimde geri gelirdi.
-        builder.HasIndex(x => new { x.ExperienceId, x.StartsAtUtc })
+        //
+        // İkinci argüman MODEL adı, `HasDatabaseName` ise yalnız veritabanı adı.
+        // Model adı verilmezse index adsız kalıyor ve EF onu sütun çiftine göre
+        // buluyor — aşağıdaki kısmi index AYNI çifte kurulduğu için ikisi tek
+        // nesneye çöküyor, ikincisi birincinin adını eziyor ve `IsUnique` ona
+        // miras kalıyordu. Sonuç: şemada yalnız "Open" filtreli bir index vardı ve
+        // yukarıdaki cümlenin anlattığı koruma veritabanında HİÇ YOKTU.
+        builder.HasIndex(x => new { x.ExperienceId, x.StartsAtUtc }, "ux_slot_experience_start")
             .HasDatabaseName("ux_availability_slot_experience_start")
             .IsUnique();
 
@@ -111,8 +118,14 @@ internal sealed class AvailabilitySlotConfiguration : IEntityTypeConfiguration<A
         builder.HasIndex(x => new { x.ExperienceId, x.StartsAtLocal })
             .HasDatabaseName("ix_availability_slot_experience_local");
 
-        // Misafirin tek sorgusu: bu ilanın açık ve gelecekteki seansları.
-        builder.HasIndex(x => new { x.ExperienceId, x.StartsAtUtc })
+        // Misafirin tek sorgusu: bu ilanın açık ve gelecekteki seansları. Üstteki
+        // tekil index aynı çifti kapsıyor ama TÜM satırları taşıyor; kapalı ve
+        // geçmiş seanslar zamanla birikeceği için açık olanların kısmi index'i
+        // küçük ve sıcak kalıyor.
+        //
+        // TEKİL DEĞİL: tekillik üstteki index'in işi. Burada `IsUnique()` olsaydı
+        // yalnız açık satırlar arasında tekillik kurar, yani hiçbir şey eklemezdi.
+        builder.HasIndex(x => new { x.ExperienceId, x.StartsAtUtc }, "ix_slot_open")
             .HasDatabaseName("ix_availability_slot_open")
             .HasFilter("status = 'Open'");
 

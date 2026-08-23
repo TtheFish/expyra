@@ -1406,10 +1406,13 @@ namespace Expyra.Infrastructure.Migrations
                     b.HasIndex("ExperienceId", "StartsAtLocal")
                         .HasDatabaseName("ix_availability_slot_experience_local");
 
-                    b.HasIndex("ExperienceId", "StartsAtUtc")
-                        .IsUnique()
+                    b.HasIndex(new[] { "ExperienceId", "StartsAtUtc" }, "ix_slot_open")
                         .HasDatabaseName("ix_availability_slot_open")
                         .HasFilter("status = 'Open'");
+
+                    b.HasIndex(new[] { "ExperienceId", "StartsAtUtc" }, "ux_slot_experience_start")
+                        .IsUnique()
+                        .HasDatabaseName("ux_availability_slot_experience_start");
 
                     b.ToTable("availability_slot", null, t =>
                         {

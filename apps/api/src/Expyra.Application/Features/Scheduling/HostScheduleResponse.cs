@@ -1,4 +1,5 @@
 using System.Globalization;
+using Expyra.Application.Features.Scheduling.Commands.SetPricing;
 using Expyra.Domain.Scheduling;
 
 namespace Expyra.Application.Features.Scheduling;
@@ -65,6 +66,11 @@ public sealed record SlotResponse(
 /// Üç ayrı uç olsaydı ay görünümü üç istek atardı ve aralarında tutarsız bir an
 /// olurdu.
 /// </summary>
+/// <param name="Pricing">
+/// Host'un girdiği fiyat; hiç girmemişse <c>null</c>. <b>Buradaki tek okuma yolu</b>
+/// ve olması şart: <c>PUT .../pricing</c> tam değiştirme yapıyor, yani kayıtlı değeri
+/// okuyamayan bir form boş açılıp kaydedilirse mevcut kademeleri siler.
+/// </param>
 public sealed record HostScheduleResponse(
     string TimeZoneId,
     int DurationMinutes,
@@ -75,7 +81,8 @@ public sealed record HostScheduleResponse(
     IReadOnlyList<string> MissingScheduleRequirements,
     IReadOnlyList<RecurrenceResponse> Recurrences,
     IReadOnlyList<BlackoutResponse> Blackouts,
-    IReadOnlyList<SlotResponse> Slots);
+    IReadOnlyList<SlotResponse> Slots,
+    PricingResponse? Pricing);
 
 /// <summary>
 /// Tarih ve saatin tel üzerindeki biçimi. <b>Tek yerde</b>: üç ayrı yanıt tipinde
