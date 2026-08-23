@@ -125,3 +125,59 @@ export function toMajorAmountInput(amountMinor: number, minorUnits: number): str
 
   return `${amountMinor < 0 ? '-' : ''}${whole}.${fraction}`
 }
+
+// ---------------------------------------------------------------------------
+// Takvim (PLAN Blok 7)
+// ---------------------------------------------------------------------------
+
+/** Çoklu: `formData.getAll`. Değerler `"monday"` … `"sunday"` (küçük harf). */
+export const RECURRENCE_DAY_FIELD = 'gun'
+export const RECURRENCE_TIME_FIELD = 'saat'
+export const RECURRENCE_START_FIELD = 'kural-baslangic'
+export const RECURRENCE_ID_FIELD = 'kural'
+
+export const BLACKOUT_START_FIELD = 'kapali-baslangic'
+export const BLACKOUT_END_FIELD = 'kapali-bitis'
+export const BLACKOUT_ID_FIELD = 'kapali-aralik'
+
+export const SLOT_ID_FIELD = 'seans'
+export const SLOT_STATUS_FIELD = 'seans-durumu'
+
+/**
+ * Haftanın günleri, PAZARTESİ'den başlayarak.
+ *
+ * Sıra ISO 8601 (`1 = Pazartesi`), .NET'in `DayOfWeek`'i (`0 = Pazar`) DEĞİL —
+ * takvim ekranında haftanın pazar günüyle başlaması Türkçe ve Avrupa
+ * bağlamında yanlış görünür. Değerlerin kendisi tel üzerindeki metin, sıra ise
+ * yalnız çizim sırası; ikisi bağımsız.
+ */
+export const WEEKDAYS = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+] as const
+
+export type Weekday = (typeof WEEKDAYS)[number]
+
+/** `"14:00"` — dakika hassasiyeti; sunucu saniye taşıyan değeri reddediyor. */
+export function isValidTimeOfDay(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+}
+
+/** `"2026-10-13"` — takvimsel geçerlilik de kontrol ediliyor (31 Şubat geçmiyor). */
+export function isValidIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year!, month! - 1, day!))
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month! - 1 &&
+    date.getUTCDate() === day
+  )
+}

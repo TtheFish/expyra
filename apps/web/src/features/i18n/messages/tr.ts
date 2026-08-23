@@ -783,4 +783,93 @@ export const tr = {
   'host.pricing.error.range':
     'Tutar ödeme sağlayıcısının kabul ettiği aralığın dışında. Çok küçük ya da çok büyük bir fiyat girdin.',
 
+  // --- Takvim (PLAN Blok 7) ---
+  'host.experience.section.schedule': 'Takvim',
+  'host.experience.section.scheduleHelp':
+    'Hangi gün ve saatlerde yapıyorsun? Saatler deneyimin şehrinin saat diliminde — yaz saati geçişinde yazdığın saat değişmiyor.',
+
+  'host.schedule.blocked':
+    'Takvim kurmak için önce şehir, süre ve kapasite gerekiyor. Yukarıdaki bölümleri tamamla.',
+  'host.schedule.timeZone': 'Saat dilimi: {bolge}',
+  'host.schedule.generatedThrough': 'Takvim {tarih} tarihine kadar hazır.',
+
+  // Haftalık kural
+  'host.schedule.rule.heading': 'Haftalık kural',
+  'host.schedule.rule.days': 'Günler',
+  'host.schedule.rule.daysHelp': 'Birden fazla seçebilirsin; her gün ayrı bir kural olur.',
+  'host.schedule.rule.time': 'Başlangıç saati',
+  'host.schedule.rule.timeHelp': 'Deneyimin şehrinin saatiyle.',
+  'host.schedule.rule.start': 'Bu tarihten itibaren',
+  'host.schedule.rule.startHelp': 'Boş bırakırsan bugünden başlar.',
+  'host.schedule.rule.submit': 'Kuralı ekle',
+  'host.schedule.rule.pending': 'Ekleniyor…',
+  'host.schedule.rule.stop': 'Durdur',
+  'host.schedule.rule.stopping': 'Durduruluyor…',
+  'host.schedule.rule.empty': 'Henüz haftalık kural yok.',
+  'host.schedule.rule.stopped': 'durduruldu',
+
+  // Kapalı aralık
+  'host.schedule.blackout.heading': 'Kapalı günler',
+  'host.schedule.blackout.start': 'Başlangıç',
+  'host.schedule.blackout.end': 'Bitiş',
+  'host.schedule.blackout.endHelp': 'Boş bırakırsan tek gün kapanır. Bitiş günü dâhil.',
+  'host.schedule.blackout.submit': 'Kapat',
+  'host.schedule.blackout.pending': 'Kapatılıyor…',
+  'host.schedule.blackout.remove': 'Kaldır',
+  'host.schedule.blackout.removing': 'Kaldırılıyor…',
+  'host.schedule.blackout.empty': 'Kapalı gün yok.',
+
+  // Seanslar
+  'host.schedule.slots.heading': 'Yaklaşan seanslar',
+  'host.schedule.slots.empty': 'Bu aralıkta seans yok.',
+  'host.schedule.slots.remaining': {
+    one: '{n} yer kaldı',
+    other: '{n} yer kaldı',
+  },
+  'host.schedule.slots.closed': 'Kapalı',
+  'host.schedule.slots.closedByBlackout': 'Kapalı gün',
+  'host.schedule.slots.close': 'Kapat',
+  'host.schedule.slots.closing': 'Kapatılıyor…',
+  'host.schedule.slots.open': 'Aç',
+  'host.schedule.slots.opening': 'Açılıyor…',
+  'host.schedule.slots.more': 've {n} seans daha',
+
+  // Günler
+  'host.schedule.day.monday': 'Pazartesi',
+  'host.schedule.day.tuesday': 'Salı',
+  'host.schedule.day.wednesday': 'Çarşamba',
+  'host.schedule.day.thursday': 'Perşembe',
+  'host.schedule.day.friday': 'Cuma',
+  'host.schedule.day.saturday': 'Cumartesi',
+  'host.schedule.day.sunday': 'Pazar',
+
+  // Onaylar
+  'host.schedule.ruleSaved': 'Kural eklendi ve seanslar oluşturuldu.',
+  'host.schedule.ruleStopped': 'Kural durduruldu.',
+  'host.schedule.slotOpened': 'Seans açıldı.',
+  'host.schedule.slotClosed': 'Seans kapatıldı.',
+  'host.schedule.blackoutSaved': 'Günler kapatıldı.',
+  'host.schedule.blackoutRemoved': 'Kapalı aralık kaldırıldı.',
+
+  // Hatalar — her biri sunucunun makine-okunur koduna karşılık geliyor
+  'host.schedule.error.noDay': 'En az bir gün seç.',
+  'host.schedule.error.time': 'Saati SS:DD biçiminde gir.',
+  'host.schedule.error.date': 'Tarihi geçerli bir gün olarak gir.',
+  'host.schedule.error.range': 'Bitiş tarihi başlangıçtan önce olamaz.',
+  'host.schedule.error.notSchedulable':
+    'Takvim kurmak için önce şehir, süre ve kapasite gerekiyor.',
+  'host.schedule.error.duplicateRule': 'O gün ve saatte zaten bir kural var.',
+  'host.schedule.error.ruleLimit': 'Bir deneyimde daha fazla haftalık kural olamaz.',
+  'host.schedule.error.dstGap':
+    'O saat, yaz saati geçişi yüzünden o gün hiç yaşanmıyor. Bir saat sonrasını dene.',
+  'host.schedule.error.past': 'Geçmiş bir seans değiştirilemez.',
+  'host.schedule.error.slotExists': 'O saatte zaten bir seans var.',
+  'host.schedule.error.blackedOut': 'O tarih kapalı olarak işaretli. Önce aralığı kaldır.',
+  'host.schedule.error.generated':
+    'Haftalık kuraldan doğan seans silinemez; kapatabilirsin.',
+  'host.schedule.error.hasBookings': 'Rezervasyonu olan bir seans değiştirilemez.',
+  'host.schedule.error.blackoutLimit': 'Daha fazla kapalı aralık eklenemez.',
+  'host.schedule.error.horizon': 'Takvim bu kadar ileriye açılamıyor.',
+  'host.schedule.error.generic': 'Bu işlem şu an yapılamadı.',
+
 } as const

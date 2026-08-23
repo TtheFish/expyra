@@ -12,6 +12,9 @@ import { resolveCity } from '@/features/places/api'
 import { path } from '@/lib/routes'
 import {
   ADULT_PRICE_FIELD,
+  BLACKOUT_END_FIELD,
+  BLACKOUT_ID_FIELD,
+  BLACKOUT_START_FIELD,
   CAPACITY_FIELD,
   CATEGORY_FIELD,
   CHILD_PRICE_FIELD,
@@ -21,7 +24,15 @@ import {
   DURATION_FIELD,
   EXPERIENCE_ID_FIELD,
   INFANT_PRICE_FIELD,
+  RECURRENCE_DAY_FIELD,
+  RECURRENCE_ID_FIELD,
+  RECURRENCE_START_FIELD,
+  RECURRENCE_TIME_FIELD,
   SECTION_FIELD,
+  SLOT_ID_FIELD,
+  SLOT_STATUS_FIELD,
+  isValidIsoDate,
+  isValidTimeOfDay,
   parseMinorAmount,
   SPOKEN_LANGUAGE_FIELD,
   TAGS_FIELD,
@@ -36,6 +47,9 @@ import {
   createExperience,
   createMediaUpload,
   deleteMedia,
+  createBlackout,
+  createRecurrence,
+  deleteBlackout,
   fetchCurrencies,
   fetchHostExperience,
   hostExperiencePath,
@@ -45,6 +59,8 @@ import {
   setExperienceTranslation,
   setMediaCover,
   setPricing,
+  setSlotStatus,
+  stopRecurrence,
   updateExperience,
   type HostExperiencePatch,
   type MediaUpload,
@@ -950,4 +966,302 @@ function pricingFailure(t: Translate, error: unknown): ExperienceFormState {
   }
 
   throw error
+}
+
+// ---------------------------------------------------------------------------
+// Takvim (PLAN Blok 7)
+// ---------------------------------------------------------------------------
+//
+// Beş küçük eylem, tek büyük eylem DEĞİL. Hepsi farklı uca gidiyor ve farklı
+// hata dallarına sahip: kural çakışması 409 "aynı gün ve saatte zaten kural
+// var" derken, seans kapatma 409'u "geçmiş seans değiştirilemez" diyor. Tek
+// eylemde toplansalardı ekran ikisine de aynı cümleyi gösterirdi.
+
+/**
+ * Takvim uçlarının ortak iskeleti: dil → çevirmen → ilan kimliği → token.
+ *
+ * Beş eylemin ilk on satırı birebir aynıydı; kopyalanan bir `redirect` unutmak
+ * oturumu düşmüş host'a boş bir hata göstermek demekti.
+ */
+async function scheduleContext(formData: FormData): Promise<
+  | { ok: true; lang: UiLocale; t: Translate; experienceId: string; accessToken: string; here: string }
+  | { ok: false; state: ExperienceFormState }
+> {
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(lang)
+
+  const experienceId = readField(formData, EXPERIENCE_ID_FIELD)
+  if (!experienceId) {
+    return { ok: false, state: fail(t, 'host.experience.error.notFound') }
+  }
+
+  const here = hostExperiencePath(lang, experienceId)
+  const accessToken = await requireAccessToken()
+
+  if (!accessToken) {
+    redirect(signInHref(lang, here), RedirectType.replace)
+  }
+
+  return { ok: true, lang, t, experienceId, accessToken, here }
+}
+
+/**
+ * Takvim uçlarının hatalarını ekrana çevirir.
+ *
+ * 409'un METNİ burada seçilemiyor çünkü tek bir uçta birden çok sebep var
+ * (çakışan kural, kapalı aralık, geçmiş seans, satılmış koltuk). Sunucu
+ * makine-okunur bir kod gönderiyor (`AppException.Code`) ve dal ona bakıyor —
+ * ProblemDetails'in Türkçe cümlesine değil, çünkü o cümlenin dili kullanıcının
+ * dili olmak zorunda değil.
+ */
+function scheduleFailure(t: Translate, error: unknown): ExperienceFormState {
+  if (error instanceof ApiError) {
+    if (error.status === 404) return fail(t, 'host.experience.error.notFound')
+
+    if (error.status === 409 || error.status === 400) {
+      return fail(t, scheduleConflictKey(error.code))
+    }
+  }
+
+  throw error
+}
+
+function scheduleConflictKey(code: string | null): SimpleMessageKey {
+  switch (code) {
+    case 'schedule-not-schedulable':
+      return 'host.schedule.error.notSchedulable'
+    case 'recurrence-duplicate':
+      return 'host.schedule.error.duplicateRule'
+    case 'recurrence-limit':
+      return 'host.schedule.error.ruleLimit'
+    case 'slot-dst-gap':
+      return 'host.schedule.error.dstGap'
+    case 'slot-in-past':
+      return 'host.schedule.error.past'
+    case 'slot-exists':
+      return 'host.schedule.error.slotExists'
+    case 'slot-blacked-out':
+      return 'host.schedule.error.blackedOut'
+    case 'slot-generated':
+      return 'host.schedule.error.generated'
+    case 'slot-has-bookings':
+      return 'host.schedule.error.hasBookings'
+    case 'blackout-limit':
+      return 'host.schedule.error.blackoutLimit'
+    case 'schedule-horizon-too-far':
+      return 'host.schedule.error.horizon'
+    default:
+      // Bilinmeyen kod GİZLENMİYOR: log'a düşüyor ki yeni bir sunucu kodu
+      // eklendiğinde ekranda genel bir cümle görüp sebebini arayan olmasın.
+      if (code) console.error('host.schedule.unknownCode', code)
+      return 'host.schedule.error.generic'
+  }
+}
+
+/** Haftalık kural açar; sunucu aynı istekte ufka kadar seans üretiyor. */
+export async function createRecurrenceAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const context = await scheduleContext(formData)
+  if (!context.ok) return context.state
+
+  const { t, experienceId, accessToken, lang, here } = context
+
+  const days = formData
+    .getAll(RECURRENCE_DAY_FIELD)
+    .filter((value): value is string => typeof value === 'string')
+
+  if (days.length === 0) {
+    return fail(t, 'host.schedule.error.noDay')
+  }
+
+  const time = readField(formData, RECURRENCE_TIME_FIELD) ?? ''
+  if (!isValidTimeOfDay(time)) {
+    return fail(t, 'host.schedule.error.time')
+  }
+
+  // Başlangıç tarihi boşsa BUGÜN: host "her salı" derken çoğu zaman "bu haftadan
+  // itibaren" demek istiyor ve zorunlu bir tarih alanı gereksiz bir adım olurdu.
+  const start = readField(formData, RECURRENCE_START_FIELD)
+  if (start !== null && !isValidIsoDate(start)) {
+    return fail(t, 'host.schedule.error.date')
+  }
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await createRecurrence(accessToken, experienceId, {
+      daysOfWeek: days,
+      startTimeLocal: time,
+      startsOnLocal: start ?? todayIso(),
+    })
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return scheduleFailure(t, error)
+    }
+  }
+
+  if (access) redirect(accessHref(lang, access, here), RedirectType.replace)
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.schedule.ruleSaved'))
+}
+
+/** Kuralı durdurur; ondan doğmuş gelecek seanslar kapanıyor. */
+export async function stopRecurrenceAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const context = await scheduleContext(formData)
+  if (!context.ok) return context.state
+
+  const { t, experienceId, accessToken, lang, here } = context
+
+  const recurrenceId = readField(formData, RECURRENCE_ID_FIELD)
+  if (!recurrenceId) return fail(t, 'host.schedule.error.generic')
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await stopRecurrence(accessToken, experienceId, recurrenceId)
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return scheduleFailure(t, error)
+    }
+  }
+
+  if (access) redirect(accessHref(lang, access, here), RedirectType.replace)
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.schedule.ruleStopped'))
+}
+
+/** Tek seansı açar ya da kapatır. */
+export async function setSlotStatusAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const context = await scheduleContext(formData)
+  if (!context.ok) return context.state
+
+  const { t, experienceId, accessToken, lang, here } = context
+
+  const slotId = readField(formData, SLOT_ID_FIELD)
+  const status = readField(formData, SLOT_STATUS_FIELD)
+
+  if (!slotId || (status !== 'open' && status !== 'closed')) {
+    return fail(t, 'host.schedule.error.generic')
+  }
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await setSlotStatus(accessToken, experienceId, slotId, status)
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return scheduleFailure(t, error)
+    }
+  }
+
+  if (access) redirect(accessHref(lang, access, here), RedirectType.replace)
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t(status === 'open' ? 'host.schedule.slotOpened' : 'host.schedule.slotClosed'))
+}
+
+/** "Şu tarihlerde yokum." Aralığa düşen açık ve satılmamış seanslar kapanıyor. */
+export async function createBlackoutAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const context = await scheduleContext(formData)
+  if (!context.ok) return context.state
+
+  const { t, experienceId, accessToken, lang, here } = context
+
+  const start = readField(formData, BLACKOUT_START_FIELD) ?? ''
+  // Bitiş boşsa TEK GÜN: "yarın yokum" en sık durum ve iki alan doldurtmak
+  // gereksiz bir adım.
+  const end = readField(formData, BLACKOUT_END_FIELD) ?? start
+
+  if (!isValidIsoDate(start) || !isValidIsoDate(end)) {
+    return fail(t, 'host.schedule.error.date')
+  }
+
+  if (end < start) {
+    return fail(t, 'host.schedule.error.range')
+  }
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await createBlackout(accessToken, experienceId, { startsOnLocal: start, endsOnLocal: end })
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return scheduleFailure(t, error)
+    }
+  }
+
+  if (access) redirect(accessHref(lang, access, here), RedirectType.replace)
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.schedule.blackoutSaved'))
+}
+
+/** Aralığı kaldırır; YALNIZ onun kapattığı seanslar geri açılıyor. */
+export async function deleteBlackoutAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const context = await scheduleContext(formData)
+  if (!context.ok) return context.state
+
+  const { t, experienceId, accessToken, lang, here } = context
+
+  const blackoutId = readField(formData, BLACKOUT_ID_FIELD)
+  if (!blackoutId) return fail(t, 'host.schedule.error.generic')
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await deleteBlackout(accessToken, experienceId, blackoutId)
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return scheduleFailure(t, error)
+    }
+  }
+
+  if (access) redirect(accessHref(lang, access, here), RedirectType.replace)
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.schedule.blackoutRemoved'))
+}
+
+/**
+ * Bugünün ISO tarihi, SUNUCUNUN saat diliminde.
+ *
+ * Deneyimin saat diliminde değil ve bu bir kusur değil bilinçli bir eşik: bu
+ * değer yalnız "başlangıç tarihi boş bırakıldı" durumunda kullanılıyor ve
+ * sunucu üretimi zaten deneyimin saat dilimindeki bugünden başlatıyor. En kötü
+ * ihtimalle bir gün erken bir başlangıç tarihi yazılıyor, o da üretimi
+ * etkilemiyor.
+ */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10)
 }

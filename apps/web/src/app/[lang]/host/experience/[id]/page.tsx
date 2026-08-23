@@ -10,12 +10,20 @@ import { getSession } from '@/features/auth/session'
 import {
   archiveExperienceAction,
   publishExperienceAction,
+  createBlackoutAction,
+  createRecurrenceAction,
+  deleteBlackoutAction,
+  setSlotStatusAction,
   setTranslationAction,
+  stopRecurrenceAction,
   updateExperienceAction,
   updatePricingAction,
 } from '@/features/host/experience-actions'
 import {
   ADULT_PRICE_FIELD,
+  BLACKOUT_END_FIELD,
+  BLACKOUT_ID_FIELD,
+  BLACKOUT_START_FIELD,
   CAPACITY_FIELD,
   CATEGORY_FIELD,
   CHILD_PRICE_FIELD,
@@ -23,10 +31,17 @@ import {
   DESCRIPTION_FIELD,
   DURATION_FIELD,
   INFANT_PRICE_FIELD,
+  RECURRENCE_DAY_FIELD,
+  RECURRENCE_ID_FIELD,
+  RECURRENCE_START_FIELD,
+  RECURRENCE_TIME_FIELD,
+  SLOT_ID_FIELD,
+  SLOT_STATUS_FIELD,
   SPOKEN_LANGUAGE_FIELD,
   TAGS_FIELD,
   TEXT_LANGUAGE_PARAM,
   TITLE_FIELD,
+  WEEKDAYS,
   toMajorAmountInput,
 } from '@/features/host/experience-fields'
 import { ExperienceForm } from '@/features/host/experience-forms'
@@ -44,8 +59,11 @@ import {
   type HostExperience,
   type HostExperienceTranslation,
   type HostPricing,
+  type HostSchedule,
+  type HostSlot,
 } from '@/features/host/experiences-api'
 import type { SimpleMessageKey, Translate } from '@/features/i18n/dictionary'
+import { formatWallClock } from '@/features/i18n/format'
 import { getPluralTemplates, getTemplate, getTranslator } from '@/features/i18n/translator'
 import { MIN_CITY_QUERY_LENGTH, prefersEnglishCityName } from '@/features/places/api'
 import { contentLanguages, localNameOf } from '@/lib/languages'
@@ -339,6 +357,19 @@ export default async function EditExperiencePage({
 
           <Section
             index={7}
+            title={t('host.experience.section.schedule')}
+            help={t('host.experience.section.scheduleHelp')}
+          >
+            <ScheduleSection
+              lang={lang}
+              experienceId={experience.id}
+              schedule={schedule}
+              t={t}
+            />
+          </Section>
+
+          <Section
+            index={8}
             title={t('host.experience.section.pricing')}
             help={t('host.experience.section.pricingHelp')}
           >
@@ -357,7 +388,7 @@ export default async function EditExperiencePage({
           </Section>
 
           <Section
-            index={8}
+            index={9}
             title={t('host.experience.section.status')}
             help={t('host.experience.section.statusHelp')}
           >
@@ -596,8 +627,19 @@ function BasicsFields({ experience, t }: { experience: HostExperience; t: Transl
           className="auth-input"
           type="number"
           inputMode="numeric"
-          min={1}
-          /* `Experience.MaxDurationMinutes` — 7 gün. */
+          /*
+            `min` ADIMIN KATI olmak ZORUNDA. HTML5 geçerli değerleri
+            `min + k·step` olarak sayıyor, yani `min=1, step=5` iken küme
+            1, 6, 11 … 116, 121 oluyordu ve 60, 90, 120 — en yaygın üç süre —
+            tarayıcı tarafından reddediliyordu. Hata mesajı da anlaşılmazdı:
+            "en yakın geçerli değerler 116 ve 121".
+
+            Alt sınır 5 dakika: sunucu 1'i kabul ediyor ama 1 dakikalık bir
+            deneyim gerçek bir girdi değil ve tabanı adıma eşitlemek zaten
+            gerekiyordu.
+          */
+          min={5}
+          /* `Experience.MaxDurationMinutes` — 7 gün. 10080 = 5'in katı. */
           max={10080}
           step={5}
           /*
@@ -880,6 +922,339 @@ function TagsField({ experience, t }: { experience: HostExperience; t: Translate
  * yerde (arayüz + sunucu) yaşamasına kapı açar. Basıldığında gelen 409, eksikleri
  * `role="alert"` içinde duyuruyor.
  */
+/**
+ * Takvim bölümü — haftalık kural, kapalı günler ve yaklaşan seanslar.
+ *
+ * **Ay ızgarası YOK ve bu bilinçli bir eşik.** Bir takvim ızgarası klavye
+ * gezinmesi (ok tuşları, `grid` rolü, `aria-selected`) ve odak yönetimi demek;
+ * yarım yapılmış bir ızgara, düz bir listeden daha erişilemez olur. Liste
+ * host'un ihtiyacı olan iki soruyu zaten cevaplıyor: "hangi seanslar var" ve
+ * "hangisini kapatabilirim". Izgara gerçekten gerektiğinde kendi işini hak
+ * ediyor.
+ *
+ * **Saatler `formatWallClock` ile çiziliyor**, `new Date()` ile değil: sunucu
+ * saat dilimi eki OLMAYAN bir duvar saati gönderiyor ve `new Date()` onu
+ * tarayıcının dilimine göre yorumlardı — host Prag'daki turunu İstanbul'dan
+ * açtığında saatler bir saat kayardı.
+ */
+function ScheduleSection({
+  lang,
+  experienceId,
+  schedule,
+  t,
+}: {
+  lang: string
+  experienceId: string
+  schedule: HostSchedule
+  t: Translate
+}) {
+  // Ön koşul eksikse form GÖSTERİLMİYOR ama bölüm duruyor: host neyin eksik
+  // olduğunu görüp yukarıdaki bölüme dönebilmeli. Sunucu da aynı kararı veriyor
+  // (409) — ikisi ayrışırsa ekran "kaydet" der, sunucu reddeder.
+  if (schedule.missingScheduleRequirements.length > 0) {
+    return <p className="auth-help">{t('host.schedule.blocked')}</p>
+  }
+
+  // Saat RENDER SIRASINDA okunmuyor (`Date.now()` bileşeni saf olmaktan çıkarır
+  // ve `react-hooks/purity` haklı olarak reddediyor). Gerek de yok: sunucu
+  // pencereyi zaten deneyimin saat dilimindeki BUGÜNDEN başlatıyor ve satırlar
+  // başlangıca göre sıralı geliyor.
+  //
+  // Kalan tek pürüz, bugünün saati geçmiş seansları: listede görünüyorlar ve
+  // düğmeleri 409 alıyor ("geçmiş seans değiştirilemez"). Bu, saat okuyup onları
+  // gizlemekten daha dürüst — host kendi takvimindeki o seansı görüyor, sadece
+  // artık değiştiremiyor.
+  const upcoming = schedule.slots
+  const shown = upcoming.slice(0, SCHEDULE_SLOT_PREVIEW)
+
+  return (
+    <div className="grid gap-6">
+      <p className="auth-help">
+        {t('host.schedule.timeZone', { bolge: schedule.timeZoneId })}
+        {schedule.generatedThroughLocalDate
+          ? ` · ${t('host.schedule.generatedThrough', { tarih: schedule.generatedThroughLocalDate })}`
+          : ''}
+      </p>
+
+      <ScheduleBlock heading={t('host.schedule.rule.heading')}>
+        {schedule.recurrences.length === 0 ? (
+          <p className="auth-help">{t('host.schedule.rule.empty')}</p>
+        ) : (
+          <ul className="grid gap-2">
+            {schedule.recurrences.map((rule) => (
+              <li key={rule.id} className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-sm">
+                  {t(weekdayMessageKey(rule.dayOfWeek))} · {rule.startTimeLocal}
+                  {rule.status === 'stopped' ? ` (${t('host.schedule.rule.stopped')})` : ''}
+                </span>
+
+                {rule.status === 'active' ? (
+                  <ExperienceForm
+                    action={stopRecurrenceAction}
+                    lang={lang}
+                    experienceId={experienceId}
+                    size="sm"
+                    labels={{
+                      submit: t('host.schedule.rule.stop'),
+                      pending: t('host.schedule.rule.stopping'),
+                    }}
+                  >
+                    <input type="hidden" name={RECURRENCE_ID_FIELD} value={rule.id} />
+                  </ExperienceForm>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <ExperienceForm
+          action={createRecurrenceAction}
+          lang={lang}
+          experienceId={experienceId}
+          className="auth-form"
+          labels={{
+            submit: t('host.schedule.rule.submit'),
+            pending: t('host.schedule.rule.pending'),
+          }}
+        >
+          {/*
+            `fieldset`/`legend`: yedi onay kutusu tek bir soruya ait ve ekran
+            okuyucu her kutuyu bağlamsız okumamalı (`SpokenLanguageField` ile
+            aynı kalıp).
+          */}
+          <fieldset aria-describedby="gun-yardim">
+            <legend className="auth-label">{t('host.schedule.rule.days')}</legend>
+            <div className="mt-2 flex flex-wrap gap-3">
+              {WEEKDAYS.map((day) => (
+                <label key={day} className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" name={RECURRENCE_DAY_FIELD} value={day} />
+                  {t(weekdayMessageKey(day))}
+                </label>
+              ))}
+            </div>
+            <p id="gun-yardim" className="auth-help">
+              {t('host.schedule.rule.daysHelp')}
+            </p>
+          </fieldset>
+
+          <div>
+            <label className="auth-label" htmlFor="saat">
+              {t('host.schedule.rule.time')}
+            </label>
+            <input
+              id="saat"
+              name={RECURRENCE_TIME_FIELD}
+              type="time"
+              className="auth-input"
+              required
+              aria-describedby="saat-yardim"
+            />
+            <p id="saat-yardim" className="auth-help">
+              {t('host.schedule.rule.timeHelp')}
+            </p>
+          </div>
+
+          <div>
+            <label className="auth-label" htmlFor="kural-baslangic">
+              {t('host.schedule.rule.start')}
+            </label>
+            <input
+              id="kural-baslangic"
+              name={RECURRENCE_START_FIELD}
+              type="date"
+              className="auth-input"
+              aria-describedby="kural-baslangic-yardim"
+            />
+            <p id="kural-baslangic-yardim" className="auth-help">
+              {t('host.schedule.rule.startHelp')}
+            </p>
+          </div>
+        </ExperienceForm>
+      </ScheduleBlock>
+
+      <ScheduleBlock heading={t('host.schedule.blackout.heading')}>
+        {schedule.blackouts.length === 0 ? (
+          <p className="auth-help">{t('host.schedule.blackout.empty')}</p>
+        ) : (
+          <ul className="grid gap-2">
+            {schedule.blackouts.map((blackout) => (
+              <li key={blackout.id} className="flex flex-wrap items-center justify-between gap-3">
+                <span className="text-sm">
+                  {blackout.startsOnLocal === blackout.endsOnLocal
+                    ? blackout.startsOnLocal
+                    : `${blackout.startsOnLocal} – ${blackout.endsOnLocal}`}
+                </span>
+
+                <ExperienceForm
+                  action={deleteBlackoutAction}
+                  lang={lang}
+                  experienceId={experienceId}
+                  size="sm"
+                  labels={{
+                    submit: t('host.schedule.blackout.remove'),
+                    pending: t('host.schedule.blackout.removing'),
+                  }}
+                >
+                  <input type="hidden" name={BLACKOUT_ID_FIELD} value={blackout.id} />
+                </ExperienceForm>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <ExperienceForm
+          action={createBlackoutAction}
+          lang={lang}
+          experienceId={experienceId}
+          className="auth-form"
+          labels={{
+            submit: t('host.schedule.blackout.submit'),
+            pending: t('host.schedule.blackout.pending'),
+          }}
+        >
+          <div>
+            <label className="auth-label" htmlFor="kapali-baslangic">
+              {t('host.schedule.blackout.start')}
+            </label>
+            <input
+              id="kapali-baslangic"
+              name={BLACKOUT_START_FIELD}
+              type="date"
+              className="auth-input"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="auth-label" htmlFor="kapali-bitis">
+              {t('host.schedule.blackout.end')}
+            </label>
+            <input
+              id="kapali-bitis"
+              name={BLACKOUT_END_FIELD}
+              type="date"
+              className="auth-input"
+              aria-describedby="kapali-bitis-yardim"
+            />
+            <p id="kapali-bitis-yardim" className="auth-help">
+              {t('host.schedule.blackout.endHelp')}
+            </p>
+          </div>
+        </ExperienceForm>
+      </ScheduleBlock>
+
+      <ScheduleBlock heading={t('host.schedule.slots.heading')}>
+        {shown.length === 0 ? (
+          <p className="auth-help">{t('host.schedule.slots.empty')}</p>
+        ) : (
+          <ul className="grid gap-2">
+            {shown.map((slot) => (
+              <SlotRow key={slot.slotId} lang={lang} experienceId={experienceId} slot={slot} t={t} />
+            ))}
+          </ul>
+        )}
+
+        {upcoming.length > shown.length ? (
+          <p className="auth-help">
+            {t('host.schedule.slots.more', { n: upcoming.length - shown.length })}
+          </p>
+        ) : null}
+      </ScheduleBlock>
+    </div>
+  )
+}
+
+/** Kaç seans gösteriliyor. Liste bir ÖNİZLEME; tamamı ay görünümünün işi olacak. */
+const SCHEDULE_SLOT_PREVIEW = 12
+
+function ScheduleBlock({ heading, children }: { heading: string; children: ReactNode }) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold">{heading}</h3>
+      <div className="mt-3 grid gap-3">{children}</div>
+    </div>
+  )
+}
+
+function SlotRow({
+  lang,
+  experienceId,
+  slot,
+  t,
+}: {
+  lang: string
+  experienceId: string
+  slot: HostSlot
+  t: Translate
+}) {
+  const closed = slot.status === 'closed'
+
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-3">
+      <span className="text-sm">
+        {/*
+          Duvar saati: sunucu deneyimin saat dilimindeki saati gönderdi ve
+          gösterilecek şey tam olarak o. `new Date()` bir saat kaydırırdı.
+        */}
+        <span className="font-medium">
+          {formatWallClock(lang, slot.startsAtLocal, {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </span>{' '}
+        <span className="text-fg-muted">
+          {closed
+            ? slot.closedReason === 'blackout'
+              ? t('host.schedule.slots.closedByBlackout')
+              : t('host.schedule.slots.closed')
+            : t('host.schedule.slots.remaining', { n: slot.remainingCapacity })}
+        </span>
+      </span>
+
+      <ExperienceForm
+        action={setSlotStatusAction}
+        lang={lang}
+        experienceId={experienceId}
+        size="sm"
+        labels={
+          closed
+            ? { submit: t('host.schedule.slots.open'), pending: t('host.schedule.slots.opening') }
+            : { submit: t('host.schedule.slots.close'), pending: t('host.schedule.slots.closing') }
+        }
+      >
+        <input type="hidden" name={SLOT_ID_FIELD} value={slot.slotId} />
+        <input type="hidden" name={SLOT_STATUS_FIELD} value={closed ? 'open' : 'closed'} />
+      </ExperienceForm>
+    </li>
+  )
+}
+
+/**
+ * Gün adı → sözlük anahtarı. Sunucu `"monday"` gönderiyor (sayı değil, CLAUDE.md
+ * #8) ve karşılığı arayüzde — gün adları bizim metnimiz, host'un içeriği değil.
+ */
+function weekdayMessageKey(day: string): SimpleMessageKey {
+  switch (day) {
+    case 'monday':
+      return 'host.schedule.day.monday'
+    case 'tuesday':
+      return 'host.schedule.day.tuesday'
+    case 'wednesday':
+      return 'host.schedule.day.wednesday'
+    case 'thursday':
+      return 'host.schedule.day.thursday'
+    case 'friday':
+      return 'host.schedule.day.friday'
+    case 'saturday':
+      return 'host.schedule.day.saturday'
+    default:
+      return 'host.schedule.day.sunday'
+  }
+}
+
 function PricingFields({
   pricing,
   currencies,

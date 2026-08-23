@@ -542,6 +542,95 @@ export const en = {
   'host.pricing.error.range':
     'That amount is outside the range the payment provider accepts — it is either too small or too large.',
 
+  // --- Schedule (PLAN Blok 7) ---
+  'host.experience.section.schedule': 'Schedule',
+  'host.experience.section.scheduleHelp':
+    'Which days and times do you run this? Times are in the city’s time zone — the hour you write stays put across daylight saving changes.',
+
+  'host.schedule.blocked':
+    'A schedule needs a city, a duration and a capacity first. Finish the sections above.',
+  'host.schedule.timeZone': 'Time zone: {bolge}',
+  'host.schedule.generatedThrough': 'Your calendar is ready through {tarih}.',
+
+  // Weekly rule
+  'host.schedule.rule.heading': 'Weekly rule',
+  'host.schedule.rule.days': 'Days',
+  'host.schedule.rule.daysHelp': 'You can pick more than one; each day becomes its own rule.',
+  'host.schedule.rule.time': 'Start time',
+  'host.schedule.rule.timeHelp': 'In the city’s local time.',
+  'host.schedule.rule.start': 'Starting from',
+  'host.schedule.rule.startHelp': 'Leave empty to start today.',
+  'host.schedule.rule.submit': 'Add rule',
+  'host.schedule.rule.pending': 'Adding…',
+  'host.schedule.rule.stop': 'Stop',
+  'host.schedule.rule.stopping': 'Stopping…',
+  'host.schedule.rule.empty': 'No weekly rules yet.',
+  'host.schedule.rule.stopped': 'stopped',
+
+  // Blackout
+  'host.schedule.blackout.heading': 'Days off',
+  'host.schedule.blackout.start': 'From',
+  'host.schedule.blackout.end': 'To',
+  'host.schedule.blackout.endHelp': 'Leave empty to close a single day. The end day is included.',
+  'host.schedule.blackout.submit': 'Close',
+  'host.schedule.blackout.pending': 'Closing…',
+  'host.schedule.blackout.remove': 'Remove',
+  'host.schedule.blackout.removing': 'Removing…',
+  'host.schedule.blackout.empty': 'No days off.',
+
+  // Sessions
+  'host.schedule.slots.heading': 'Upcoming sessions',
+  'host.schedule.slots.empty': 'No sessions in this range.',
+  'host.schedule.slots.remaining': {
+    one: '{n} spot left',
+    other: '{n} spots left',
+  },
+  'host.schedule.slots.closed': 'Closed',
+  'host.schedule.slots.closedByBlackout': 'Day off',
+  'host.schedule.slots.close': 'Close',
+  'host.schedule.slots.closing': 'Closing…',
+  'host.schedule.slots.open': 'Open',
+  'host.schedule.slots.opening': 'Opening…',
+  'host.schedule.slots.more': 'and {n} more',
+
+  // Days
+  'host.schedule.day.monday': 'Monday',
+  'host.schedule.day.tuesday': 'Tuesday',
+  'host.schedule.day.wednesday': 'Wednesday',
+  'host.schedule.day.thursday': 'Thursday',
+  'host.schedule.day.friday': 'Friday',
+  'host.schedule.day.saturday': 'Saturday',
+  'host.schedule.day.sunday': 'Sunday',
+
+  // Confirmations
+  'host.schedule.ruleSaved': 'Rule added and sessions created.',
+  'host.schedule.ruleStopped': 'Rule stopped.',
+  'host.schedule.slotOpened': 'Session opened.',
+  'host.schedule.slotClosed': 'Session closed.',
+  'host.schedule.blackoutSaved': 'Days closed.',
+  'host.schedule.blackoutRemoved': 'Days off removed.',
+
+  // Errors — each maps to a machine-readable code from the server
+  'host.schedule.error.noDay': 'Pick at least one day.',
+  'host.schedule.error.time': 'Enter the time as HH:MM.',
+  'host.schedule.error.date': 'Enter a valid date.',
+  'host.schedule.error.range': 'The end date cannot be before the start.',
+  'host.schedule.error.notSchedulable':
+    'A schedule needs a city, a duration and a capacity first.',
+  'host.schedule.error.duplicateRule': 'There is already a rule on that day and time.',
+  'host.schedule.error.ruleLimit': 'This experience cannot take more weekly rules.',
+  'host.schedule.error.dstGap':
+    'That time does not exist on that day because of the daylight saving change. Try an hour later.',
+  'host.schedule.error.past': 'A past session cannot be changed.',
+  'host.schedule.error.slotExists': 'There is already a session at that time.',
+  'host.schedule.error.blackedOut': 'That date is marked as a day off. Remove the range first.',
+  'host.schedule.error.generated':
+    'A session created by a weekly rule cannot be deleted; you can close it.',
+  'host.schedule.error.hasBookings': 'A session with bookings cannot be changed.',
+  'host.schedule.error.blackoutLimit': 'No more days off can be added.',
+  'host.schedule.error.horizon': 'The calendar cannot be opened that far ahead.',
+  'host.schedule.error.generic': 'That did not work just now.',
+
 } as const satisfies Dictionary<'en'>
 
 /**
