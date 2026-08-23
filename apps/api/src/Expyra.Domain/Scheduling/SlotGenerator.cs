@@ -19,6 +19,12 @@ public static class SlotGenerator
     /// seans üretilmiyor: kabul kriteri 4 geçmiş seansların misafire dönmemesini
     /// istiyor ve hiç üretmemek, üretip filtrelemekten sağlam.
     /// </param>
+    /// <param name="throughLocalDate">
+    /// Taramanın son günü, <b>dâhil</b>. Çağırandan geliyor ve bu bilinçli:
+    /// <see cref="RecurrenceTemplate.GenerationHorizonDays"/> burada sabitlenseydi
+    /// host'un "bir yıl ileriyi aç" isteği sessizce 180 günde kesilir, filigran ise
+    /// istenen tarihe kadar ilerlerdi — takvim "hazır" der, seans olmazdı.
+    /// </param>
     /// <param name="existingLocalStarts">
     /// Zaten var olan seansların yerel başlangıçları. <b>Durumdan bağımsız</b>:
     /// kapatılmış bir seans da burada olmalı, aksi halde tekrar üretim onu
@@ -28,6 +34,7 @@ public static class SlotGenerator
         RecurrenceTemplate template,
         TimeZoneInfo zone,
         DateOnly fromLocalDate,
+        DateOnly throughLocalDate,
         IReadOnlyCollection<AvailabilityBlackout> blackouts,
         IReadOnlySet<DateTime> existingLocalStarts)
     {
@@ -48,7 +55,7 @@ public static class SlotGenerator
         // Filigran (`schedule_generated_through_local`) burada KULLANILMIYOR: o
         // yalnız bir kısayol ve bozulursa fazladan iş olur, eksik satır olmaz.
         var cursor = Later(fromLocalDate, template.StartsOnLocal);
-        var horizon = fromLocalDate.AddDays(RecurrenceTemplate.GenerationHorizonDays);
+        var horizon = throughLocalDate;
 
         if (template.EndsOnLocal is { } ends && ends < horizon)
         {

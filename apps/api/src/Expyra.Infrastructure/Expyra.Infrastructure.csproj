@@ -20,6 +20,13 @@
                       LogicalName="Expyra.Infrastructure.Seed.currencies.json" />
     <EmbeddedResource Include="..\..\..\..\docs\categories.json"
                       LogicalName="Expyra.Infrastructure.Seed.categories.json" />
+    <!--
+      Ödeme sağlayıcısının para birimi kısıtları. Seed DEĞİL — veritabanına
+      yazılmıyor, açılışta belleğe okunup PaymentCurrencyRules'a veriliyor.
+      Aynı klasörde çünkü kaynağı da aynı: docs/ altındaki elle bakılan tablolar.
+    -->
+    <EmbeddedResource Include="..\..\..\..\docs\payment-constraints.json"
+                      LogicalName="Expyra.Infrastructure.Seed.payment-constraints.json" />
   </ItemGroup>
 
   <ItemGroup>

@@ -9,6 +9,7 @@ using Expyra.Application.Common.Interfaces;
 using Expyra.Infrastructure.Auth;
 using Expyra.Infrastructure.Email;
 using Expyra.Infrastructure.Persistence;
+using Expyra.Infrastructure.Pricing;
 using Expyra.Infrastructure.Storage;
 using Expyra.Infrastructure.Time;
 
@@ -56,6 +57,12 @@ public static class DependencyInjection
         // konsola akar (Riskler §8).
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+
+        // Ödeme sağlayıcısının para kısıtları. Açılışta bir kez okunuyor: dosya
+        // değişmiyor ve her istekte JSON ayrıştırmak boşa iş. Eksik ya da bozuk
+        // dosyada AÇILIŞTA patlıyor — çalışma anında sessizce sınırsız bir tavana
+        // düşmektense (CLAUDE.md #1).
+        services.AddSingleton(PaymentCurrencyRulesLoader.Load());
 
         AddIdentity(services, configuration);
 

@@ -103,6 +103,20 @@ public sealed class Experience : BaseAuditableEntity
     public bool InfantCountsTowardCapacity { get; set; } = true;
 
     /// <summary>
+    /// Takvimin hangi yerel tarihe kadar üretildiği. <b>FİLİGRAN</b>: yalnız
+    /// "takviminiz şu tarihe kadar hazır" demek ve ufku ilerletme isteğini kısa
+    /// devre yaptırmak için.
+    ///
+    /// <para><b>Üretimin alt sınırı DEĞİL.</b> Üretim daima bugünden tarıyor;
+    /// filigran bozulursa fazladan iş olur, eksik satır olmaz. Alt sınır olarak
+    /// kullanılsaydı yanlış bir değer takvimde kalıcı bir delik açardı.</para>
+    ///
+    /// <para>Index YOK: bu sütunda filtreleyen sorgu yok, daima deneyim satırıyla
+    /// birlikte okunuyor.</para>
+    /// </summary>
+    public DateOnly? ScheduleGeneratedThroughLocal { get; set; }
+
+    /// <summary>
     /// Host'un ilanı İLK yazdığı dil. Fallback zincirinin üçüncü adımı ve slug'ın kaynağı
     /// (docs/I18N.md §2).
     ///

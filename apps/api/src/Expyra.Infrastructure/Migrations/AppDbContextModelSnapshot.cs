@@ -93,6 +93,10 @@ namespace Expyra.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("published_at_utc");
 
+                    b.Property<DateOnly?>("ScheduleGeneratedThroughLocal")
+                        .HasColumnType("date")
+                        .HasColumnName("schedule_generated_through_local");
+
                     b.Property<string>("Slug")
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")

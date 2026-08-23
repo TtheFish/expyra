@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Serilog;
@@ -15,7 +17,19 @@ builder.Host.UseSerilog((context, config) => config
     .ReadFrom.Configuration(context.Configuration)
     .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture));
 
-builder.Services.AddControllers();
+// Enum'lar tel üzerinde İSİMLE taşınıyor, sayıyla değil.
+//
+// Gerekçe DayOfWeek'te en görünür: .NET'te Pazar = 0 ama ISO 8601'de Pazartesi = 1.
+// Sayı kabul edilseydi istemcinin hangi sözleşmeyi varsaydığı görünmez bir hata
+// kaynağı olurdu ve "salı" isteyen bir host "çarşamba" alırdı. Aynısı GuestType
+// için de geçerli: sıralama değişirse eski istemciler başka bir kademe okurdu.
+//
+// camelCase, yanıtların elle ürettiği metinlerle (ScheduleFormat.Day → "tuesday")
+// aynı hizada olsun diye: aynı sözleşmede iki farklı büyük/küçük harf düzeni,
+// istemcide iki farklı eşleme tablosu demekti.
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(
+        new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddOpenApi();
 

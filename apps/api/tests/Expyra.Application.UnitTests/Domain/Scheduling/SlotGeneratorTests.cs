@@ -29,17 +29,38 @@ public sealed class SlotGeneratorTests
             Status = status,
         };
 
+    /// <param name="through">
+    /// Verilmezse çağıranların ürettiği varsayılan ufuk. Testlerin çoğu bu ufka
+    /// bakmıyor; ufkun KENDİSİNİ ölçenler değeri açıkça veriyor.
+    /// </param>
     private static SlotGenerationReport Run(
         RecurrenceTemplate template,
         DateOnly from,
         IReadOnlyCollection<AvailabilityBlackout>? blackouts = null,
-        IReadOnlySet<DateTime>? existing = null)
+        IReadOnlySet<DateTime>? existing = null,
+        DateOnly? through = null)
         => SlotGenerator.Generate(
             template,
             Prague,
             from,
+            through ?? from.AddDays(RecurrenceTemplate.GenerationHorizonDays),
             blackouts ?? [],
             existing ?? new HashSet<DateTime>());
+
+    [Fact]
+    public void UfukCagirandanGeliyor_180GunSABIT_DEGIL()
+    {
+        var from = new DateOnly(2026, 6, 1);
+
+        // Üretecin içinde sabitlenmiş bir 180 gün olsaydı bu satır 180 günlük sonuç
+        // verirdi ve "bir yıl ileriyi aç" isteği sessizce kesilirdi: filigran istenen
+        // tarihe ilerler, seanslar ilerlemezdi — takvim "hazır" der, gün boş çıkardı.
+        var uzun = Run(Template(), from, through: from.AddDays(364));
+        var kisa = Run(Template(), from, through: from.AddDays(70));
+
+        uzun.Created.Count.ShouldBe(52);
+        kisa.Created.Count.ShouldBe(10);
+    }
 
     [Fact]
     public void SekizHaftaIleriUretiyor_VeHepsiSali()

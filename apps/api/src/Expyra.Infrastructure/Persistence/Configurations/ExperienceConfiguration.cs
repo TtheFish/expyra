@@ -63,6 +63,11 @@ internal sealed class ExperienceConfiguration : IEntityTypeConfiguration<Experie
             .HasDefaultValue(true)
             .IsRequired();
 
+        // Filigran; nullable çünkü takvimi hiç kurulmamış deneyimde bir değer
+        // uydurmak, "0 tarihine kadar hazır" gibi yorumlanamaz bir satır bırakırdı.
+        builder.Property(x => x.ScheduleGeneratedThroughLocal)
+            .HasColumnName("schedule_generated_through_local");
+
         builder.Property(x => x.OriginalLanguage)
             .HasColumnName("original_language")
             .HasMaxLength(LanguageCode.MaxLength)
