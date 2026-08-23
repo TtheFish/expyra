@@ -616,6 +616,54 @@ body::after {
   text-shadow: 0 1px 12px rgb(0 0 0 / 0.45);
 }
 
+/*
+  WCAG 2.2.2 kontrolü. Duvar kağıdı kendiliğinden oynayan, beş saniyeden uzun
+  süren bir hareket ve içerikle birlikte çiziliyor — durdurulabilir olmak zorunda.
+
+  Sağ altta ve küçük: köşe, içeriğin en az yoğun olduğu yer. Görünmez DEĞİL
+  (opacity 0 ya da sr-only olsaydı fare kullanıcısına hiçbir şey sunmazdı);
+  sönük ama okunur, hover ve odakta belirginleşiyor.
+*/
+.hero-wallpaper-toggle {
+  position: absolute;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  z-index: 3;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 44px: dokunmatik hedef alt sınırı (WCAG 2.5.8 / Apple HIG). Görsel kutu daha
+     küçük görünüyor ama tıklanabilir alan tam boy. */
+  inline-size: 2.75rem;
+  block-size: 2.75rem;
+
+  border: 1px solid oklch(1 0 0 / 0.22);
+  border-radius: 999px;
+  background: oklch(0.2 0.01 260 / 0.42);
+  backdrop-filter: blur(10px);
+
+  color: oklch(0.97 0.01 260 / 0.85);
+  font-size: 0.7rem;
+  line-height: 1;
+
+  cursor: pointer;
+  transition: background 0.25s var(--ease-glass), border-color 0.25s var(--ease-glass),
+    color 0.25s var(--ease-glass);
+}
+
+.hero-wallpaper-toggle:hover {
+  background: oklch(0.2 0.01 260 / 0.62);
+  border-color: oklch(1 0 0 / 0.4);
+  color: oklch(1 0 0);
+}
+
+.hero-wallpaper-toggle:focus-visible {
+  outline: 2px solid var(--color-brand-400, oklch(0.72 0.18 25));
+  outline-offset: 3px;
+}
+
 /* Ters yönde süzülen sıcak ışık — derinlik hissi */
 .hero-wallpaper-parallax {
   position: absolute;

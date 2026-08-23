@@ -9,10 +9,15 @@ namespace Expyra.Application.Features.Users.Commands.CreateAvatarUpload;
 ///
 /// <para><b>Neden ilan görsellerindeki gibi bir <c>Pending</c> satır yok:</b> avatarın
 /// kendi tablosu yok, tek bir sütun (<c>app_user.avatar_key</c>) ve o sütun ancak
-/// doğrulama bittiğinde yazılıyor. Ara durumu tutacak bir yer olmaması bir eksiklik
-/// değil: kullanıcı başına en fazla bir yetim nesne doğabiliyor ve anahtar kullanıcı
-/// kimliğiyle öneklendiği için temizlik komutu onu kullanıcıdan yürüyerek bulabiliyor.
-/// İlan görsellerinde durum farklıydı — orada yetim sayısı sınırsızdı.</para>
+/// doğrulama bittiğinde yazılıyor.</para>
+///
+/// <para><b>Bedeli:</b> yarıda bırakılan her yükleme bir yetim nesne bırakıyor ve
+/// anahtar her seferinde yeni olduğu için sayı SINIRSIZ — bu notun önceki hâli
+/// "kullanıcı başına en fazla bir yetim" diyordu ve iki paragraf aşağıdaki
+/// "anahtar her yüklemede YENİ" cümlesiyle çelişiyordu. İlan görsellerinden farkı
+/// yetimin sayısı değil, KOTAYI YEMEMESİ: avatarın tavanı yok, dolayısıyla sızıntı
+/// kullanıcıyı kilitlemiyor. Temizlik <c>avatars/{userId}/</c> ön ekinden yürüyor
+/// ve zamanlayıcıyı bekliyor (Blok 10).</para>
 ///
 /// <para>Anahtar her yüklemede YENİ: sabit bir ada (<c>avatar.jpg</c>) yazılsaydı CDN
 /// önbelleği geçersizleşmez ve kullanıcı fotoğrafını değiştirdikten sonra günlerce

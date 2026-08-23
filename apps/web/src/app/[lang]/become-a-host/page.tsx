@@ -3,6 +3,7 @@ import { SiteFooter } from '@/components/brand/site-footer'
 import { SiteHeader } from '@/components/brand/site-header'
 import { GlassButton } from '@/components/ui/glass-button'
 import { ApiError, fetchCurrentUser } from '@/features/auth/api'
+import { experiencePath } from '@/features/experiences/api'
 import { RETURN_TO_PARAM } from '@/features/auth/return-to'
 import { getSession } from '@/features/auth/session'
 import { ActivateHostForm } from '@/features/host/activate-host-form'
@@ -363,9 +364,24 @@ function ListingsSection({
                 </h3>
               </div>
 
-              <GlassButton size="sm" href={hostExperiencePath(lang, experience.id)}>
-                {t('host.listings.edit')}
-              </GlassButton>
+              <div className="flex shrink-0 items-center gap-2">
+                {/* Yayındaki ilanın misafir sayfasına bağlantı. `slug` API'den zaten
+                    geliyordu ama web onu hiç kullanmıyordu: host kendi ilanının
+                    dışarıdan nasıl göründüğünü göremiyordu. Taslakta slug yok. */}
+                {experience.slug !== null && experience.status === 'Published' && (
+                  <GlassButton
+                    size="sm"
+                    variant="ghost"
+                    href={experiencePath(lang, experience.slug)}
+                  >
+                    {t('host.listings.view')}
+                  </GlassButton>
+                )}
+
+                <GlassButton size="sm" href={hostExperiencePath(lang, experience.id)}>
+                  {t('host.listings.edit')}
+                </GlassButton>
+              </div>
             </article>
           </li>
         ))}

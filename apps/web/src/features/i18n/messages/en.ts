@@ -165,12 +165,12 @@ export const en = {
     'Look through the local experiences in your city. Small groups, real hosts.',
   'howItWorks.step.book.title': 'Book it',
   'howItWorks.step.book.body':
-    'Pick a date and take your spot. The ticket is in your pocket right away.',
+    'Pick a date and party size, see the price. Booking is coming soon.',
   'howItWorks.step.join.title': 'Show up',
-  'howItWorks.step.join.body': 'The host scans your QR at the door. Your experience starts.',
+  'howItWorks.step.join.body': 'Your host greets you and the experience starts.',
   'howItWorks.backToExplore': 'Back to exploring',
 
-  'myExperiences.lede': 'Your tickets live here. The host scans the QR at the door.',
+  'myExperiences.lede': 'Your tickets live here.',
   'myExperiences.upcoming': 'Upcoming · {sayi}',
   'myExperiences.past': 'Past · {sayi}',
   'myExperiences.downloadPdf': 'Download PDF',
@@ -236,6 +236,15 @@ export const en = {
   'account.email.label': 'Your email address',
   'account.email.note': 'Email addresses can’t be changed yet.',
 
+  // --- Wallpaper (shared layout — visible on EVERY page) ---------------------
+  'wallpaper.istanbul.place': 'İstanbul',
+  'wallpaper.istanbul.label': 'Grilled fish on the street',
+  'wallpaper.kitchen.place': 'A home kitchen',
+  'wallpaper.kitchen.label': 'Cooking with auntie',
+  'wallpaper.cappadocia.place': 'Cappadocia',
+  'wallpaper.cappadocia.label': 'Hot air balloon',
+  'wallpaper.pause': 'Pause background video',
+  'wallpaper.play': 'Play background video',
   'account.avatar.label': 'Profile photo',
   'account.avatar.help': 'JPEG, PNG or WebP · at least 800×600 pixels · up to 10 MB',
   'account.avatar.add': 'Add a photo',
@@ -294,6 +303,7 @@ export const en = {
 
   'host.listings.heading': 'My listings · {sayi}',
   'host.listings.edit': 'Edit',
+  'host.listings.view': 'View listing',
   'host.listings.status.draft': 'Draft',
   'host.listings.status.published': 'Published',
   'host.listings.status.archived': 'Archived',

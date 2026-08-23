@@ -202,9 +202,12 @@ export async function buildTicketPdf(
   })
   y -= 30
 
-  const notice = ticket.status === 'used'
-    ? t('ticket.pdf.notice.used')
-    : t('ticket.pdf.notice.valid')
+  // Ekrandaki "Örnek bilet" rozeti ve "QR henüz imzalanmıyor" notu KAĞIDA DA
+  // geçiyor. Önceki hâli, ekranda bilerek düzeltilmiş cümlenin aynısını
+  // ("girişte host bu kodu okutacak") PDF'e basıyordu — uyarıyı görmeyen tek
+  // kullanıcı, kapıya belge götüren kullanıcıydı. Gerçek bilet geldiğinde
+  // (Blok 12) buraya `ticket.pdf.notice.*` geri gelir.
+  const notice = t('ticket.demoNote')
   const noticeWidth = regular.widthOfTextAtSize(notice, 10)
   page.drawText(notice, {
     x: (A4.width - noticeWidth) / 2, y, size: 10, font: regular, color: MUTED,

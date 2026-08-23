@@ -316,14 +316,18 @@ export const tr = {
   'howItWorks.step.discover.body':
     'Şehrindeki yerel deneyimlere göz at. Küçük gruplar, gerçek hostlar.',
   'howItWorks.step.book.title': 'Rezerve et',
-  'howItWorks.step.book.body': 'Tarih seç, yerini ayırt. Biletin anında cebinde.',
+  // Rezervasyon henüz yok (PLAN Blok 9). Olmayan bir akışı anlatmak, ilana giren
+  // kullanıcıya vaat edilen düğmeyi aratıyordu.
+  'howItWorks.step.book.body': 'Tarih ve kişi sayısını seç, fiyatı gör. Rezervasyon yakında.',
   'howItWorks.step.join.title': 'Katıl',
-  'howItWorks.step.join.body': 'Girişte host QR kodunu okutur. Deneyimin başlar.',
+  'howItWorks.step.join.body': 'Host seni karşılar ve deneyimin başlar.',
   'howItWorks.backToExplore': 'Keşfe dön',
 
   // --- Deneyimlerim ----------------------------------------------------------
   /** Başlık `nav.myExperiences` — üst çubukla aynı ad (bkz. site-footer.tsx). */
-  'myExperiences.lede': 'Biletlerin burada. Girişte host QR kodu okutacak.',
+  // Aynı ekranda biletin altında "QR henüz imzalanmıyor" yazıyor; başlık onu
+  // yalanlamamalı.
+  'myExperiences.lede': 'Biletlerin burada.',
   /**
    * Sayı bölüm başlığında bir ROZET, sayılan bir isim değil ("Yaklaşan · 2").
    * Çoğul tablosu değil düz metin: İngilizce'de de çekimlenecek bir sözcük yok.
@@ -401,6 +405,15 @@ export const tr = {
   // Alanı "düzenlenebilir gibi" göstermek yerine neden olmadığını yazıyoruz.
   'account.email.note': 'E-posta adresi şimdilik değiştirilemiyor.',
 
+  // --- Duvar kağıdı (ortak layout — HER sayfada görünür) ---------------------
+  'wallpaper.istanbul.place': 'İstanbul',
+  'wallpaper.istanbul.label': 'Sokakta ızgara balık',
+  'wallpaper.kitchen.place': 'Ev mutfağı',
+  'wallpaper.kitchen.label': 'Teyze ile yemek',
+  'wallpaper.cappadocia.place': 'Kapadokya',
+  'wallpaper.cappadocia.label': 'Sıcak hava balonu',
+  'wallpaper.pause': 'Arka plan videosunu durdur',
+  'wallpaper.play': 'Arka plan videosunu oynat',
   'account.avatar.label': 'Profil fotoğrafı',
   'account.avatar.help': 'JPEG, PNG veya WebP · en az 800×600 piksel · en fazla 10 MB',
   'account.avatar.add': 'Fotoğraf ekle',
@@ -464,6 +477,7 @@ export const tr = {
 
   'host.listings.heading': 'İlanlarım · {sayi}',
   'host.listings.edit': 'Düzenle',
+  'host.listings.view': 'İlanı gör',
   'host.listings.status.draft': 'Taslak',
   'host.listings.status.published': 'Yayında',
   /** Arşiv bir silme değil: satır duruyor, yalnız aramada çıkmıyor. Metin de öyle diyor. */

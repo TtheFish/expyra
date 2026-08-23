@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { notFound } from 'next/navigation'
 import { SiteChrome } from '@/components/brand/site-chrome'
 import { getTranslator } from '@/features/i18n/translator'
+import { WALLPAPER_CLIPS } from '@/lib/wallpaper-clips'
 import { findLanguage } from '@/lib/languages'
 import { isRoutableLanguage, routableLanguages } from '@/lib/routes'
 import '../globals.css'
@@ -79,6 +80,20 @@ export default async function RootLayout({
 
   const language = findLanguage(lang)
 
+  // Duvar kağıdı metinleri SUNUCUDA çözülüyor: bileşen istemci tarafında ve sözlük
+  // `server-only`. Önceden bu metinler kaynak dosyaya gömülüydü ve ortak layout'ta
+  // yaşadığı için /en dahil her sayfada Türkçe görünüyorlardı.
+  const t = await getTranslator(lang)
+
+  const wallpaperLabels = {
+    captions: WALLPAPER_CLIPS.map((clip) => ({
+      place: t(clip.placeKey),
+      label: t(clip.labelKey),
+    })),
+    pause: t('wallpaper.pause'),
+    play: t('wallpaper.play'),
+  }
+
   return (
     <html
       lang={lang}
@@ -89,7 +104,7 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <SiteChrome>{children}</SiteChrome>
+        <SiteChrome wallpaperLabels={wallpaperLabels}>{children}</SiteChrome>
       </body>
     </html>
   )

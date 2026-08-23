@@ -1,4 +1,6 @@
 import { signOut } from '@/features/auth/api'
+import { UI_LANGUAGE_FIELD, uiLocaleOf } from '@/features/i18n/locale'
+import { path } from '@/lib/routes'
 import { clearSession, getSession } from '@/features/auth/session'
 
 /**
@@ -9,7 +11,7 @@ import { clearSession, getSession } from '@/features/auth/session'
  * `GET` tanımlanmadığı için Next kendiliğinden 405 döner.
  */
 
-export async function POST(): Promise<Response> {
+export async function POST(request: Request): Promise<Response> {
   const session = await getSession()
 
   if (session?.refreshToken) {
@@ -27,5 +29,12 @@ export async function POST(): Promise<Response> {
   await clearSession()
 
   // 303: tarayıcı POST'u GET'e çevirsin. 307 verilirse ana sayfaya POST atılır.
-  return new Response(null, { status: 303, headers: { Location: '/' } })
+  //
+  // Hedef DİLE DUYARLI: sabit '/' verilirse next.config kökü varsayılan dile
+  // yönlendiriyor ve /en/hesap'tan çıkan kullanıcı /tr'de uyanıyordu. Dil formdan
+  // geliyor — `expyra_lang` çerezi ÇÖZÜM DEĞİL, o İÇERİK dili tercihini tutuyor
+  // ve 'ja' olabilir (features/i18n/locale.ts).
+  const language = uiLocaleOf(new URL(request.url).searchParams.get(UI_LANGUAGE_FIELD))
+
+  return new Response(null, { status: 303, headers: { Location: path(language, 'home') } })
 }

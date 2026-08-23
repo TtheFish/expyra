@@ -25,8 +25,13 @@
 - ~72 test metodu (unit + integration), `GlobalExceptionHandler`, ProblemDetails
 
 **Prototip (ekran var, veri sahte)**
-- Ana sayfa vitrini + `/kesfet` — veri `apps/web/src/lib/experiences.ts` (3 sabit deneyim), `filterExperiences()` substring
-- Host paneli `/host-ol` — `draftExperiences` sabiti, "Yeni deneyim" ve "Düzenle" `disabled`
+
+> Bu envanter Temmuz'da çekilmiş bir fotoğraftı ve eskidi; aşağıdaki üstü çizili
+> satırlar Blok 5-6'da eritildi. Silinmiyor çünkü hangi prototipin ne zaman
+> gerçeğe döndüğü, "bu ekran hep böyle miydi" sorusunun tek kaydı.
+
+- ~~Ana sayfa vitrini + `/kesfet` — veri `apps/web/src/lib/experiences.ts`~~ → **Blok 5**: dosya silindi, ikisi de gerçek API'den besleniyor
+- ~~Host paneli `/host-ol` — `draftExperiences` sabiti, düğmeler `disabled`~~ → **Blok 5**: gerçek ilan listesi, çalışan sihirbaz
 - Bilet + PDF — `apps/web/src/lib/ticket.ts` (`DEMO_TICKETS`), `lib/ticket-pdf.ts`, `app/api/bilet/[code]/pdf/route.ts`
 - Arama çubuğu — tarih alanı sonuca etki etmiyor; şehir serbest metin
 - QR — `ticketPayload()` imzasız düz URL, işaret ettiği `/dogrula/[code]` sayfası **yok**

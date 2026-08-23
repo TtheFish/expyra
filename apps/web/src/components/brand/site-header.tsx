@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { AccountMenu } from '@/features/auth/account-menu'
 import { ApiError, fetchCurrentUser, type CurrentUser } from '@/features/auth/api'
 import { SIGN_OUT_PATH } from '@/features/auth/return-to'
+import { UI_LANGUAGE_FIELD } from '@/features/i18n/locale'
 import { getSession } from '@/features/auth/session'
 import { getTemplate, getTranslator } from '@/features/i18n/translator'
 import { path } from '@/lib/routes'
@@ -152,7 +153,10 @@ async function AccountSlot({ lang }: { lang: string }) {
       label={label}
       initial={initialOf(label, lang)}
       accountHref={path(lang, 'account')}
-      signOutPath={SIGN_OUT_PATH}
+      /* Dil eylem ADRESİNDE, gizli input olarak DEĞİL: form native POST ediyor ve
+         gizli bir alan gövdeye girerdi — o zaman route'un formData ayrıştırması
+         gerekirdi. Query string POST'ta da korunuyor ve okuması tek satır. */
+      signOutPath={`${SIGN_OUT_PATH}?${UI_LANGUAGE_FIELD}=${encodeURIComponent(lang)}`}
       labels={{
         // Yer tutucular SUNUCUDA doluyor: ad ve adres render anında biliniyor,
         // istemciye şablon göndermenin bir faydası yok.
