@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
@@ -94,7 +95,7 @@ public sealed class GuestAvailabilityTests(ApiFactory factory)
 
         // Pencerenin başı da bugüne kırpılmış: istemci ne istediğini değil ne aldığını
         // görmeli.
-        availability.From.ShouldBe(TodayInCity().ToString("yyyy-MM-dd"));
+        availability.From.ShouldBe(TodayInCity().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
     }
 
     [Fact]
@@ -510,7 +511,7 @@ public sealed class GuestAvailabilityTests(ApiFactory factory)
             {
                 daysOfWeek = new[] { day.ToString().ToLowerInvariant() },
                 startTimeLocal = time,
-                startsOnLocal = TodayInCity().ToString("yyyy-MM-dd"),
+                startsOnLocal = TodayInCity().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);

@@ -71,6 +71,11 @@ jobs:
       - name: Lint
         run: pnpm -r lint
 
+      # Web tarafında test YOKTU ve CI de bunu görmüyordu. --if-present:
+      # her paketin test betiği olmak zorunda değil (mobil henüz boş).
+      - name: Test
+        run: pnpm -r --if-present test
+
       - name: Build
         run: pnpm -r build
 

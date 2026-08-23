@@ -93,7 +93,10 @@ export const INFANT_PRICE_FIELD = 'bebek-fiyat'
 export function parseMinorAmount(raw: string, minorUnits: number): number | null {
   const text = raw.trim().replace(',', '.')
 
-  if (!/^\d{1,15}(\.\d{0,6})?$/.test(text)) return null
+  // Nokta varsa İKİ YANINDA da rakam şart. `\d{0,6}` yazılıydı ve "45." kabul
+  // ediliyordu, ".5" ise reddediliyordu — aynı eksikliğin iki ucu, iki farklı
+  // sonuç. Test bunu yakaladı.
+  if (!/^\d{1,15}(\.\d{1,6})?$/.test(text)) return null
 
   const [whole, fraction = ''] = text.split('.')
 

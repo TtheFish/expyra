@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
@@ -188,7 +189,7 @@ public sealed class HostScheduleTests(ApiFactory factory)
             {
                 daysOfWeek = new[] { "tuesday" },
                 startTimeLocal = "14:00",
-                startsOnLocal = TodayInPrague().ToString("yyyy-MM-dd"),
+                startsOnLocal = TodayInPrague().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
@@ -244,7 +245,7 @@ public sealed class HostScheduleTests(ApiFactory factory)
             new
             {
                 throughLocalDate = TodayInPrague()
-                    .AddDays(ScheduleRules.MaxHorizonDays + 1).ToString("yyyy-MM-dd"),
+                    .AddDays(ScheduleRules.MaxHorizonDays + 1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
@@ -265,7 +266,7 @@ public sealed class HostScheduleTests(ApiFactory factory)
         var target = today.AddDays(ScheduleRules.MaxHorizonDays - 5);
 
         var extended = await ExtendAsync(client, token, experience, target);
-        extended.GeneratedThroughLocalDate.ShouldBe(target.ToString("yyyy-MM-dd"));
+        extended.GeneratedThroughLocalDate.ShouldBe(target.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
 
         var son = (await SlotRowsAsync(experience)).Max(x => DateOnly.FromDateTime(x.StartsAtLocal));
 
@@ -294,7 +295,7 @@ public sealed class HostScheduleTests(ApiFactory factory)
             {
                 daysOfWeek = new[] { "wednesday" },
                 startTimeLocal = "10:00",
-                startsOnLocal = TodayInPrague().ToString("yyyy-MM-dd"),
+                startsOnLocal = TodayInPrague().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
@@ -474,7 +475,7 @@ public sealed class HostScheduleTests(ApiFactory factory)
         // kapatmamak olurdu.
         var response = await MediaApi.SendAsync(
             client, HttpMethod.Post, $"{BasePath}/{experience}/blackouts", token,
-            new { startsOnLocal = day.ToString("yyyy-MM-dd"), endsOnLocal = day.ToString("yyyy-MM-dd") });
+            new { startsOnLocal = day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), endsOnLocal = day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
@@ -710,7 +711,7 @@ public sealed class HostScheduleTests(ApiFactory factory)
             {
                 daysOfWeek = new[] { "tuesday" },
                 startTimeLocal = "14:00",
-                startsOnLocal = TodayInPrague().ToString("yyyy-MM-dd"),
+                startsOnLocal = TodayInPrague().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             }))
             .StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
@@ -845,7 +846,7 @@ public sealed class HostScheduleTests(ApiFactory factory)
             {
                 daysOfWeek = new[] { day.ToString().ToLowerInvariant() },
                 startTimeLocal = time,
-                startsOnLocal = TodayInPrague().ToString("yyyy-MM-dd"),
+                startsOnLocal = TodayInPrague().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
@@ -858,7 +859,7 @@ public sealed class HostScheduleTests(ApiFactory factory)
     {
         var response = await MediaApi.SendAsync(
             client, HttpMethod.Post, $"{BasePath}/{experienceId}/blackouts", token,
-            new { startsOnLocal = day.ToString("yyyy-MM-dd"), endsOnLocal = day.ToString("yyyy-MM-dd") });
+            new { startsOnLocal = day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), endsOnLocal = day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Created);
 
@@ -870,7 +871,7 @@ public sealed class HostScheduleTests(ApiFactory factory)
     {
         var response = await MediaApi.SendAsync(
             client, HttpMethod.Post, $"{BasePath}/{experienceId}/schedule/extend", token,
-            new { throughLocalDate = through?.ToString("yyyy-MM-dd") });
+            new { throughLocalDate = through?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) });
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
