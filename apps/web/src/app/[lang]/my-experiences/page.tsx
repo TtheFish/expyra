@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { BrandLogo } from '@/components/brand/brand-logo'
+import { HeaderShell } from '@/components/brand/site-header'
 import { GlassButton } from '@/components/ui/glass-button'
 import { GlassTicket } from '@/components/ticket/glass-ticket'
 import type { Translate } from '@/features/i18n/dictionary'
@@ -51,8 +52,7 @@ export default async function MyExperiencesPage({
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="relative z-30 px-4 pt-4">
-        <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+      <HeaderShell>
           <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
           <nav className="flex items-center gap-1" aria-label={t('nav.primaryLabel')}>
             <GlassButton
@@ -72,8 +72,7 @@ export default async function MyExperiencesPage({
               {t('nav.myExperiences')}
             </GlassButton>
           </nav>
-        </div>
-      </header>
+      </HeaderShell>
 
       <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:py-16">
         <h1 className="text-on-media text-3xl font-semibold tracking-tight text-white sm:text-4xl">

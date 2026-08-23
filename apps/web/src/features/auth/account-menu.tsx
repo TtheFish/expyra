@@ -137,7 +137,7 @@ export function AccountMenu({ label, initial, accountHref, signOutPath, labels }
           <a
             ref={firstItemRef}
             href={accountHref}
-            className="flex min-h-12 w-full items-center rounded-[var(--radius-glass-sm)] px-3 text-sm font-medium transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-[-2px]"
+            className="flex min-h-12 w-full items-center rounded-[var(--radius-glass-sm)] px-3 text-sm font-medium transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-[-2px]"
           >
             {labels.account}
           </a>
@@ -147,7 +147,7 @@ export function AccountMenu({ label, initial, accountHref, signOutPath, labels }
           <form action={signOutPath} method="post">
             <button
               type="submit"
-              className="flex min-h-12 w-full items-center rounded-[var(--radius-glass-sm)] px-3 text-left text-sm font-medium transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-[-2px]"
+              className="flex min-h-12 w-full items-center rounded-[var(--radius-glass-sm)] px-3 text-left text-sm font-medium transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-[-2px]"
             >
               {labels.signOut}
             </button>

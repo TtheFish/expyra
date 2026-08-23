@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { BrandLogo } from '@/components/brand/brand-logo'
+import { HeaderShell } from '@/components/brand/site-header'
 import { GlassButton } from '@/components/ui/glass-button'
 import type { SimpleMessageKey, Translate } from '@/features/i18n/dictionary'
 import { getTranslator } from '@/features/i18n/translator'
@@ -39,14 +40,12 @@ export default async function HowItWorksPage({ params }: { params: Promise<{ lan
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="relative z-30 px-4 pt-4">
-        <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+      <HeaderShell>
           <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
           <GlassButton variant="ghost" size="sm" href={path(lang, 'home')} className="text-nav-link">
             {t('howItWorks.back')}
           </GlassButton>
-        </div>
-      </header>
+      </HeaderShell>
 
       <main className="relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 py-16">
         <h1 className="text-on-media text-3xl font-semibold tracking-tight text-white sm:text-4xl">

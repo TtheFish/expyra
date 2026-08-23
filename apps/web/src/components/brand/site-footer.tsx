@@ -34,7 +34,7 @@ export async function SiteFooter({ lang }: { lang: string }) {
               <li key={link.href}>
                 <a
                   href={link.href}
-                  className="text-fg-muted transition-colors duration-200 hover:text-fg focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-2"
+                  className="text-fg-muted transition-colors duration-200 hover:text-fg focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
                 >
                   {link.label}
                 </a>

@@ -104,6 +104,23 @@
   --calendar-icon-invert: 0;
 
   /*
+    Odak halkası. Vurgu renginden AYRI bir token ve tek bir değer — temaya göre
+    değişmiyor.
+
+    Neden brand-500, brand-400 değil: halka WCAG 1.4.11 gereği komşu renklerle
+    3:1 tutmak zorunda ve tek bir renk DÖRT zeminde birden tutmalı (açık zemin,
+    koyu zemin, açık cam, koyu cam). Ölçülen en kötü değerler:
+
+      brand-400 → 2.67:1  KALIYOR (açık cam üzerinde)
+      brand-500 → 3.63:1  geçiyor
+      brand-600 → 2.82:1  kalıyor (koyu cam üzerinde)
+
+    Yani rampanın ortası tek çözüm: açık zeminlerde yeterince koyu, koyu
+    zeminlerde yeterince açık. Değeri değiştirmeden önce dört zeminde de ölç.
+  */
+  --focus-ring: var(--color-brand-500);
+
+  /*
     Hata rengi. Marka rengi de kırmızı (--color-brand-500), bu yüzden hata ASLA
     yalnız renkle anlatılmaz (WCAG 1.4.1): role="alert" metni + aria-invalid
     kenarlığı + metnin kendisi. Bu token üç temada da tanımlı olmak ZORUNDA —
@@ -352,7 +369,7 @@ body::after {
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-brand-400);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 3px;
   }
 }
@@ -373,11 +390,24 @@ body::after {
 
 /* Marka renginde dolu cam — birincil aksiyonlar (canlı kırmızı + hover) */
 @utility glass-brand {
+  /*
+    Gradyanın EN AÇIK noktası beyaz metinle 4.5:1'i geçmek zorunda (WCAG 1.4.3 AA).
+    Ölçen taraf metnin altındaki en açık piksel, ortalama değil.
+
+    Eski değerler 0.68 → 0.55 idi ve üst uç 3.49:1 veriyordu: alt uç 5.21:1
+    olduğu için "ortalama iyi" görünüyordu ama metin gradyanın tamamının
+    üzerinde duruyor. Şimdi 0.59 → 0.50, yani en açık nokta 4.64:1.
+
+    Açıklığı geri almak isteyen biri için: L 0.595'in üzerine çıkarsa
+    (C 0.24, H 28) kriter düşer. Alternatif metni koyulaştırmaktı — ama beyaz
+    metin bu düğmenin kimliği ve zemini koyulaştırmak görsel olarak daha az
+    şey bozuyor.
+  */
   background:
     linear-gradient(
       to bottom,
-      oklch(0.68 0.24 28 / 0.98),
-      oklch(0.55 0.24 25 / 0.98)
+      oklch(0.59 0.24 28 / 0.98),
+      oklch(0.50 0.24 25 / 0.98)
     );
   border-color: oklch(0.78 0.16 28 / 0.55);
   color: white;
@@ -392,13 +422,21 @@ body::after {
     background 0.35s var(--ease-glass);
 
   &:hover {
+    /*
+      Hover DERİNLEŞİYOR, parlamıyor. Beyaz metinli bir düğmede parlamak
+      kontrastı düşüren yön: eski hâli 0.74'e çıkıyor ve üstüne
+      `brightness(1.08)` biniyordu — en açık nokta 3.30:1'e iniyordu.
+
+      "Kalkma" hissi kayboldu sanılmasın: onu zaten gölge ve `glass-interactive`
+      taşıyor, renk değil. `saturate` kaldı, `brightness` gitti.
+    */
     background:
       linear-gradient(
         to bottom,
-        oklch(0.74 0.24 30 / 1),
-        oklch(0.60 0.24 25 / 1)
+        oklch(0.56 0.24 30 / 1),
+        oklch(0.47 0.24 25 / 1)
       );
-    filter: brightness(1.08) saturate(1.08);
+    filter: saturate(1.08);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.48),
       0 4px 14px oklch(0.58 0.24 25 / 0.45),
@@ -461,7 +499,7 @@ body::after {
 
   &:focus-visible,
   &:has(:focus-visible) {
-    outline: 2px solid var(--color-brand-400);
+    outline: 2px solid var(--focus-ring);
     outline-offset: -1px;
   }
 }
@@ -670,7 +708,7 @@ body::after {
 }
 
 .hero-wallpaper-toggle:focus-visible {
-  outline: 2px solid var(--color-brand-400, oklch(0.72 0.18 25));
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -935,7 +973,7 @@ body::after {
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-brand-400);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
 
@@ -1002,7 +1040,7 @@ body::after {
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-brand-400);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
     border-radius: var(--radius-glass-sm);
   }

@@ -171,7 +171,7 @@ export function LanguagePicker({
             onChange={(event) => setQuery(event.target.value)}
             placeholder={labels.searchPlaceholder}
             autoComplete="off"
-            className="mb-2 w-full rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:outline-2 focus-visible:outline-brand-400"
+            className="mb-2 w-full rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
           />
 
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -259,7 +259,7 @@ function LanguageRow({
         type="button"
         onClick={() => onSelect(language)}
         aria-current={selected ? 'true' : undefined}
-        className="flex w-full items-center justify-between gap-3 rounded-[var(--radius-glass-sm)] px-2 py-2 text-left text-sm transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-[-2px]"
+        className="flex w-full items-center justify-between gap-3 rounded-[var(--radius-glass-sm)] px-2 py-2 text-left text-sm transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-[-2px]"
       >
         <span className="min-w-0">
           {/* Dil kendi dilinde yazılır; lang özniteliği olmadan ekran okuyucu

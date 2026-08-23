@@ -29,7 +29,7 @@ function classesFor(variant: Variant, size: Size, className: string) {
     return [
       'inline-flex items-center justify-center font-medium',
       'transition-colors duration-300',
-      'focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-3',
+      'focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-3',
       sizeClass[size],
       className,
     ].join(' ')

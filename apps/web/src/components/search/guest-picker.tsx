@@ -168,7 +168,7 @@ export function GuestPicker({
               setOpen(false)
               triggerRef.current?.focus()
             }}
-            className="mt-4 w-full rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] px-4 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[rgb(var(--glass-tint)_/_0.35)] focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-2"
+            className="mt-4 w-full rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] px-4 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[rgb(var(--glass-tint)_/_0.35)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
           >
             {labels.done}
           </button>
@@ -263,7 +263,7 @@ function StepButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--glass-border)] text-lg leading-none transition-all duration-200 hover:border-brand-400 hover:text-brand-400 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-[var(--glass-border)] disabled:hover:text-inherit focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-2"
+      className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--glass-border)] text-lg leading-none transition-all duration-200 hover:border-brand-400 hover:text-brand-400 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-[var(--glass-border)] disabled:hover:text-inherit focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
     >
       {children}
     </button>

@@ -524,7 +524,7 @@ export function CityPicker({
             inputRef.current?.focus()
           }}
           aria-label={labels.clear}
-          className="absolute end-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-sm text-fg-muted transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.35)] focus-visible:outline-2 focus-visible:outline-brand-400"
+          className="absolute end-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-sm text-fg-muted transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.35)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
         >
           <span aria-hidden="true">×</span>
         </button>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!--
+    Sekme ikonu — `brand-logo.tsx`'teki ExpyraMark'ın birebir aynısı.
+
+    Renkler CSS değişkeni DEĞİL ham oklch: bu dosya bir belge bağlamı dışında,
+    tarayıcının ikon yükleyicisinde çiziliyor ve orada `globals.css` yok.
+    Değerler `--color-brand-400` ve `--color-brand-600` ile aynı; rampa
+    değişirse burası da elle güncellenmeli (o yüzden yan yana yazılı).
+
+    `favicon.ico` SİLİNDİ — o Next şablonundan kalan Vercel üçgeniydi ve
+    Expyra'nın sekmesinde başka bir şirketin logosu duruyordu. App Router bu
+    dosyayı `<link rel="icon">` olarak kendisi bağlıyor.
+  -->
+  <defs>
+    <linearGradient id="expyra-icon" x1="24" y1="0" x2="24" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="oklch(0.68 0.22 25)" />
+      <stop offset="1" stop-color="oklch(0.52 0.23 25)" />
+    </linearGradient>
+  </defs>
+
+  <rect width="48" height="48" rx="14" fill="url(#expyra-icon)" />
+
+  <g fill="white">
+    <rect x="11" y="11" width="26" height="5.4" rx="2.7" />
+    <rect x="11" y="21.3" width="26" height="5.4" rx="2.7" />
+    <rect x="11" y="31.6" width="26" height="5.4" rx="2.7" />
+  </g>
+</svg>

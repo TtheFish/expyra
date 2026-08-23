@@ -91,7 +91,7 @@ export function ExperienceCard({
             href={experiencePath(lang, item.slug)}
             /* Odak halkası LİNKTE: article odak alamıyor, dolayısıyla
                `glass-interactive`'in kendi `:focus-visible` kuralı hiç ateşlenmez. */
-            className="rounded-[4px] after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-400"
+            className="rounded-[4px] after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
             /* Başlık host'un dilinde olabilir: ekran okuyucu doğru fonetikle
                okusun (WCAG 3.1.2). */
             lang={item.text.language}

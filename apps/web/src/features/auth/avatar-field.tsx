@@ -135,7 +135,7 @@ export function AvatarField({
             className={[
               'inline-flex h-9 cursor-pointer items-center justify-center rounded-[var(--radius-glass-sm)]',
               'px-4 text-sm font-medium transition-colors duration-300',
-              'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-brand-400',
+              'peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-[var(--focus-ring)]',
               disabled ? 'cursor-not-allowed opacity-50' : 'hover:text-fg',
             ].join(' ')}
           >

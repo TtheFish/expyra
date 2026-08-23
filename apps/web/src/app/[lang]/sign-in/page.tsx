@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { AuthCard } from '@/components/auth/auth-card'
 import { BrandLogo } from '@/components/brand/brand-logo'
+import { HeaderShell } from '@/components/brand/site-header'
 import { GlassButton } from '@/components/ui/glass-button'
 import { peekDevLoginCode } from '@/features/auth/api'
 import { getChallenge, secondsUntil } from '@/features/auth/challenge'
@@ -54,14 +55,12 @@ export default async function SignInPage({
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="relative z-30 px-4 pt-4">
-        <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+      <HeaderShell>
           <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
           <GlassButton variant="ghost" size="sm" href={path(lang, 'home')} className="text-nav-link">
             {t('auth.back')}
           </GlassButton>
-        </div>
-      </header>
+      </HeaderShell>
 
       <main className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-16">
         {challenge ? (

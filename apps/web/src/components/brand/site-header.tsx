@@ -23,6 +23,30 @@ import { path } from '@/lib/routes'
  * context'i — aktif dilin TÜM anahtarlarını, kullanıcının hiç açmayacağı
  * sayfalarınkiler dahil, her sayfada indirtirdi (docs/I18N.md §5).
  */
+/**
+ * Üst çubuğun KABUĞU — cam yüzey, yükseklik, genişlik ve istifleme sırası.
+ *
+ * Ayrı bir bileşen çünkü dört sayfa bu markup'ı birebir kopyalamıştı
+ * (`sign-in`, `how-it-works`, `my-experiences` ve <see cref="SiteHeader"/>).
+ * Kopyaların içeriği farklıydı ama kabuğu aynıydı; header yüksekliğini ya da
+ * z-index'ini değiştirmek dört dosya gezmek demekti ve biri kaçınılmaz olarak
+ * geride kalırdı.
+ *
+ * İÇERİK burada değil: sayfalar farklı şeyler gösteriyor ve o bir tasarım
+ * kararı — giriş sayfasında hesap menüsü olmaması hata değil, tercih.
+ */
+export function HeaderShell({ children }: { children: React.ReactNode }) {
+  return (
+    /* z-30: nav'daki açılır paneller (dil seçici, hesap menüsü) main'in üstünde
+       çizilmeli. Header ve main aynı z-10'daysa DOM'da sonra gelen main kazanır. */
+    <header className="relative z-30 px-4 pt-4">
+      <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+        {children}
+      </div>
+    </header>
+  )
+}
+
 export async function SiteHeader({ lang }: { lang: string }) {
   const [t, triggerTemplate] = await Promise.all([
     getTranslator(lang),
@@ -30,10 +54,7 @@ export async function SiteHeader({ lang }: { lang: string }) {
   ])
 
   return (
-    /* z-30: nav'daki açılır paneller (dil seçici, hesap menüsü) main'in üstünde
-       çizilmeli. Header ve main aynı z-10'daysa DOM'da sonra gelen main kazanır. */
-    <header className="relative z-30 px-4 pt-4">
-      <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+    <HeaderShell>
         <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
 
         <nav className="hidden items-center gap-1 sm:flex" aria-label={t('nav.primaryLabel')}>
@@ -97,8 +118,7 @@ export async function SiteHeader({ lang }: { lang: string }) {
             <AccountSlot lang={lang} />
           </Suspense>
         </div>
-      </div>
-    </header>
+    </HeaderShell>
   )
 }
 
