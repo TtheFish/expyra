@@ -51,8 +51,13 @@ if (-not $DryRun) {
 
 # --- Etiketler ---------------------------------------------------------------
 #
+# Depoda ZATEN olanlar (faz-1, faz-2, api, web, mobile, security, feature)
+# burada YOK ve olmamalı: renklerini bu dosyaya kopyalamak, bir gün ikisinin
+# ayrışacağı anlamına gelirdi. Aşağıdakiler yalnız bu betiğin getirdiği yeni
+# boyutlar.
+#
 # Etiket YOKSA gh issue create hata veriyor, o yüzden önce kuruluyorlar.
-# `--force` var olanı güncelliyor; renk/açıklama değişirse tek kaynak bu dosya.
+# `--force` var olanı güncelliyor.
 
 $labels = @(
     @{ Name = 'blok';       Color = '0e8a16'; Description = 'PLAN.md feature bloğu' },
@@ -78,7 +83,7 @@ if (-not $DryRun) {
 $issues = @(
     @{
         Title  = 'Hero videoları 41 MiB — yeniden kodlanmalı'
-        Labels = 'eksik,performans,bloke'
+        Labels = 'eksik,performans,bloke,web'
         Body   = @'
 `apps/web/public/brand/clips/` altındaki üç klip toplam ~41 MiB:
 
@@ -114,7 +119,7 @@ Ayrıntı: `docs/ACIK-EKSIKLER.md` §1
     },
     @{
         Title  = 'Host görsel başına alternatif metin girebilmeli'
-        Labels = 'eksik,erisilebilirlik'
+        Labels = 'eksik,erisilebilirlik,api,web'
         Body   = @'
 `experience_media` satırında alternatif metin alanı yok, dolayısıyla misafir
 detayındaki galeri `alt=""` ile çiziliyor.
@@ -138,7 +143,7 @@ Ayrıntı: `docs/ACIK-EKSIKLER.md` §2
     },
     @{
         Title  = 'apiBaseUrl ve problemOf dört BFF dosyasında kopyalanmış'
-        Labels = 'teknik-borc'
+        Labels = 'teknik-borc,web'
         Body   = @'
 Her `features/<alan>/api.ts` dosyası `apiBaseUrl()` ve `problemOf()`
 fonksiyonlarını yerel olarak yeniden tanımlıyor:
@@ -163,7 +168,7 @@ olarak kaldırmalı.
     },
     @{
         Title  = 'Host tarafında tekil ilan GET ucu yok'
-        Labels = 'teknik-borc'
+        Labels = 'teknik-borc,api'
         Body   = @'
 `HostExperiencesController` liste ucu taşıyor ama `GET /{id}` yok. Web tarafı
 bu yüzden listeyi çekip içinden seçiyor (`fetchHostExperience`).
@@ -177,7 +182,7 @@ değişmiyor.
     },
     @{
         Title  = 'Host takviminde ay ızgarası'
-        Labels = 'blok'
+        Labels = 'blok,web,erisilebilirlik'
         Body   = @'
 Takvim bölümü bugün düz bir liste: haftalık kurallar, kapalı günler ve
 yaklaşan on iki seans.
@@ -196,7 +201,7 @@ Bugünkü hâli: `apps/web/src/app/[lang]/host/experience/[id]/page.tsx`,
     },
     @{
         Title  = 'pnpm check web için typecheck çalıştırmıyor'
-        Labels = 'teknik-borc'
+        Labels = 'teknik-borc,web'
         Body   = @'
 `apps/web/package.json` içinde `typecheck` betiği var (`tsc --noEmit`) ama
 kök `pnpm check` onu çağırmıyor.
@@ -217,18 +222,18 @@ sürüyor, `next build` on saniyeden fazla.
 # işaretleniyor.
 
 $blocks = @(
-    @{ Number = 8;  Title = 'Keşif: arama, filtre, boş sonuç'; Size = 'L'; Note = 'Bloğun ilk yarısı Blok 7''yi beklemiyordu; artık ikisi de hazır.' },
-    @{ Number = 9;  Title = 'Rezervasyon';                     Size = 'L'; Note = 'Blok 7 bitti, bu doğrudan devamı. RemainingCapacity yazması burada başlıyor — satır kilidi altında.' },
-    @{ Number = 10; Title = 'Bildirimler';                     Size = 'M'; Note = 'Outbox + BackgroundService. Gerçek e-posta sağlayıcısı yok ama uçtan uca FileSystemEmailSender ile yazılabilir.' },
-    @{ Number = 11; Title = 'Ödeme (sahte sağlayıcı) + makbuz + kazanç'; Size = 'L'; Note = 'Fiş animasyonu için referans: https://www.dqnamo.com/experiments/receipt-printer' },
-    @{ Number = 12; Title = 'Bilet ve check-in';               Size = 'L'; Note = 'Bugünkü bilet imzasız bir QR taşıyor ve "demo" işareti gerekiyor.' },
-    @{ Number = 13; Title = 'İptal ve iade';                   Size = 'M'; Note = '' },
-    @{ Number = 14; Title = 'Yorum ve puan';                   Size = 'M'; Note = 'Bugün buton disabled.' },
-    @{ Number = 15; Title = 'Favoriler ve haber ver';          Size = 'S'; Note = '' },
-    @{ Number = 16; Title = 'Hesap durumu, şikayet, ban uygulaması'; Size = 'M'; Note = 'Ban kapısı var, yönetim aracı yok.' },
-    @{ Number = 17; Title = 'SEO, paylaşım, indekslenebilirlik'; Size = 'M'; Note = '' },
-    @{ Number = 19; Title = 'Mobil (Expo)';                    Size = 'L'; Note = 'Önce packages/shared-types OpenAPI üretimi kurulmalı.' },
-    @{ Number = 20; Title = 'Prod sertleştirme';               Size = 'L'; Note = '' }
+    @{ Number = 8;  Title = 'Keşif: arama, filtre, boş sonuç'; Size = 'L'; Labels = 'blok,feature,api,web'; Note = 'Bloğun ilk yarısı Blok 7''yi beklemiyordu; artık ikisi de hazır.' },
+    @{ Number = 9;  Title = 'Rezervasyon';                     Size = 'L'; Labels = 'blok,feature,api,web'; Note = 'Blok 7 bitti, bu doğrudan devamı. RemainingCapacity yazması burada başlıyor — satır kilidi altında.' },
+    @{ Number = 10; Title = 'Bildirimler';                     Size = 'M'; Labels = 'blok,feature,api'; Note = 'Outbox + BackgroundService. Gerçek e-posta sağlayıcısı yok ama uçtan uca FileSystemEmailSender ile yazılabilir.' },
+    @{ Number = 11; Title = 'Ödeme (sahte sağlayıcı) + makbuz + kazanç'; Size = 'L'; Labels = 'blok,feature,api,web'; Note = 'Fiş animasyonu için referans: https://www.dqnamo.com/experiments/receipt-printer' },
+    @{ Number = 12; Title = 'Bilet ve check-in';               Size = 'L'; Labels = 'blok,feature,api,web'; Note = 'Bugünkü bilet imzasız bir QR taşıyor ve "demo" işareti gerekiyor.' },
+    @{ Number = 13; Title = 'İptal ve iade';                   Size = 'M'; Labels = 'blok,feature,api,web'; Note = '' },
+    @{ Number = 14; Title = 'Yorum ve puan';                   Size = 'M'; Labels = 'blok,feature,api,web'; Note = 'Bugün buton disabled.' },
+    @{ Number = 15; Title = 'Favoriler ve haber ver';          Size = 'S'; Labels = 'blok,feature,api,web'; Note = '' },
+    @{ Number = 16; Title = 'Hesap durumu, şikayet, ban uygulaması'; Size = 'M'; Labels = 'blok,feature,api,web'; Note = 'Ban kapısı var, yönetim aracı yok.' },
+    @{ Number = 17; Title = 'SEO, paylaşım, indekslenebilirlik'; Size = 'M'; Labels = 'blok,feature,web'; Note = '' },
+    @{ Number = 19; Title = 'Mobil (Expo)';                    Size = 'L'; Labels = 'blok,feature,mobile'; Note = 'Önce packages/shared-types OpenAPI üretimi kurulmalı.' },
+    @{ Number = 20; Title = 'Prod sertleştirme';               Size = 'L'; Labels = 'blok,api,web,security'; Note = '' }
 )
 
 foreach ($block in $blocks) {
@@ -236,14 +241,14 @@ foreach ($block in $blocks) {
 
     $issues += @{
         Title  = "Blok $($block.Number) — $($block.Title)"
-        Labels = 'blok'
+        Labels = $block.Labels
         Body   = "Kapsam, kabul kriterleri ve tuzaklar: ``docs/PLAN.md`` içinde ``### Blok $($block.Number)``.`n`nBoyut: $($block.Size)$note`n`n---`n`nBu bir TAKİP issue'su. İş PR'lara bölünürken alt issue açılabilir; kabul kriterleri PLAN'da tek kaynak olarak duruyor."
     }
 }
 
 $issues += @{
     Title  = 'Blok 18 — Gerçek Stripe Connect'
-    Labels = 'blok,bloke'
+    Labels = 'blok,bloke,api,security'
     Body   = "Kapsam: ``docs/PLAN.md`` ``### Blok 18``.`n`n**BLOKE: şirket kaydı yok.**`n`nBlok 11 sahte sağlayıcıyla tam yazılıyor; kısayol alınmazsa bu blok gerçekten ""ikinci implementasyon"" oluyor. Para kısıtları (``docs/payment-constraints.json``) ve ``PaymentCurrencyRules`` zaten Stripe'a göre kurgulandı."
 }
 
