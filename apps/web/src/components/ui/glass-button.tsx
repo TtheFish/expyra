@@ -21,10 +21,15 @@ const sizeClass: Record<Size, string> = {
 
 function classesFor(variant: Variant, size: Size, className: string) {
   if (variant === 'ghost') {
+    // Renk BURADA verilmiyor: varyantın yazdığı `text-fg-muted`, çağıranın
+    // `className`'iyle aynı özgüllükte olduğu için sıralamaya göre kazanıp
+    // kaybediyordu — koyu nav barında linkler gri kalıyor, hover'da büsbütün
+    // kayboluyordu. Renk çağıranın kararı; `glass-nav` içinde --fg/--fg-muted
+    // zaten bara göre yeniden tanımlı.
     return [
       'inline-flex items-center justify-center font-medium',
-      'text-fg-muted hover:text-fg transition-colors duration-300',
-      'focus-visible:outline-2 focus-visible:outline-brand-400 focus-visible:outline-offset-3',
+      'transition-colors duration-300',
+      'focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-3',
       sizeClass[size],
       className,
     ].join(' ')

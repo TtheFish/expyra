@@ -107,19 +107,23 @@ export async function qrPngBytes(ticket: Ticket): Promise<Uint8Array> {
   return Uint8Array.from(Buffer.from(dataUrl.split(',')[1] ?? '', 'base64'))
 }
 
-/** Deneyimin kendi saat diliminde tarih. Gezginin bulunduğu yer alakasız. */
-export function formatLocalDateTime(ticket: Ticket, locale = 'tr-TR'): string {
+/**
+ * Deneyimin kendi saat diliminde tarih. Gezginin bulunduğu yer alakasız.
+ *
+ * İki ayrı kavram, ikisi de parametre: **locale** biletin hangi dilde YAZILDIĞI
+ * ("14 Ağustos 2026 Cuma" / "Friday, August 14, 2026"), **timeZone** ise
+ * deneyimin nerede BAŞLADIĞI. Locale değişince saat değişmez.
+ *
+ * Locale ilk parametre ve varsayılansız (`features/i18n/format.ts` imza kuralı):
+ * biletin en kritik alanı saat, yanlış dilde basılması sessizce geçmemeli.
+ *
+ * Para için ayrı bir sarmalayıcı yok — `format.ts`'teki `formatMoney` birebir
+ * aynı işi yapıyordu, ikinci kopya yalnız ikisinin ayrışmasına yarardı.
+ */
+export function formatLocalDateTime(locale: string, ticket: Ticket): string {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: 'full',
     timeStyle: 'short',
     timeZone: ticket.timeZone,
   }).format(new Date(ticket.startsAtUtc))
-}
-
-export function formatMoney(amount: number, currency: string, locale = 'tr-TR'): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount)
 }

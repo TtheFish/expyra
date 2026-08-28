@@ -17,7 +17,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:18
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -68,8 +68,20 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # next.config.ts görsellerin açık listesini EXPYRA_MEDIA_URL'den kuruyor ve
+      # tanımsızsa build'i düşürüyor. .env.local gitignore'da (ve öyle kalmalı),
+      # bu yüzden CI örneği kopyalıyor: değerler burada TEKRARLANMAZ, .env.example
+      # değişince CI kendiliğinden takip eder.
+      - name: Ortam değişkenleri
+        run: cp apps/web/.env.example apps/web/.env.local
+
       - name: Lint
         run: pnpm -r lint
+
+      # Web tarafında test YOKTU ve CI de bunu görmüyordu. --if-present:
+      # her paketin test betiği olmak zorunda değil (mobil henüz boş).
+      - name: Test
+        run: pnpm -r --if-present test
 
       - name: Build
         run: pnpm -r build

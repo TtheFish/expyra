@@ -5,6 +5,11 @@ Sıfırdan yayına kadar tüm iş listesi. Her satır bir **dikey dilim**: API +
 
 **Takım:** 2 kişi. **Tahminler** ikisinin paralel çalıştığı varsayımıyla.
 
+> **Uygulama sırası için [PLAN.md](PLAN.md).** Bu dosya *ne* yapılacağını fazlara
+> bölüyor; PLAN.md *hangi sırayla ve neden* — her blok misafir ve host tarafını
+> birlikte kapsıyor. İkisi çelişirse PLAN.md'nin "ROADMAP ile farklar" bölümü
+> gerekçesiyle birlikte kazanır.
+
 > **Universal kapsam kararı ([VISION.md](VISION.md) §4):** platform ilk günden çok
 > dilli, çok para birimli, çok ülkeli. Bu yüzden i18n veri modeli, para birimi ve
 > konum hiyerarşisi **öne çekildi** — Faz 8'e bırakılamaz, çünkü ikisi de
@@ -45,19 +50,34 @@ Sıfırdan yayına kadar tüm iş listesi. Her satır bir **dikey dilim**: API +
 
 ## Faz 1 — Kimlik & hesap · 2 hafta
 
+> **Karar: ŞİFRE YOK.** Kayıt ve giriş tek akış — kullanıcı e-postasını yazar, tek
+> kullanımlık kod alır, kodu girer, oturum açılır. Argon2id, şifre politikası, şifre
+> sıfırlama ve ayrı e-posta doğrulama akışı tamamen düştü.
+
 | # | İş | Not |
 |---|---|---|
-| 1.1 | E-posta + şifre ile kayıt | Argon2id/PBKDF2, şifre politikası |
-| 1.2 | Giriş + JWT + **refresh token rotasyonu** | Eski projede refresh token yoktu |
-| 1.3 | E-posta doğrulama | Tek kullanımlık token, süre sınırlı |
-| 1.4 | Şifre sıfırlama | Aynı token altyapısı |
-| 1.5 | Profil görüntüle / düzenle | Ad, kullanıcı adı, biyografi |
+| 1.1 | **E-posta + tek kullanımlık kod ile kayıt & giriş (tek akış)** | Şifre YOK. 6 hane / 10 dk, HMAC-SHA256 + pepper, 5 deneme. Hesap doğrulama anında doğar |
+| 1.2 | **JWT + refresh token rotasyonu + yeniden kullanım tespiti** | 1.1 ile aynı dilimde biter. Access 15 dk, refresh 30 gün / mutlak tavan 90 gün, aile bazlı iptal |
+| 1.3 | ~~E-posta doğrulama~~ | **DÜŞTÜ** — akışın kendisi. "Hesap = doğrulanmış e-posta" değişmezi bedava geldi |
+| 1.4 | ~~Şifre sıfırlama~~ | **DÜŞTÜ** — şifre yok |
+| 1.5 | Profil görüntüle / düzenle | Ad, kullanıcı adı, biyografi. Görünen ad buraya taşındı (kayıt akışında sorulmuyor). E-posta değişikliği **step-up OTP** ister |
 | 1.6 | Avatar yükleme | Faz 2'deki storage'ın ilk müşterisi |
-| 1.7 | Rol modeli: gezgin ↔ host | Tek hesap iki rol; host olma akışı |
-| 1.8 | Oturum koruması | Web route guard + API `[Authorize]` politikaları |
-| 1.9 | Sosyal giriş (Google + Apple) | Apple, mobil store şartı — şimdi yapılırsa Faz 9 kolaylaşır |
+| 1.7 | Rol modeli: gezgin ↔ host | Tek hesap iki rol; host olma akışı. `app_user.roles` sütunu 1.1'de açılmadı — bu maddenin migration'ı |
+| 1.8 | Oturum koruması | **Daraltıldı:** web `proxy.ts` guard + API JWT şeması 1.1'de girdi. Kalan: `[Authorize]` politikaları ve rol bazlı yetki |
+| 1.9 | Sosyal giriş (Google + Apple) | `external_login` tablosu 1.1'de kuruldu (Apple `sub`'a bağlanır, e-postaya bağlanamaz) → saf handler işi, migration yok |
+| 1.10 | **Kimlik uçlarında hız sınırı** | 10.1'den öne çekildi: şifresiz sistemde hız sınırı sertleştirme değil, mekanizmanın kendisi. E-posta/IP/challenge bazlı üç sayaç |
 
-**Çıktı:** Kullanıcı kayıt olur, giriş yapar, profilini yönetir.
+**Çıktı:** Kullanıcı e-postasıyla kod alarak tek adımda kayıt olur ve giriş yapar;
+oturumu güvenle yenilenir.
+
+**Neden şifresiz daha güvenli, daha az kod:** Şifreli sistemde de "şifremi unuttum"
+e-postaya düşer — yani e-posta zaten kök yetkidir; şifre sadece bir katman görüntüsü
+ekler. Kaldırınca şifre hash'i, politika, sızdırılmış parola kontrolü, sıfırlama akışı
+ve "doğrulanmamış kullanıcı" durumu birlikte gider.
+
+**Bilinen zayıflık:** e-posta OTP, gerçek zamanlı phishing/relay'e (AiTM) karşı korunaklı
+değildir — hiçbir paylaşılan sır değildir. Gerçek çözüm passkey (v2); `external_login`
+tablosu bugünden kabul ediyor.
 
 ---
 
@@ -67,7 +87,7 @@ Sıfırdan yayına kadar tüm iş listesi. Her satır bir **dikey dilim**: API +
 |---|---|---|
 | 2.1 | Object storage altyapısı (S3/R2) | Presigned URL. **Base64 DB'ye yazma yok** |
 | 2.2 | Deneyim oluştur (taslak) | Başlık, açıklama, süre, kapasite |
-| 2.3 | **Çok dilli içerik veri modeli** | Başlık/açıklama dil bazlı saklanır; host birden fazla dilde girebilir |
+| 2.3 | **Çok dilli içerik veri modeli** | `ExperienceTranslation` + `Language` kayıt defteri; dil listesi kodda sabit DEĞİL. Tasarım: [I18N.md](I18N.md) |
 | 2.4 | Görsel yükleme | Çoklu, sıralama, kapak seçimi, boyut/format doğrulama |
 | 2.5 | Kategori & etiket | Sabit kategori listesi + serbest etiket |
 | 2.6 | **Konum hiyerarşisi** | Ülke → şehir → koordinat. Global aramanın temeli; şehir serbest metin OLAMAZ |
@@ -106,8 +126,8 @@ biriminde yapılır — aksi halde kur farkı riskini platform üstlenir.
 |---|---|---|
 | 4.1 | Deneyim listeleme + sayfalama | Cursor tabanlı |
 | 4.2 | **Ülke/şehir gezinme** | Global katalogda kaybolmadan daralma |
-| 4.3 | Metin arama | Postgres full-text, dil duyarlı |
-| 4.4 | Filtreler | Tarih, fiyat (kur duyarlı), kategori, süre, dil |
+| 4.3 | Metin arama | Postgres full-text, dil duyarlı. **Çekçe stemmer'ı yok (Prag!), KO/JA'da parser yok** — [I18N.md](I18N.md) §4 |
+| 4.4 | Filtreler | Tarih, fiyat (kur duyarlı), kategori, süre, **konuşulan dil** (ilan metninin dili değil — [I18N.md](I18N.md) §3) |
 | 4.5 | Deneyim detay sayfası | Görseller, açıklama, takvim, host kartı |
 | 4.6 | **Boş sonuç akışı** | "Burada henüz yok" → yakın şehirler + haber ver. Global olmanın en büyük ürün riski |
 | 4.7 | Favoriler | |
@@ -144,6 +164,7 @@ sonuç yoksa bile eli boş dönmez.
 | 6.1 | `IPaymentProvider` soyutlaması | Tek arayüz: ödeme başlat, doğrula, iade et |
 | 6.2 | `FakePaymentProvider` | Gerçekçi davranır: gecikme, başarısız kart, timeout senaryoları |
 | 6.3 | Ödeme akışı (API + web) | Sepet → ödeme → sipariş durumu; **gerçek olan kısım bu** |
+| 6.3b | **Makbuz yazıcı animasyonu** | Ödeme tamamlanınca bilet "yazdırılır" — referans: dqnamo.com/experiments/receipt-printer. Detay aşağıda |
 | 6.4 | Sipariş durum makinesi | beklemede → ödendi → tamamlandı / iade edildi |
 | 6.5 | Komisyon hesabı | Platform payı kayıtta tutulur, henüz tahsil edilmez |
 | 6.6 | İade / kısmi iade | İptal politikasına bağlı |
@@ -156,6 +177,33 @@ sonuç yoksa bile eli boş dönmez.
 yaşar. "Nasıl olsa sahte" diye kısayol alınmaz — idempotency, durum makinesi, hata
 yolları gerçekmiş gibi yazılır. Aksi halde Stripe geldiğinde bu fazın tamamı yeniden
 yazılır ve hiçbir şey kazanılmamış olur.
+
+### Makbuz yazıcı animasyonu (6.3b)
+
+Ödeme onaylandığında sonuç ekranı düz bir "başarılı" mesajı olmayacak: bilet, bir
+yazarkasa makbuzu gibi kademeli olarak "yazdırılır". Referans:
+[dqnamo.com/experiments/receipt-printer](https://www.dqnamo.com/experiments/receipt-printer).
+
+Üç aşama: **işleniyor → yazdırılıyor → tamam**. Kağıt aşağı doğru adım adım
+(stepped keyframe) beslenir, düz kayma değil — mekanik his buradan geliyor.
+Alt kenar `clip-path` ile testere dişli (kopartılmış kağıt). Tipografi monospace.
+
+Bunu bir süs olarak değil, üç sebeple yapıyoruz:
+
+1. **Ödeme onayı beklerken geçen süreyi doldurur.** Sahte sağlayıcıda bile gecikme
+   var (6.2), gerçek Stripe'ta daha fazla olacak — boş spinner yerine anlamlı hareket.
+2. **Bilet zaten var.** Prototip `GlassTicket` + PDF üretimi (7.1b) hazır; makbuz
+   aynı verinin ikinci sunumu, yeni veri modeli gerektirmiyor.
+3. Paylaşılabilir bir an yaratır — ekran görüntüsü alınası bir onay ekranı.
+
+**Kurallar:**
+
+- `prefers-reduced-motion` açıksa animasyon çalışmaz, bilet doğrudan görünür.
+  Sistemde bu zaten global olarak uygulanıyor (`globals.css`) — kontrol et, ezme.
+- Animasyon **ödemenin durumunu temsil etmez.** Sipariş durumu sunucudan gelir;
+  yazdırma bitmeden kullanıcı sayfadan ayrılırsa rezervasyon yine tamamdır.
+  Animasyonu akışın kapısı yapmak, eski projenin "UI durumu = iş durumu" hatasıdır.
+- Atlanabilir olmalı — tıklayınca sona atlar. 1,75 sn ilk seferde hoş, beşincide değil.
 
 ---
 
@@ -226,8 +274,8 @@ Prototipten çıkan iki ders:
 
 | # | İş | Not |
 |---|---|---|
-| 8.1 | Arayüz çeviri altyapısı | **Hardcoded metin yok**. İçerik modeli Faz 2.3'te geldi, bu arayüz katmanı |
-| 8.2 | Dil seçimi ve algılama | Tarayıcı dili + kullanıcı tercihi; URL'de dil segmenti |
+| 8.1 | Arayüz çeviri altyapısı | **Hardcoded metin yok**; eksik anahtar derlemeyi kırar. İçerik modeli Faz 2.3'te geldi, bu arayüz katmanı |
+| 8.2 | Dil seçimi ve algılama | Tarayıcı dili + kullanıcı tercihi; URL'de dil segmenti. **Türkçe route isimleri burada karara bağlanır** — [I18N.md](I18N.md) §5 |
 | 8.3 | SEO | Metadata, sitemap, hreflang, structured data (Event/Offer) |
 | 8.4 | Çoklu para birimi | Görüntüleme + tahsilat kuru ayrımı |
 | 8.5 | Paylaşım kartları | OG görselleri |

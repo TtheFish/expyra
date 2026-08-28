@@ -1,8 +1,18 @@
+import { useId } from 'react'
+
 /**
- * Expyra mark — keşif / konum hissi: yumuşak pin + ufuk yayı.
- * Nav için SVG; PNG seçenekleri /public/brand altında.
+ * Expyra mark — kırmızı squircle içinde üç bar (E).
+ *
+ * Renkler marka rampasından geliyor, ham hex değil: logo ile birincil butonlar
+ * farklı kırmızılara kaymasın. Rampa `globals.css` `@theme` içinde tanımlı ve
+ * temadan bağımsız, yani mark her iki temada aynı.
+ *
+ * `id`ler `useId` ile üretiliyor — aynı sayfada iki mark varsa (nav + footer)
+ * sabit bir id ikinci gradyanı birincinin tanımına bağlar.
  */
 export function ExpyraMark({ className = 'size-7' }: { className?: string }) {
+  const gradientId = `expyra-mark-${useId()}`
+
   return (
     <svg
       className={className}
@@ -11,20 +21,26 @@ export function ExpyraMark({ className = 'size-7' }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <rect width="48" height="48" rx="14" fill="#FF3B2F" />
-      <path
-        d="M24 10.5c-6.2 0-11.2 4.9-11.2 11 0 7.4 8.4 15.2 10.5 17a1 1 0 0 0 1.4 0c2.1-1.8 10.5-9.6 10.5-17 0-6.1-5-11-11.2-11Z"
-        fill="white"
-        fillOpacity="0.96"
-      />
-      <circle cx="24" cy="21" r="4.2" fill="#FF3B2F" />
-      <path
-        d="M15 34.5c2.8 1.6 6.1 2.5 9 2.5s6.2-.9 9-2.5"
-        stroke="white"
-        strokeOpacity="0.5"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
+      <defs>
+        <linearGradient id={gradientId} x1="24" y1="0" x2="24" y2="48" gradientUnits="userSpaceOnUse">
+          <stop stopColor="var(--color-brand-400)" />
+          <stop offset="1" stopColor="var(--color-brand-600)" />
+        </linearGradient>
+      </defs>
+
+      <rect width="48" height="48" rx="14" fill={`url(#${gradientId})`} />
+
+      {/*
+        Oranlar referans mark'tan ölçüldü: bar kalınlığı ≈ aralık (5.4'e 4.9).
+        Aralığı daraltmak kutuyu doldurup markı hamburger menüsüne çeviriyor —
+        aradaki boşluk bu logoda barlar kadar taşıyıcı. Üstte ve altta 11 birim
+        boşluk kalıyor, yani mark kutuya sıkışmıyor.
+      */}
+      <g fill="white">
+        <rect x="11" y="11" width="26" height="5.4" rx="2.7" />
+        <rect x="11" y="21.3" width="26" height="5.4" rx="2.7" />
+        <rect x="11" y="31.6" width="26" height="5.4" rx="2.7" />
+      </g>
     </svg>
   )
 }

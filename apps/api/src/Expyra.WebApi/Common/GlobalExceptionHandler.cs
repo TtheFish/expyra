@@ -1,3 +1,4 @@
+using System.Globalization;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -36,6 +37,15 @@ internal sealed class GlobalExceptionHandler(
 
         httpContext.Response.StatusCode = problemDetails.Status ?? 500;
 
+        // Map() içine yeni bir case gerekmiyor — TooManyRequestsException : AppException,
+        // mevcut dal status'u zaten doğru üretiyor. Eksik olan tek şey başlık: Retry-After
+        // olmadan istemci ne kadar bekleyeceğini bilemez ve hemen tekrar dener.
+        if (exception is TooManyRequestsException tooMany)
+        {
+            httpContext.Response.Headers.RetryAfter =
+                ((int)tooMany.RetryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
+        }
+
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
@@ -59,6 +69,12 @@ internal sealed class GlobalExceptionHandler(
         {
             Status = app.StatusCode,
             Title = app.Message,
+
+            // Kod VARSA yanıta giriyor. Title Türkçe ve arayüz iki dilde: istemci
+            // metne bakarak dal seçemez (bkz. AppException.Code).
+            Extensions = app.Code is null
+                ? new Dictionary<string, object?>(StringComparer.Ordinal)
+                : new Dictionary<string, object?>(StringComparer.Ordinal) { ["code"] = app.Code },
         },
 
         UnauthorizedAccessException => new ProblemDetails

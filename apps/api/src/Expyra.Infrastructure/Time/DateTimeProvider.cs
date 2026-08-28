@@ -4,5 +4,6 @@ namespace Expyra.Infrastructure.Time;
 
 internal sealed class DateTimeProvider : IDateTimeProvider
 {
-    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
+    /// <summary>Kesme gerekçesi: <see cref="DateTimeOffsetExtensions.TruncateToMicroseconds"/>.</summary>
+    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow.TruncateToMicroseconds();
 }

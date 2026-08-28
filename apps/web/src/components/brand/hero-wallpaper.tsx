@@ -26,10 +26,32 @@ function waitCanPlay(video: HTMLVideoElement, timeoutMs = 12000): Promise<void> 
 }
 
 /**
- * Site-wide playlist wallpaper (layout'ta yaşar → tab değişince kaybolmaz).
- * Video varsayılan açık; prefers-reduced-motion sadece parallax'ı keser.
+ * Site geneli video duvar kağıdı (layout'ta yaşar → sekme değişince kaybolmaz).
+ *
+ * ## Durdurulabilir olmak ZORUNDA
+ *
+ * Video kendiliğinden başlıyor, beş saniyeden uzun sürüyor ve içerikle birlikte
+ * çiziliyor — WCAG 2.2.2 (Pause, Stop, Hide) bunun için bir kontrol istiyor ve bu
+ * **Level A**, yani en düşük uyum seviyesinin bile şartı. Önceki hâlde ne kontrol
+ * vardı ne de `prefers-reduced-motion` videoyu durduruyordu; o ayar yalnız
+ * parallax'ı kesiyordu.
+ *
+ * Kontrol `aria-hidden` kapsayıcının DIŞINDA: içeride kalsaydı ekran okuyucu ve
+ * klavye onu hiç görmezdi, yani "kontrol var" demek kâğıt üzerinde kalırdı.
+ * Altyazı içeride kalıyor — dekoratif ve her sayfada duyurulması gürültü olurdu.
+ *
+ * ## Hareket tercihi videoyu da kesiyor
+ *
+ * `prefers-reduced-motion: reduce` artık oynatmayı hiç başlatmıyor; ekranda poster
+ * karesi kalıyor. Kullanıcı isterse düğmeyle başlatabiliyor — tercih bir yasak
+ * değil, varsayılan.
+ *
+ * ## Metinler prop olarak geliyor
+ *
+ * Altyazılar sabit Türkçeydi ve duvar kağıdı ortak layout'ta yaşadığı için `/en`
+ * dahil her sayfada görünüyordu (CLAUDE.md: "metin hardcode edilmez").
  */
-export function HeroWallpaper() {
+export function HeroWallpaper({ labels }: { labels: WallpaperLabels }) {
   const aRef = useRef<HTMLVideoElement>(null)
   const bRef = useRef<HTMLVideoElement>(null)
   const indexRef = useRef(0)
@@ -43,7 +65,15 @@ export function HeroWallpaper() {
   const [labelVisible, setLabelVisible] = useState(true)
   const [reduceParallax, setReduceParallax] = useState(false)
 
-  const clip = WALLPAPER_CLIPS[index]!
+  /**
+   * Oynatma tercihi. `null` = henüz okunmadı (ilk render; sunucu `matchMedia`'yı
+   * bilemez). Üç durumlu olmasının sebebi hidrasyon: ilk render'da "oynuyor"
+   * varsaymak, hareket tercihi olan kullanıcıya bir kare de olsa video göstermek
+   * olurdu.
+   */
+  const [playing, setPlaying] = useState<boolean | null>(null)
+
+  const caption = labels.captions[index]
   const layerEl = (layer: 0 | 1) => (layer === 0 ? aRef.current : bRef.current)
 
   useEffect(() => {
@@ -57,7 +87,15 @@ export function HeroWallpaper() {
     }
 
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const sync = () => setReduceParallax(media.matches)
+
+    const sync = () => {
+      setReduceParallax(media.matches)
+
+      // Tercih DEĞİŞTİĞİNDE oynatma da değişiyor. Yalnız ilk okumada bakılsaydı,
+      // ayarı sonradan açan kullanıcı sayfayı yenilemeden kurtulamazdı.
+      setPlaying(!media.matches)
+    }
+
     sync()
     media.addEventListener('change', sync)
     return () => media.removeEventListener('change', sync)
@@ -201,6 +239,25 @@ export function HeroWallpaper() {
       scheduleNext()
     }
 
+    // Tercih okunmadan (null) ya da duraklatılmışken oynatma HİÇ başlamıyor.
+    // Başlatıp sonra durdurmak, hareket tercihi olan kullanıcıya bir kare de olsa
+    // hareket göstermek olurdu.
+    if (playing !== true) {
+      const pauseAll = () => {
+        for (const video of [aRef.current, bRef.current]) {
+          try {
+            video?.pause()
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+
+      clearTimer()
+      pauseAll()
+      return pauseAll
+    }
+
     void start()
 
     return () => {
@@ -208,7 +265,7 @@ export function HeroWallpaper() {
       busyRef.current = false
       warmPromiseRef.current = null
     }
-  }, [])
+  }, [playing])
 
   useEffect(() => {
     if (reduceParallax) return
@@ -238,33 +295,81 @@ export function HeroWallpaper() {
   }, [reduceParallax])
 
   return (
-    <div className="hero-wallpaper" aria-hidden="true">
-      <div className="hero-wallpaper-media">
-        <video
-          ref={aRef}
-          className={`hero-wallpaper-video ${active === 0 ? 'is-active' : ''}`}
-          muted
-          playsInline
-          preload="auto"
-          poster="/brand/wallpaper-dusk.jpg"
-        />
-        <video
-          ref={bRef}
-          className={`hero-wallpaper-video ${active === 1 ? 'is-active' : ''}`}
-          muted
-          playsInline
-          preload="auto"
-        />
+    // Düğme duvar kağıdının DIŞINDA, kardeşi olarak duruyor. İçerideyken iki ayrı
+    // sebeple fareyle tıklanamıyordu ve ikisi de tek başına yeterliydi:
+    //
+    //   1. `.hero-wallpaper` üzerindeki `pointer-events: none` kalıtsal ve düğme
+    //      onu sıfırlamıyordu — isabet testinde ölüydü.
+    //   2. `.hero-wallpaper` `position: fixed; z-index: 0` ile KENDİ istifleme
+    //      bağlamını kuruyor, yani düğmedeki z-index yalnız o bağlamın içinde
+    //      geçerliydi. Kardeş içerik katmanı (`site-chrome.tsx`, z-10) tüm görünüm
+    //      alanını, düğmenin oturduğu köşe dahil kaplıyordu.
+    //
+    // Klavye yolu çalıştığı için hata gözden kaçmıştı: `sr-only` bir düğme fare
+    // kullanıcısına hiçbir şey sunmaz ve WCAG 2.2.2 "mekanizma" istiyor, "klavye
+    // mekanizması" değil.
+    <>
+      {/* Kapsayıcının tamamı dekoratif — düğme dışarı çıktığı için `aria-hidden`
+          buraya geri döndü ve katmanların tek tek gizlenmesine gerek kalmadı. */}
+      <div className="hero-wallpaper" aria-hidden="true">
+        <div className="hero-wallpaper-media">
+          <video
+            ref={aRef}
+            className={`hero-wallpaper-video ${active === 0 ? 'is-active' : ''}`}
+            muted
+            playsInline
+            preload="auto"
+            poster="/brand/wallpaper-dusk.jpg"
+          />
+          <video
+            ref={bRef}
+            className={`hero-wallpaper-video ${active === 1 ? 'is-active' : ''}`}
+            muted
+            playsInline
+            preload="auto"
+          />
+        </div>
+
+        <div className="hero-wallpaper-parallax" />
+        <div className="hero-wallpaper-veil" />
+        <div className="hero-wallpaper-glow" />
+
+        <div className={`hero-wallpaper-caption ${labelVisible ? 'is-visible' : ''}`}>
+          <p className="hero-wallpaper-place">{caption?.place}</p>
+          <p className="hero-wallpaper-label">{caption?.label}</p>
+        </div>
       </div>
 
-      <div className="hero-wallpaper-parallax" />
-      <div className="hero-wallpaper-veil" />
-      <div className="hero-wallpaper-glow" />
+      {/*
+        WCAG 2.2.2 kontrolü. Küçük ve köşede ama GİZLİ DEĞİL: `sr-only` bir düğme
+        fare kullanıcısına hiçbir şey sunmazdı ve kriter "mekanizma" istiyor,
+        "ekran okuyucu mekanizması" değil.
 
-      <div className={`hero-wallpaper-caption ${labelVisible ? 'is-visible' : ''}`}>
-        <p className="hero-wallpaper-place">{clip.place}</p>
-        <p className="hero-wallpaper-label">{clip.label}</p>
-      </div>
-    </div>
+        Odaklanınca büyüyor (`focus-visible`) — klavyeyle gezen kullanıcı nerede
+        olduğunu görsün.
+      */}
+      <button
+        type="button"
+        onClick={() => setPlaying((current) => current !== true)}
+        className="hero-wallpaper-toggle"
+      >
+        <span className="sr-only">{playing === true ? labels.pause : labels.play}</span>
+        <span aria-hidden="true">{playing === true ? '❚❚' : '▶'}</span>
+      </button>
+    </>
   )
+}
+
+/**
+ * Duvar kağıdının metinleri. Sözlük `server-only`, bu bileşen istemci — metinler
+ * sunucuda çözülüp prop olarak iniyor (`media-uploader.tsx` ile aynı karar).
+ *
+ * `captions` DİZİ ve sırası `WALLPAPER_CLIPS` ile aynı: hangi klibin çizileceğini
+ * sunucu bilmiyor (döngü istemcide dönüyor), o yüzden üçünün metnini de gönderip
+ * bileşen indeksliyor. Üç kısa dizge — tarayıcıya inen yük ihmal edilebilir.
+ */
+export type WallpaperLabels = {
+  captions: { place: string; label: string }[]
+  pause: string
+  play: string
 }

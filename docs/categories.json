@@ -1,0 +1,19 @@
+{
+  "note": "Deneyim kategorilerinin başlangıç verisi. `dotnet run --project apps/api/src/Expyra.WebApi -- seed reference-data` ile yazılır — migration'a GÖMÜLMEZ.",
+  "warning": "BU DOSYADA AD YOK, SADECE SLUG VAR — bilinçli. Kategori adı BİZİM metnimiz, host'un içeriği değil; yeri Blok 3'ün sözlüğü (docs/I18N.md §1, Category.cs sınıf notu). Buraya bir slug eklemek, arayüz sözlüğüne 'category.<slug>' anahtarını eklemeden yarım kalır: derleme kırılır, çalışma anında sessiz boş etiket çıkmaz.",
+  "sortOrder": "Listeleme sırası ürün kararı. Alfabetik sıra her dilde farklı ve hiçbirinde anlamlı değil.",
+  "categories": [
+    { "slug": "food-drink", "sortOrder": 10 },
+    { "slug": "art-culture", "sortOrder": 20 },
+    { "slug": "history-heritage", "sortOrder": 30 },
+    { "slug": "nature-outdoors", "sortOrder": 40 },
+    { "slug": "water-sea", "sortOrder": 50 },
+    { "slug": "sports-adventure", "sortOrder": 60 },
+    { "slug": "crafts-workshops", "sortOrder": 70 },
+    { "slug": "music-nightlife", "sortOrder": 80 },
+    { "slug": "wellness", "sortOrder": 90 },
+    { "slug": "photography", "sortOrder": 100 },
+    { "slug": "tours-walks", "sortOrder": 110 },
+    { "slug": "local-life", "sortOrder": 120 }
+  ]
+}

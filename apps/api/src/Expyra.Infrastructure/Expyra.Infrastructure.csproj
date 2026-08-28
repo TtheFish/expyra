@@ -4,10 +4,47 @@
     <ProjectReference Include="..\Expyra.Application\Expyra.Application.csproj" />
   </ItemGroup>
 
+  <!--
+    Dil kayıt defterinin seed verisi. docs/languages.json KOPYALANMAZ, buradan
+    gömülü kaynak olarak bağlanır — liste dokümanla kod arasında ikiye ayrılırsa
+    hangisinin doğru olduğu belirsizleşir.
+  -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\..\docs\languages.json"
+                      LogicalName="Expyra.Infrastructure.Seed.languages.json" />
+    <EmbeddedResource Include="..\..\..\..\docs\countries.json"
+                      LogicalName="Expyra.Infrastructure.Seed.countries.json" />
+    <EmbeddedResource Include="..\..\..\..\docs\cities.json"
+                      LogicalName="Expyra.Infrastructure.Seed.cities.json" />
+    <EmbeddedResource Include="..\..\..\..\docs\currencies.json"
+                      LogicalName="Expyra.Infrastructure.Seed.currencies.json" />
+    <EmbeddedResource Include="..\..\..\..\docs\categories.json"
+                      LogicalName="Expyra.Infrastructure.Seed.categories.json" />
+    <!--
+      Kur anlık görüntüsünün seed verisi. Gerçek kur servisi Faz 7'de; o gelene kadar
+      sabit oranlar. Hepsi 1.0 olsaydı kur çevriminin bozukluğu hiçbir testte
+      görünmezdi.
+    -->
+    <EmbeddedResource Include="..\..\..\..\docs\exchange-rates.json"
+                      LogicalName="Expyra.Infrastructure.Seed.exchange-rates.json" />
+    <!--
+      Ödeme sağlayıcısının para birimi kısıtları. Seed DEĞİL — veritabanına
+      yazılmıyor, açılışta belleğe okunup PaymentCurrencyRules'a veriliyor.
+      Aynı klasörde çünkü kaynağı da aynı: docs/ altındaki elle bakılan tablolar.
+    -->
+    <EmbeddedResource Include="..\..\..\..\docs\payment-constraints.json"
+                      LogicalName="Expyra.Infrastructure.Seed.payment-constraints.json" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!--
+      Token ÜRETİMİ burada; JwtBearer (doğrulama) WebApi'de kalıyor. ASP.NET'e bağımlı
+      olan paketi bu projeye çekmek katman ihlali olurdu.
+    -->
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
