@@ -17,8 +17,9 @@
     "types:generate": "pnpm --filter @expyra/shared-types generate",
     "db:up": "./scripts/db-up.sh",
     "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r --if-present typecheck",
     "build": "pnpm -r build",
-    "check": "pnpm run api:build && pnpm run api:test && pnpm -r lint && pnpm run test && pnpm -r build",
+    "check": "pnpm run api:build && pnpm run api:test && pnpm -r lint && pnpm run typecheck && pnpm run test && pnpm -r build",
     "test": "pnpm -r --if-present test"
   }
 }

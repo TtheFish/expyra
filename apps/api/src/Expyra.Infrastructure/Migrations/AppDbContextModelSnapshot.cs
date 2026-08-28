@@ -605,7 +605,7 @@ namespace Expyra.Infrastructure.Migrations
                             EnglishName = "Czech",
                             IsRightToLeft = false,
                             NativeName = "Čeština",
-                            UiAvailable = false
+                            UiAvailable = true
                         },
                         new
                         {

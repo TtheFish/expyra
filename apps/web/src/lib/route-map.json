@@ -39,6 +39,18 @@
       "signIn": "sign-in",
       "account": "account",
       "hostExperienceEdit": "host/experience/:id"
+    },
+    "cs": {
+      "home": "",
+      "explore": "objevit",
+      "howItWorks": "jak-to-funguje",
+      "myExperiences": "moje-zazitky",
+      "becomeHost": "stat-se-hostitelem",
+      "experienceDetail": "zazitek/:slug",
+      "hostExperienceNew": "hostitel/zazitek/novy",
+      "signIn": "prihlaseni",
+      "account": "ucet",
+      "hostExperienceEdit": "host/experience/:id"
     }
   }
 }

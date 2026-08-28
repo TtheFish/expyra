@@ -5,7 +5,7 @@ Yerel deneyim rezervasyon platformu. Host'lar deneyim yayınlar, gezginler rezer
 ## Durum
 
 **Blok 1-7 tamam.** Çalışan: şifresiz kimlik (e-posta + tek kullanımlık kod), host rolü,
-arayüz dili (tr/en, lokalize URL'ler), yer/kategori/para birimi kayıt defteri, deneyim
+arayüz dili (tr/en/cs, lokalize URL'ler), yer/kategori/para birimi kayıt defteri, deneyim
 oluşturma ve yayınlama, görsel yükleme, host takvimi + fiyat, misafir tarafında
 müsaitlik ve teklif.
 
