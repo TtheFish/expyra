@@ -54,12 +54,13 @@ public static class ReferenceDataSeeder
         await dbContext.AcquireAdvisoryLockAsync(AdvisoryLockKey, cancellationToken).ConfigureAwait(false);
 
         var countryCodes = await SeedCountriesAsync(dbContext, cancellationToken).ConfigureAwait(false);
-        var currencies = await SeedCurrenciesAsync(dbContext, cancellationToken).ConfigureAwait(false);
+        var currencyCodes = await SeedCurrenciesAsync(dbContext, cancellationToken).ConfigureAwait(false);
         var categories = await SeedCategoriesAsync(dbContext, cancellationToken).ConfigureAwait(false);
         var (cities, aliases) = await SeedCitiesAsync(dbContext, countryCodes, cancellationToken)
             .ConfigureAwait(false);
 
-        var rates = await SeedExchangeRatesAsync(dbContext, cancellationToken).ConfigureAwait(false);
+        var rates = await SeedExchangeRatesAsync(dbContext, currencyCodes, cancellationToken)
+            .ConfigureAwait(false);
 
         var changed = await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -69,7 +70,7 @@ public static class ReferenceDataSeeder
             Countries: countryCodes.Count,
             Cities: cities,
             CityAliases: aliases,
-            Currencies: currencies,
+            Currencies: currencyCodes.Count,
             Categories: categories,
             ExchangeRates: rates,
             ChangedRows: changed);
@@ -113,7 +114,7 @@ public static class ReferenceDataSeeder
         return seen;
     }
 
-    private static async Task<int> SeedCurrenciesAsync(
+    private static async Task<HashSet<string>> SeedCurrenciesAsync(
         AppDbContext dbContext,
         CancellationToken cancellationToken)
     {
@@ -159,7 +160,7 @@ public static class ReferenceDataSeeder
             }
         }
 
-        return seen.Count;
+        return seen;
     }
 
     /// <summary>
@@ -176,8 +177,15 @@ public static class ReferenceDataSeeder
     /// <para>Gerçek servis geldiğinde (Faz 7) o yeni anlık görüntüler ekleyecek ve
     /// çözücü en yenisini okuyor; bu satırlar kendiliğinden devre dışı kalacak.</para>
     /// </summary>
+    /// <param name="registry">
+    /// Para birimi kodları <see cref="SeedCurrenciesAsync"/>'ten gelir, veritabanından
+    /// DEĞİL: satırlar aynı transaction'da henüz yalnızca Add edilmiş ve SaveChanges en
+    /// sonda. Buradan sorgu atmak onları göremez, boş veritabanında seed her zaman
+    /// patardı. <see cref="SeedCitiesAsync"/> ülke kodlarını aynı sebeple parametre alıyor.
+    /// </param>
     private static async Task<int> SeedExchangeRatesAsync(
         AppDbContext dbContext,
+        HashSet<string> registry,
         CancellationToken cancellationToken)
     {
         var exists = await dbContext.ExchangeRateSnapshots
@@ -206,13 +214,6 @@ public static class ReferenceDataSeeder
         Require(
             file.CapturedAtUtc <= now,
             $"exchange-rates.json: capturedAtUtc gelecekte ({file.CapturedAtUtc:O}).");
-
-        var known = await dbContext.Currencies
-            .Select(x => x.Code)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        var registry = new HashSet<string>(known, StringComparer.Ordinal);
 
         var snapshot = new ExchangeRateSnapshot
         {
