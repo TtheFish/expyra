@@ -1,28 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <!--
-    Sekme ikonu — `brand-logo.tsx`'teki ExpyraMark'ın birebir aynısı.
-
-    Renkler CSS değişkeni DEĞİL ham oklch: bu dosya bir belge bağlamı dışında,
-    tarayıcının ikon yükleyicisinde çiziliyor ve orada `globals.css` yok.
-    Değerler `--color-brand-400` ve `--color-brand-600` ile aynı; rampa
-    değişirse burası da elle güncellenmeli (o yüzden yan yana yazılı).
-
-    `favicon.ico` SİLİNDİ — o Next şablonundan kalan Vercel üçgeniydi ve
-    Expyra'nın sekmesinde başka bir şirketin logosu duruyordu. App Router bu
-    dosyayı `<link rel="icon">` olarak kendisi bağlıyor.
-  -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Tab icon: white E on red squircle, top gloss. ASCII-only. -->
   <defs>
-    <linearGradient id="expyra-icon" x1="24" y1="0" x2="24" y2="48" gradientUnits="userSpaceOnUse">
-      <stop stop-color="oklch(0.68 0.22 25)" />
-      <stop offset="1" stop-color="oklch(0.52 0.23 25)" />
+    <clipPath id="c">
+      <rect width="512" height="512" rx="128" />
+    </clipPath>
+    <linearGradient id="g" x1="256" y1="8" x2="256" y2="96" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffb0a4" stop-opacity="0.95" />
+      <stop offset="0.4" stop-color="#ff6b5a" stop-opacity="0.55" />
+      <stop offset="1" stop-color="#fb3324" stop-opacity="0" />
     </linearGradient>
   </defs>
-
-  <rect width="48" height="48" rx="14" fill="url(#expyra-icon)" />
-
-  <g fill="white">
-    <rect x="11" y="11" width="26" height="5.4" rx="2.7" />
-    <rect x="11" y="21.3" width="26" height="5.4" rx="2.7" />
-    <rect x="11" y="31.6" width="26" height="5.4" rx="2.7" />
+  <g clip-path="url(#c)">
+    <rect width="512" height="512" fill="#fb3324" />
+    <ellipse cx="256" cy="8" rx="240" ry="88" fill="url(#g)" />
+    <path d="M128 14c40-10 216-10 256 0 18 4 34 14 46 28H82c12-14 28-24 46-28Z" fill="#ffffff" opacity="0.35" />
+    <path fill="#ffffff" d="M108 176h267a29 29 0 0 0 0-58h-238a29 29 0 0 0-29 29V176Z" />
+    <path fill="#ffffff" d="M137 227h142a29 29 0 0 1 0 58h-142a29 29 0 0 1 0-58Z" />
+    <path fill="#ffffff" d="M108 336h267a29 29 0 0 1 0 58h-238a29 29 0 0 1-29-29V336Z" />
   </g>
 </svg>

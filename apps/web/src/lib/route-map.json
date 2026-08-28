@@ -51,6 +51,18 @@
       "signIn": "prihlaseni",
       "account": "ucet",
       "hostExperienceEdit": "host/experience/:id"
+    },
+    "de": {
+      "home": "",
+      "explore": "entdecken",
+      "howItWorks": "so-funktionierts",
+      "myExperiences": "meine-erlebnisse",
+      "becomeHost": "gastgeber-werden",
+      "experienceDetail": "erlebnis/:slug",
+      "hostExperienceNew": "host/erlebnis/neu",
+      "signIn": "anmelden",
+      "account": "konto",
+      "hostExperienceEdit": "host/experience/:id"
     }
   }
 }

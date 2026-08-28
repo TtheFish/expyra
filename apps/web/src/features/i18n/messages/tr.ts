@@ -108,6 +108,15 @@ export const tr = {
   /** Artık serbest metin değil: alan yalnız kayıt defterindeki şehirleri kabul ediyor. */
   'search.destination.placeholder': 'Şehir ara',
   'search.date.label': 'Ne zaman?',
+  'search.date.placeholder': 'Tarih seç',
+  'search.date.dialogLabel': 'Tarih seç',
+  'search.date.day': 'Gün',
+  'search.date.month': 'Ay',
+  'search.date.year': 'Yıl',
+  'search.date.done': 'Tamam',
+  'search.date.clear': 'Temizle',
+  'search.date.stepUp': '{alan} yukarı',
+  'search.date.stepDown': '{alan} aşağı',
   'search.submit': 'Ara',
 
   // --- Şehir seçici ----------------------------------------------------------

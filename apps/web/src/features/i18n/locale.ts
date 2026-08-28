@@ -62,10 +62,9 @@ export const defaultUiLocale: UiLocale = requireConfiguredDefault()
 export const pluralCategories = {
   tr: ['one', 'other'],
   en: ['one', 'other'],
-  // Çekçe dört biçim taşıyor: one (1), few (2-4), many (ondalık), other (5+).
-  // `many` yalnız kesirli sayılarda seçiliyor ("1,5 hodiny") — tam sayıda asla.
-  // Sözlükte atlanamaz: eksik biçim `PluralForms<'cs'>` ile derlemede kırılır.
+  // Çekçe dört biçim: one (1), few (2-4), many (ondalık), other (5+).
   cs: ['one', 'few', 'many', 'other'],
+  de: ['one', 'other'],
 } as const satisfies Record<UiLocale, readonly Intl.LDMLPluralRule[]>
 
 export type PluralCategoryOf<L extends UiLocale> = (typeof pluralCategories)[L][number]

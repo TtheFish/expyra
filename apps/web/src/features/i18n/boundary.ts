@@ -157,6 +157,35 @@ export const boundaryMessages = {
       reference: 'Kód pro podporu',
     },
   },
+
+  de: {
+    loading: 'Seite wird geladen',
+
+    notFound: {
+      code: 'Fehler 404 · Seite nicht gefunden',
+      title: 'Diese Seite gibt es nicht',
+      lede: 'Der Link ist vielleicht veraltet, oder in der Adresse steckt ein Tippfehler. Was du suchst, kann noch hier sein — schau dich um.',
+      explore: 'Erlebnisse entdecken',
+      home: 'Zur Startseite',
+    },
+
+    error: {
+      title: 'Etwas ist schiefgelaufen',
+      lede: 'Diese Seite ließ sich nicht laden. Es kann an uns liegen — meist reicht ein erneuter Versuch.',
+      retry: 'Nochmal versuchen',
+      home: 'Zur Startseite',
+      reference: 'Support-Code',
+    },
+
+    globalError: {
+      documentTitle: 'Etwas ist schiefgelaufen · Expyra',
+      title: 'Etwas ist schiefgelaufen',
+      lede: 'Die App ist unerwartet stehengeblieben. Neu laden hilft meist.',
+      retry: 'Neu laden',
+      home: 'Zur Startseite',
+      reference: 'Support-Code',
+    },
+  },
 } as const satisfies Record<UiLocale, BoundaryMessages>
 
 /**

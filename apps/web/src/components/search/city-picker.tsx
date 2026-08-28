@@ -644,7 +644,9 @@ function Row({
   preferEnglishName: boolean
   onSelect: (option: Option) => void
 }) {
-  const className = `flex w-full items-center justify-between gap-3 rounded-[var(--radius-glass-sm)] px-2 py-2 text-start text-sm transition-colors duration-150 ${
+  // `cursor-pointer` + `select-none`: satır tıklanabilir seçenek; metin imleci
+  // (I-beam) "yazı seçilir" hissi verip tıklanamayacak gibi duruyordu.
+  const className = `flex w-full cursor-pointer select-none items-center justify-between gap-3 rounded-[var(--radius-glass-sm)] px-2 py-2 text-start text-sm transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] ${
     active ? 'bg-[rgb(var(--glass-tint)_/_0.35)]' : ''
   }`
 

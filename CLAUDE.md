@@ -78,7 +78,7 @@ Bileşenler: `apps/web/src/components/ui/`.
 
 ## Çeviri — yarım dil push edilmez
 
-Arayüz dilleri: **tr, en, cs**. Kaynak sözlük `messages/tr.ts`; çeviriler
+Arayüz dilleri: **tr, en, cs, de**. Kaynak sözlük `messages/tr.ts`; çeviriler
 `en.ts` ve `cs.ts`. Yeni bir panel, ekran ya da tek bir düğme metni eklendiğinde
 **üçüne birden** eklenir. Bir dilde eksik anahtar bırakıp "sonra bakarız"
 denmez — kullanıcı o ekranda boşluk ya da yabancı dilde cümle görür.

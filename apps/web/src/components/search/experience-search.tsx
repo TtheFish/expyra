@@ -57,8 +57,17 @@ export async function ExperienceSearch({
   defaultChildren,
   className = '',
 }: ExperienceSearchProps) {
-  const [t, adultForms, childForms, summaryBoth, cityResults, cityCounts, citySelected] =
-    await Promise.all([
+  const [
+    t,
+    adultForms,
+    childForms,
+    summaryBoth,
+    cityResults,
+    cityCounts,
+    citySelected,
+    dateStepUp,
+    dateStepDown,
+  ] = await Promise.all([
       getTranslator(lang),
       getPluralTemplates(lang, 'search.guests.summary.adults'),
       getPluralTemplates(lang, 'search.guests.summary.children'),
@@ -67,6 +76,8 @@ export async function ExperienceSearch({
       getPluralTemplates(lang, 'search.city.results'),
       getPluralTemplates(lang, 'search.city.countryCities'),
       getTemplate(lang, 'search.city.selectedValue'),
+      getTemplate(lang, 'search.date.stepUp'),
+      getTemplate(lang, 'search.date.stepDown'),
     ])
 
   return (
@@ -109,7 +120,22 @@ export async function ExperienceSearch({
 
         <div className="search-divider" aria-hidden="true" />
 
-        <DateField defaultValue={defaultDate} label={t('search.date.label')} />
+        <DateField
+          lang={lang}
+          defaultValue={defaultDate}
+          labels={{
+            field: t('search.date.label'),
+            placeholder: t('search.date.placeholder'),
+            dialog: t('search.date.dialogLabel'),
+            day: t('search.date.day'),
+            month: t('search.date.month'),
+            year: t('search.date.year'),
+            done: t('search.date.done'),
+            clear: t('search.date.clear'),
+            stepUp: dateStepUp,
+            stepDown: dateStepDown,
+          }}
+        />
 
         <div className="search-divider" aria-hidden="true" />
 
