@@ -78,6 +78,13 @@ jobs:
       - name: Lint
         run: pnpm -r lint
 
+      # Çeviri sözlüklerinin bekçisi (CLAUDE.md "Çeviri"): eksik ya da fazla
+      # anahtar, kaybolan yer tutucu ve eksik çoğul biçimi burada kırılır.
+      # `next build` de tip kontrolü yapıyor ama bu adım hatayı build çıktısının
+      # içine gömmek yerine tek başına gösteriyor — ve build'den önce koşuyor.
+      - name: Typecheck
+        run: pnpm -r --if-present typecheck
+
       # Web tarafında test YOKTU ve CI de bunu görmüyordu. --if-present:
       # her paketin test betiği olmak zorunda değil (mobil henüz boş).
       - name: Test

@@ -73,11 +73,60 @@ Bileşenler: `apps/web/src/components/ui/`.
 - Yeni yüzey `GlassSurface` üzerine kurulur, elle `backdrop-filter` yazılmaz.
 - Cam ancak arkasında renk varsa görünür — zemindeki mesh gradient buna hizmet eder.
 - Kontrast WCAG AA altına düşerse `--veil` artırılır, metin rengi değiştirilmez.
-- **Metin hardcode edilmez.** Arayüz sözlüğü Blok 3'te geldi ve yaşıyor:
-  kaynak `apps/web/src/features/i18n/messages/tr.ts`, çeviri `.../en.ts`.
-  Yeni metin İKİSİNE birden eklenir — `en.ts`'te eksik anahtar **derlemeyi kırar**,
-  ama hiç anahtarlanmamış bir dizgeyi hiçbir şey yakalamaz. Dil listesi koda
-  gömülmez — `docs/I18N.md`.
+- **Metin hardcode edilmez ve YARIM ÇEVİRİ PUSH EDİLMEZ.** Kendi başlığı var:
+  aşağıdaki "Çeviri" bölümü.
+
+## Çeviri — yarım dil push edilmez
+
+Arayüz dilleri: **tr, en, cs**. Kaynak sözlük `messages/tr.ts`; çeviriler
+`en.ts` ve `cs.ts`. Yeni bir panel, ekran ya da tek bir düğme metni eklendiğinde
+**üçüne birden** eklenir. Bir dilde eksik anahtar bırakıp "sonra bakarız"
+denmez — kullanıcı o ekranda boşluk ya da yabancı dilde cümle görür.
+
+Neden bu kadar sert: `/en` altında Türkçe cümle WCAG 3.1.1 (Seviye A) ihlali —
+ekran okuyucu Türkçe metni İngilizce fonetikle okur. Bu yüzden eksik çeviride
+Türkçe'ye **düşülmez**, derleme kırılır (`docs/I18N.md` §5).
+
+Metin taşıyan **dört** yer var; biri unutulursa öbürleri yakalamaz:
+
+| Dosya | Ne taşır |
+|---|---|
+| `features/i18n/messages/<dil>.ts` | arayüzün tamamı |
+| `features/i18n/boundary.ts` | 404 / hata / yükleniyor ekranları |
+| `features/i18n/locale.ts` | dilin CLDR çoğul biçimleri |
+| `lib/route-map.json` | lokalize URL segmentleri |
+
+Çoğul biçim sayısı dile göre değişir: tr ve en iki (`one`, `other`), **cs dört**
+(`one`, `few`, `many`, `other`). Çekçe'de `many` yalnız ondalıklı sayıda seçilir
+("1,5 hodiny"), tam sayıda asla.
+
+**Kontrol tek komut** ve `pnpm check` onu zaten koşuyor:
+
+```bash
+pnpm --filter @expyra/web typecheck
+```
+
+Eksik anahtar, fazla anahtar ve kaybolan yer tutucu (`{n}`, `{sehir}`) üçü de
+derleme hatası — hangi anahtarda olduğunu yazarak. Yakalanamayan tek şey
+JSX'e doğrudan gömülmüş dizge; onu yazmamak yazarın sorumluluğu.
+
+Yeni bir arayüz dili açmak: `docs/I18N.md` §5 + Çekçe'yi ekleyen PR örnek.
+Dil kaydı (`docs/languages.json`) `HasData` ile migration'a gömülü, yani
+`uiAvailable` değişikliği **migration ister**.
+
+## Branch — her iş main'den başlar
+
+1. **Her zaman güncel `main`'den dallan.** `git switch main && git pull` sonra
+   yeni branch. Branch'ten branch açma.
+2. **Branch kısa yaşar.** Bir iş, bir PR, aynı gün döner. 41 commit biriktiren
+   bir branch'te CI hiç koşmamıştı ve içinde iki gerçek hata vardı — seed boş
+   veritabanında hiç çalışmıyordu, CI web build'i ortam değişkeni olmadan
+   koşuyordu. İkisi de PR açılana kadar görünmedi.
+3. **Merge edilen branch silinir** — local ve remote: `git branch -d <ad>` +
+   `git push origin --delete <ad>`. Duran branch, bir sonraki kişinin yanlış
+   yerden dallanması demek.
+4. `main`'e doğrudan push yok; PR üzerinden. Bu 1. maddeyle çelişmiyor: dallanma
+   noktası main, dönüş yolu PR.
 
 ## Paket sürümleri
 
