@@ -24,7 +24,7 @@ import { defaultUiLocale, isUiLocale, type UiLocale } from './locale'
  * **Bedeli açıkça yazılı:** bu tablo `[lang]` altındaki her sayfanın istemci
  * paketine giriyor ve TÜM arayüz dillerini taşıyor — sözlüğün "kullanıcının
  * dili diğerlerini indirmez" kuralının (docs/I18N.md §5) tek istisnası. Bugün
- * iki dil × on üç kısa dizge; taşınabilir. Arayüz dili sayısı büyüdüğünde
+ * üç dil × on üç kısa dizge; taşınabilir. Arayüz dili sayısı büyüdüğünde
  * doğru çözüm bu tabloyu şişirmek değil, `[lang]/layout.tsx`'ten aktif dilin
  * dizgelerini taşıyan dar bir provider geçirmek olur (o zaman `global-error`
  * yine kapsam dışı kalır — layout'un kendisi çökmüşken provider da yok).
@@ -126,6 +126,35 @@ export const boundaryMessages = {
       retry: 'Reload',
       home: 'Back to the home page',
       reference: 'Support code',
+    },
+  },
+
+  cs: {
+    loading: 'Načítám stránku',
+
+    notFound: {
+      code: 'Chyba 404 · stránka nenalezena',
+      title: 'Tato stránka neexistuje',
+      lede: 'Odkaz může být starý, nebo je v adrese překlep. To, co jsi hledal, tu pořád může být — zkus objevovat.',
+      explore: 'Objevuj zážitky',
+      home: 'Zpět na hlavní stránku',
+    },
+
+    error: {
+      title: 'Něco se pokazilo',
+      lede: 'Tuto stránku se nepodařilo načíst. Klidně to může být na naší straně — většinou stačí zkusit to znovu.',
+      retry: 'Zkusit znovu',
+      home: 'Zpět na hlavní stránku',
+      reference: 'Kód pro podporu',
+    },
+
+    globalError: {
+      documentTitle: 'Něco se pokazilo · Expyra',
+      title: 'Něco se pokazilo',
+      lede: 'Aplikace se nečekaně zastavila. Načtení stránky znovu to obvykle vyřeší.',
+      retry: 'Načíst znovu',
+      home: 'Zpět na hlavní stránku',
+      reference: 'Kód pro podporu',
     },
   },
 } as const satisfies Record<UiLocale, BoundaryMessages>

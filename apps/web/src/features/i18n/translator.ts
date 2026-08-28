@@ -47,6 +47,7 @@ import { isUiLocale, type UiLocale } from './locale'
 const dictionaries: Record<UiLocale, () => Promise<LoadedDictionary>> = {
   tr: () => import('./messages/tr').then((module) => module.tr),
   en: () => import('./messages/en').then((module) => module.en),
+  cs: () => import('./messages/cs').then((module) => module.cs),
 }
 
 /**
