@@ -439,6 +439,10 @@ export const de = {
   'host.experience.spoken.label': 'Sprachen, die du während des Erlebnisses sprichst',
   'host.experience.spoken.help':
     'Unabhängig von der Sprache des Angebotstextes: Wähle die Sprachen, in denen du es tatsächlich durchführst. Höchstens zehn.',
+  'host.experience.spoken.search.label': 'Sprache suchen',
+  'host.experience.spoken.search.placeholder': 'Deutsch, German, de…',
+  'host.experience.spoken.search.results': { one: '{n} Sprache in der Liste', other: '{n} Sprachen in der Liste' },
+  'host.experience.spoken.search.none': 'Keine passende Sprache. Angekreuzte Sprachen bleiben erhalten.',
   'host.experience.tags.label': 'Tags',
   'host.experience.tags.placeholder': 'Streetfood, Rundgang, kleine Gruppe',
   'host.experience.tags.help':

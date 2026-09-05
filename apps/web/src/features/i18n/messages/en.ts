@@ -453,6 +453,10 @@ export const en = {
   'host.experience.spoken.label': 'Languages you speak during the experience',
   'host.experience.spoken.help':
     'Independent of the language you wrote the listing in: tick the languages you actually run it in. Ten at most.',
+  'host.experience.spoken.search.label': 'Search languages',
+  'host.experience.spoken.search.placeholder': 'German, Deutsch, de…',
+  'host.experience.spoken.search.results': { one: '{n} language listed', other: '{n} languages listed' },
+  'host.experience.spoken.search.none': 'No matching language. Ticked languages are kept.',
   'host.experience.tags.label': 'Tags',
   'host.experience.tags.placeholder': 'street food, walking, small group',
   'host.experience.tags.help':

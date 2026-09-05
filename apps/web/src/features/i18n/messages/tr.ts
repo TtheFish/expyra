@@ -670,6 +670,11 @@ export const tr = {
    */
   'host.experience.spoken.help':
     'İlanı hangi dilde yazdığından bağımsız: turu hangi dillerde anlatıyorsan onları işaretle. En fazla on dil.',
+  'host.experience.spoken.search.label': 'Dil ara',
+  'host.experience.spoken.search.placeholder': 'Almanca, Deutsch, de…',
+  /** Süzgeç sonucu; ekran okuyucuya kaç dil kaldığını söylüyor. */
+  'host.experience.spoken.search.results': { one: '{n} dil listede', other: '{n} dil listede' },
+  'host.experience.spoken.search.none': 'Eşleşen dil yok. İşaretli diller korunuyor.',
   'host.experience.tags.label': 'Etiketler',
   'host.experience.tags.placeholder': 'sokak lezzetleri, yürüyüş, küçük grup',
   'host.experience.tags.help':

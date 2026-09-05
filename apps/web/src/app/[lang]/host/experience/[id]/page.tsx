@@ -44,7 +44,7 @@ import {
   WEEKDAYS,
   toMajorAmountInput,
 } from '@/features/host/experience-fields'
-import { ExperienceForm } from '@/features/host/experience-forms'
+import { ExperienceForm, SpokenLanguagePicker } from '@/features/host/experience-forms'
 import { MediaUploader } from '@/features/host/media-uploader'
 import {
   HostExperienceAccessError,
@@ -810,7 +810,14 @@ function CategoryField({
       <label className="auth-label" htmlFor="kategori">
         {t('host.experience.category.label')}
       </label>
+      {/*
+        `key` ŞART: React, `action` ile gönderilen formu eylem bitince sıfırlıyor ve
+        `<select>`'te sonradan değişen `defaultValue`'yu uygulamıyor (input'ta
+        uyguluyor). Anahtar olmadan sunucu yeni kategoriyi döndürse de kutu ilk
+        yüklenen değere geri dönüyordu — DB doğru, ekran yanlış.
+      */}
       <select
+        key={experience.categorySlug ?? ''}
         id="kategori"
         name={CATEGORY_FIELD}
         className="auth-input"
@@ -847,7 +854,7 @@ function CategoryField({
  * işaretlenmeden kaydetmek "hepsini kaldır" demek — bölüm işareti (`bolum=listeler`)
  * bu niyeti "bu formda bu alan yok"tan ayırıyor.
  */
-function SpokenLanguageField({
+async function SpokenLanguageField({
   lang,
   experience,
   t,
@@ -856,7 +863,7 @@ function SpokenLanguageField({
   experience: HostExperience
   t: Translate
 }) {
-  const selected = new Set(experience.spokenLanguages)
+  const results = await getPluralTemplates(lang, 'host.experience.spoken.search.results')
 
   // Açıklama `fieldset`'e bağlı, içindeki kutuya değil: grup adını `legend`
   // veriyor, `aria-describedby` de o gruba ait olmalı ki ekran okuyucu ilk onay
@@ -868,20 +875,20 @@ function SpokenLanguageField({
         {t('host.experience.spoken.help')}
       </p>
 
-      <div className="mt-2 grid max-h-64 gap-1 overflow-y-auto rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] p-3 sm:grid-cols-2">
-        {languageOptions(lang).map((option) => (
-          <label key={option.code} className="flex items-center gap-2 py-1 text-sm">
-            <input
-              type="checkbox"
-              name={SPOKEN_LANGUAGE_FIELD}
-              value={option.code}
-              defaultChecked={selected.has(option.code)}
-              className="h-4 w-4"
-            />
-            <span className="min-w-0 truncate">{option.label}</span>
-          </label>
-        ))}
-      </div>
+      {/* Liste ve süzgeç istemcide (experience-forms.tsx); seçenekler ve metinler
+          SUNUCUDA çözülüyor — sözlük `server-only`. */}
+      <SpokenLanguagePicker
+        lang={lang}
+        name={SPOKEN_LANGUAGE_FIELD}
+        options={languageOptions(lang)}
+        selected={experience.spokenLanguages}
+        labels={{
+          search: t('host.experience.spoken.search.label'),
+          placeholder: t('host.experience.spoken.search.placeholder'),
+          none: t('host.experience.spoken.search.none'),
+          results,
+        }}
+      />
     </fieldset>
   )
 }
@@ -1289,6 +1296,8 @@ function PricingFields({
           gönderiliyor.
         */}
         <select
+          /* `key`: kategori seçicisiyle aynı sebep (form sıfırlama + select). */
+          key={pricing?.currency ?? ''}
           id="para-birimi"
           name={CURRENCY_FIELD}
           className="auth-input"
