@@ -244,6 +244,7 @@ function apiBaseUrl(): string {
 async function problemOf(response: Response): Promise<ApiError> {
   let title = ''
   let errors: ProblemErrors | null = null
+  let code: string | null = null
 
   try {
     const payload: unknown = await response.json()
@@ -256,13 +257,22 @@ async function problemOf(response: Response): Promise<ApiError> {
       if ('errors' in payload) {
         errors = validationErrorsOf((payload as { errors: unknown }).errors)
       }
+
+      // ProblemDetails uzantısı (`AppException.Code`). Bu satır YOKKEN 409'un
+      // sebebi (`media-too-small`) hiç okunmuyor ve host 335×597'lik bir görsele
+      // "en az 800×600" yerine genel "kabul edilmedi" cümlesini görüyordu —
+      // `mediaFailure` kod eşlemesi hiç çalışmamıştı.
+      if ('code' in payload) {
+        const value = (payload as { code: unknown }).code
+        if (typeof value === 'string' && value.length > 0) code = value
+      }
     }
   } catch {
     // Gövde ProblemDetails değil (ör. ters proxy'nin HTML hata sayfası). Hata
     // yutulmuyor: zaten `ApiError` üretiyoruz, yalnız mesaj durum koduna düşüyor.
   }
 
-  return new ApiError(response.status, title || `API ${response.status}`, null, errors)
+  return new ApiError(response.status, title || `API ${response.status}`, null, errors, code)
 }
 
 function validationErrorsOf(value: unknown): ProblemErrors | null {

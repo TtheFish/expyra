@@ -1,6 +1,8 @@
 'use client'
 
-import { useActionState, useId, type ReactNode } from 'react'
+import { useActionState, useId, useState, type ReactNode } from 'react'
+import type { PluralTemplates } from '@/features/i18n/dictionary'
+import { formatPlural } from '@/features/i18n/format'
 import { GlassButton } from '@/components/ui/glass-button'
 import { UI_LANGUAGE_FIELD } from '@/features/i18n/locale'
 import type { ExperienceFormState } from './experience-actions'
@@ -136,5 +138,105 @@ export function ExperienceForm({
         </p>
       </div>
     </form>
+  )
+}
+
+export type LanguageOption = { code: string; label: string }
+
+/**
+ * Konuşulan dil listesi + süzgeç. Liste 70'in üstünde satır ve kaydırarak
+ * "Almanca"yı bulmak host'un işi değil.
+ *
+ * **Süzgeç yalnız GİZLİYOR, DOM'dan çıkarmıyor.** Onay kutuları formun kendisi;
+ * eşleşmeyen satır `hidden` ile saklanıyor ki işaretli bir dil süzgeç dışında
+ * kalsa bile gönderimde yerinde dursun. Kutuyu DOM'dan çıkarmak, "İngilizce"yi
+ * işaretleyip "alm" yazan host'un İngilizce'yi sessizce kaybetmesi demekti.
+ *
+ * Eşleştirme `toLocaleLowerCase(lang)`: Türkçe arayüzde "I" → "ı", aksi hâlde
+ * "İngilizce" için "ing" yazan bulamazdı. Etiketle birlikte koda da bakılıyor
+ * (`de`, `cs`) — host çoğu zaman kısa kodu biliyor.
+ *
+ * JS kapalıyken kutu görünmüyor (state yok) ve tam liste duruyor: süzgeç bir
+ * kolaylık, form onsuz da çalışıyor.
+ */
+export function SpokenLanguagePicker({
+  lang,
+  name,
+  options,
+  selected,
+  labels,
+}: {
+  lang: string
+  name: string
+  options: readonly LanguageOption[]
+  selected: readonly string[]
+  labels: {
+    search: string
+    placeholder: string
+    none: string
+    results: PluralTemplates
+  }
+}) {
+  const [query, setQuery] = useState('')
+  const id = useId()
+  const listId = `${id}-liste`
+  const selectedSet = new Set(selected)
+
+  const needle = query.trim().toLocaleLowerCase(lang)
+  const matches = (option: LanguageOption) =>
+    needle === '' ||
+    option.label.toLocaleLowerCase(lang).includes(needle) ||
+    option.code.toLocaleLowerCase(lang).includes(needle)
+
+  const visibleCount = options.filter(matches).length
+
+  return (
+    <>
+      <label className="auth-label mt-3" htmlFor={`${id}-ara`}>
+        {labels.search}
+      </label>
+      <input
+        id={`${id}-ara`}
+        /* `type="text"`, `type="search"` DEĞİL: search kutusunda Escape'i bazı
+           tarayıcılar kendine alıyor (city-picker.tsx ile aynı not). */
+        type="text"
+        className="auth-input"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder={labels.placeholder}
+        autoComplete="off"
+        aria-controls={listId}
+      />
+
+      {/* Sayım kibar canlı bölge: her tuş vuruşunda konuşmayı kesmemeli. */}
+      <p aria-live="polite" className="sr-only">
+        {formatPlural(lang, labels.results, visibleCount)}
+      </p>
+
+      <div
+        id={listId}
+        className="mt-2 grid max-h-64 gap-1 overflow-y-auto rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] p-3 sm:grid-cols-2"
+      >
+        {options.map((option) => (
+          <label
+            key={option.code}
+            hidden={!matches(option)}
+            className="flex items-center gap-2 py-1 text-sm"
+          >
+            <input
+              type="checkbox"
+              name={name}
+              value={option.code}
+              defaultChecked={selectedSet.has(option.code)}
+              className="h-4 w-4"
+            />
+            <span className="min-w-0 truncate">{option.label}</span>
+          </label>
+        ))}
+        {visibleCount === 0 ? (
+          <p className="auth-help sm:col-span-2">{labels.none}</p>
+        ) : null}
+      </div>
+    </>
   )
 }

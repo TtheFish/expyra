@@ -520,6 +520,15 @@ export const cs = {
   'host.experience.spoken.label': 'Jazyky, kterými během zážitku mluvíš',
   'host.experience.spoken.help':
     'Nezávisí na jazyce, ve kterém jsi napsal nabídku: zaškrtni jazyky, ve kterých ho opravdu vedeš. Nejvýš deset.',
+  'host.experience.spoken.search.label': 'Hledat jazyk',
+  'host.experience.spoken.search.placeholder': 'němčina, Deutsch, de…',
+  'host.experience.spoken.search.results': {
+    one: 'V seznamu je {n} jazyk',
+    few: 'V seznamu jsou {n} jazyky',
+    many: 'V seznamu je {n} jazyka',
+    other: 'V seznamu je {n} jazyků',
+  },
+  'host.experience.spoken.search.none': 'Žádný jazyk neodpovídá. Zaškrtnuté jazyky zůstávají.',
   'host.experience.tags.label': 'Štítky',
   'host.experience.tags.placeholder': 'street food, procházka, malá skupina',
   'host.experience.tags.help':
