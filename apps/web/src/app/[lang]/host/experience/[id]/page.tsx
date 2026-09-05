@@ -188,6 +188,9 @@ export default async function EditExperiencePage({
   const activeTranslation =
     experience.translations.find((item) => item.language === activeLanguage) ?? null
 
+  // Şablon olarak iniyor (fonksiyon değil): istemci bileşeni `{n}`'i kendi dolduruyor.
+  const stepTitleTemplate = await getTemplate(lang, 'host.experience.itinerary.stepTitle.label')
+
   const heading = titleOf(experience) ?? t('host.experience.untitled')
 
   return (
@@ -363,12 +366,13 @@ export default async function EditExperiencePage({
             >
               <ItineraryEditor
                 lang={activeLanguage}
+                uiLang={lang}
                 initial={experience.itinerary
                   .filter((step) => step.language === activeLanguage)
                   .map((step) => ({ title: step.title, body: step.body ?? '' }))}
                 names={{ title: STEP_TITLE_FIELD, body: STEP_BODY_FIELD }}
                 labels={{
-                  stepTitle: (n) => t('host.experience.itinerary.stepTitle.label', { n }),
+                  stepTitle: stepTitleTemplate,
                   titlePlaceholder: t('host.experience.itinerary.stepTitle.placeholder'),
                   bodyPlaceholder: t('host.experience.itinerary.stepBody.placeholder'),
                   add: t('host.experience.itinerary.add'),

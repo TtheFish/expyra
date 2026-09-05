@@ -2,7 +2,7 @@
 
 import { useActionState, useId, useState, type ReactNode } from 'react'
 import type { PluralTemplates } from '@/features/i18n/dictionary'
-import { formatPlural } from '@/features/i18n/format'
+import { formatPlural, interpolate } from '@/features/i18n/format'
 import { GlassButton } from '@/components/ui/glass-button'
 import { UI_LANGUAGE_FIELD } from '@/features/i18n/locale'
 import type { ExperienceFormState } from './experience-actions'
@@ -258,15 +258,20 @@ export type ItineraryRow = { title: string; body: string }
 export function ItineraryEditor({
   initial,
   lang,
+  uiLang,
   names,
   labels,
   maxSteps = 20,
 }: {
   initial: readonly ItineraryRow[]
+  /** İçerik dili: input'ların `lang` özniteliği. */
   lang: string
+  /** Arayüz dili: etiket şablonunun sayı biçimi. */
+  uiLang: string
   names: { title: string; body: string }
   labels: {
-    stepTitle: (n: number) => string
+    /** "Adım {n}" ŞABLONU — fonksiyon değil; sunucu bileşeni istemciye fonksiyon geçemez. */
+    stepTitle: string
     titlePlaceholder: string
     bodyPlaceholder: string
     add: string
@@ -298,7 +303,7 @@ export function ItineraryEditor({
           <li key={id} className="rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] p-3">
             <div className="flex items-center justify-between gap-3">
               <label className="auth-label" htmlFor={`adim-${id}-baslik`}>
-                {labels.stepTitle(index + 1)}
+                {interpolate(uiLang, labels.stepTitle, { n: index + 1 })}
               </label>
               {rows.length > 1 ? (
                 <button
@@ -328,7 +333,7 @@ export function ItineraryEditor({
               lang={lang}
               defaultValue={row.body}
               placeholder={labels.bodyPlaceholder}
-              aria-label={labels.stepTitle(index + 1)}
+              aria-label={interpolate(uiLang, labels.stepTitle, { n: index + 1 })}
             />
           </li>
         ))}
