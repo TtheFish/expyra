@@ -149,16 +149,8 @@ export function LanguagePicker({
           id={panelId}
           role="dialog"
           aria-label={labels.dialog}
-          /* Panel opak — arkasında video akarken 49 satırlık liste okunmaz. */
-          style={{ backgroundColor: 'color-mix(in oklch, var(--bg) 97%, transparent)' }}
-          /*
-            Telefonda viewport'a sabitleniyor. `absolute right-0` + sabit genişlik,
-            tetikleyici sağda olduğu için paneli ekranın soluna taşırıyordu:
-            375 px'te sol kenar -140 px, yani dil adlarının tamamı ekran dışında
-            kalıp yalnız iki harflik kodlar görünüyordu. `end-0` (RTL için `right`
-            değil) ve `sm:` üstü eski davranış.
-          */
-          className="glass glass-edge fixed inset-x-4 top-[4.25rem] z-30 flex max-h-[26rem] flex-col rounded-[var(--radius-glass)] p-3 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[22rem]"
+          /* Panel opak kart — koyu temada cam+beyaz örtü patlıyordu. */
+          className="surface-lifted fixed inset-x-4 top-[4.25rem] z-30 flex max-h-[26rem] flex-col rounded-[var(--radius-glass)] p-3 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[22rem]"
         >
           <label className="sr-only" htmlFor={`${panelId}-ara`}>
             {labels.searchLabel}
@@ -171,7 +163,7 @@ export function LanguagePicker({
             onChange={(event) => setQuery(event.target.value)}
             placeholder={labels.searchPlaceholder}
             autoComplete="off"
-            className="mb-2 w-full rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] bg-transparent px-3 py-2 text-sm outline-none focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+            className="mb-2 w-full rounded-[var(--radius-glass-sm)] border border-[var(--line)] bg-[var(--surface-sunken)] px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-muted focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
           />
 
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -259,7 +251,7 @@ function LanguageRow({
         type="button"
         onClick={() => onSelect(language)}
         aria-current={selected ? 'true' : undefined}
-        className="flex w-full items-center justify-between gap-3 rounded-[var(--radius-glass-sm)] px-2 py-2 text-left text-sm transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-[-2px]"
+        className="flex w-full items-center justify-between gap-3 rounded-[var(--radius-glass-sm)] px-2 py-2 text-left text-sm transition-colors duration-150 hover:bg-[color-mix(in_oklch,var(--fg)_8%,transparent)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-[-2px]"
       >
         <span className="min-w-0">
           {/* Dil kendi dilinde yazılır; lang özniteliği olmadan ekran okuyucu

@@ -19,6 +19,10 @@ namespace Expyra.Infrastructure.Persistence.Seed;
 /// ilan slug'ı varsa atlanıyor — ikinci koşu 0 satır. Host'un demo ilanda yaptığı
 /// düzenlemeler bu yüzden korunuyor; sıfırlamak için satırı silip yeniden koş.</para>
 ///
+/// <para><b>İstisna — gradyan placeholder görseller:</b> eski seed'in ürettiği
+/// PNG gradyanlar, gömülü JPEG'lerle değiştirilir. Host kendi fotoğrafını
+/// yüklediyse (<c>image/jpeg</c> / <c>image/webp</c>) dokunulmaz.</para>
+///
 /// <para><b>Görseller depoya imzalı yükleme yoluyla yazılıyor</b> — yani
 /// <c>FileSystemObjectStorage</c>'ın kendi kapısından, doğrudan diske değil.
 /// Depo bir gün S3 olursa bu seeder de aynı arayüzle çalışır (yalnız
@@ -77,6 +81,11 @@ public static class DemoDataSeeder
             if (created)
             {
                 result.Experiences++;
+            }
+            else if (await RefreshPlaceholderMediaAsync(dbContext, storage, sink, spec, cancellationToken)
+                .ConfigureAwait(false))
+            {
+                result.MediaRefreshed++;
             }
         }
 
@@ -261,11 +270,10 @@ public static class DemoDataSeeder
             });
         }
 
-        // Görseller: kapak + bir tane daha. Renkler slug'dan türetiliyor ki her
-        // ilan ayırt edilsin.
-        for (var index = 0; index < 2; index++)
+        // Görseller: kapak + bir galeri karesi (gömülü JPEG, tema uyumlu).
+        for (var index = 0; index < spec.Photos.Count; index++)
         {
-            await AddImageAsync(dbContext, storage, sink, experience.Id, spec.Palette, index, cancellationToken)
+            await AddImageAsync(dbContext, storage, sink, experience.Id, spec.Photos[index], index, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -320,32 +328,93 @@ public static class DemoDataSeeder
         return true;
     }
 
+    /// <summary>
+    /// Eski seed'in PNG gradyanlarını gömülü JPEG'lerle değiştirir. Host gerçek
+    /// fotoğraf yüklediyse (jpeg/webp) dokunmaz — demo metin düzenlemeleri gibi
+    /// host çalışması korunur.
+    /// </summary>
+    private static async Task<bool> RefreshPlaceholderMediaAsync(
+        AppDbContext dbContext,
+        IObjectStorage storage,
+        ILocalUploadSink sink,
+        DemoExperience spec,
+        CancellationToken cancellationToken)
+    {
+        var experience = await dbContext.Experiences
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Slug == spec.Slug, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (experience is null)
+        {
+            return false;
+        }
+
+        var media = await dbContext.ExperienceMedia
+            .Where(x => x.ExperienceId == experience.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (media.Count == 0)
+        {
+            for (var index = 0; index < spec.Photos.Count; index++)
+            {
+                await AddImageAsync(dbContext, storage, sink, experience.Id, spec.Photos[index], index, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            return true;
+        }
+
+        // Hepsi eski gradyan PNG ise yükselt; karışık / gerçek foto varsa bırak.
+        if (media.Any(x => !string.Equals(x.ContentType, "image/png", StringComparison.Ordinal)))
+        {
+            return false;
+        }
+
+        foreach (var item in media)
+        {
+            await storage.DeleteAsync(item.StorageKey, cancellationToken).ConfigureAwait(false);
+            dbContext.ExperienceMedia.Remove(item);
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        for (var index = 0; index < spec.Photos.Count; index++)
+        {
+            await AddImageAsync(dbContext, storage, sink, experience.Id, spec.Photos[index], index, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        return true;
+    }
+
     private static async Task AddImageAsync(
         AppDbContext dbContext,
         IObjectStorage storage,
         ILocalUploadSink sink,
         Guid experienceId,
-        ((byte, byte, byte) Top, (byte, byte, byte) Bottom) palette,
+        string photoFileName,
         int index,
         CancellationToken cancellationToken)
     {
-        var bytes = index == 0
-            ? DemoImage.Png(1200, 900, palette.Top, palette.Bottom)
-            : DemoImage.Png(1200, 900, palette.Bottom, palette.Top);
+        var (bytes, info) = DemoPhoto.Load(photoFileName);
+        var extension = MediaRules.ExtensionOf(info.Format);
+        var contentType = info.ContentType;
 
         var mediaId = Guid.CreateVersion7();
-        var key = MediaRules.ExperienceKey(experienceId, mediaId, MediaRules.ExtensionOfContentType("image/png"));
+        var key = MediaRules.ExperienceKey(experienceId, mediaId, extension);
 
         var upload = await storage
             .CreateUploadAsync(
-                new PresignedUploadRequest(key, "image/png", bytes.Length, TimeSpan.FromMinutes(5)),
+                new PresignedUploadRequest(key, contentType, bytes.Length, TimeSpan.FromMinutes(5)),
                 cancellationToken)
             .ConfigureAwait(false);
 
         var token = System.Web.HttpUtility.ParseQueryString(upload.Url.Query)["token"];
 
         using var body = new MemoryStream(bytes);
-        var accepted = await sink.AcceptAsync(token, "image/png", body, cancellationToken).ConfigureAwait(false);
+        var accepted = await sink.AcceptAsync(token, contentType, body, cancellationToken).ConfigureAwait(false);
 
         if (accepted != LocalUploadResult.Accepted)
         {
@@ -358,10 +427,10 @@ public static class DemoDataSeeder
             Id = mediaId,
             ExperienceId = experienceId,
             StorageKey = key,
-            ContentType = "image/png",
+            ContentType = contentType,
             ByteSize = bytes.Length,
-            Width = 1200,
-            Height = 900,
+            Width = info.Width,
+            Height = info.Height,
             SortOrder = index,
             IsCover = index == 0,
             Status = MediaStatus.Active,
@@ -413,7 +482,7 @@ public static class DemoDataSeeder
             AdultMinor: 150_000,
             SlotHours: [10, 15],
             PublishedDaysAgo: 12,
-            Palette: ((214, 96, 54), (250, 200, 120)));
+            Photos: ["kadikoy-1.jpg", "kadikoy-2.jpg"]);
 
         yield return new DemoExperience(
             HostId: ayse,
@@ -454,7 +523,7 @@ public static class DemoDataSeeder
             AdultMinor: 120_000,
             SlotHours: [8],
             PublishedDaysAgo: 5,
-            Palette: ((60, 110, 180), (240, 180, 90)));
+            Photos: ["balat-1.jpg", "balat-2.jpg"]);
 
         yield return new DemoExperience(
             HostId: ayse,
@@ -497,7 +566,7 @@ public static class DemoDataSeeder
             AdultMinor: 3_500,
             SlotHours: [18],
             PublishedDaysAgo: 20,
-            Palette: ((20, 40, 90), (250, 140, 80)));
+            Photos: ["bogaz-1.jpg", "bogaz-2.jpg"]);
 
         yield return new DemoExperience(
             HostId: tuna,
@@ -538,7 +607,7 @@ public static class DemoDataSeeder
             AdultMinor: 90_000,
             SlotHours: [9],
             PublishedDaysAgo: 3,
-            Palette: ((40, 140, 120), (240, 220, 140)));
+            Photos: ["kemeralti-1.jpg", "kemeralti-2.jpg"]);
 
         yield return new DemoExperience(
             HostId: tuna,
@@ -581,7 +650,7 @@ public static class DemoDataSeeder
             AdultMinor: 4_500,
             SlotHours: [5],
             PublishedDaysAgo: 8,
-            Palette: ((120, 60, 40), (250, 190, 130)));
+            Photos: ["goreme-1.jpg", "goreme-2.jpg"]);
     }
 
     private sealed record DemoExperience(
@@ -613,12 +682,15 @@ public static class DemoDataSeeder
         long AdultMinor,
         IReadOnlyList<int> SlotHours,
         int PublishedDaysAgo,
-        ((byte, byte, byte) Top, (byte, byte, byte) Bottom) Palette);
+        IReadOnlyList<string> Photos);
 }
 
 public sealed class DemoSeedResult
 {
     public int Experiences { get; set; }
+
+    /// <summary>Eski PNG gradyanı gömülü JPEG ile değiştirilen ilan sayısı.</summary>
+    public int MediaRefreshed { get; set; }
 
     public int ChangedRows { get; set; }
 }

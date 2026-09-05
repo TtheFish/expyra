@@ -524,7 +524,7 @@ export function CityPicker({
             inputRef.current?.focus()
           }}
           aria-label={labels.clear}
-          className="absolute end-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-sm text-fg-muted transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.35)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
+          className="absolute end-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-sm text-fg-muted transition-colors duration-150 hover:bg-[color-mix(in_oklch,var(--fg)_8%,transparent)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)]"
         >
           <span aria-hidden="true">×</span>
         </button>
@@ -544,16 +544,9 @@ export function CityPicker({
           id={listboxId}
           role="listbox"
           aria-label={labels.listLabel}
-          /* Panel opak: arkasında video akarken şehir listesi okunmaz — kontrast
-             AA'nın altına düşüyor (CLAUDE.md: örtü artar, metin rengi değişmez). */
-          style={{ backgroundColor: 'color-mix(in oklch, var(--bg) 97%, transparent)' }}
-          /*
-            Telefonda viewport'a sabit (`inset-x-4`), masaüstünde alanın ALTINDA ve
-            sola hizalı — dil seçicinin `end-0`'ı burada yanlış olurdu: bu alan
-            çubuğun solunda, panel sağa hizalanırsa alanla ilgisiz bir yerde açılır.
-            `start-0` RTL'de kendiliğinden sağa dönüyor.
-          */
-          className="glass glass-edge fixed inset-x-4 top-[4.25rem] z-30 flex max-h-[22rem] flex-col overflow-y-auto rounded-[var(--radius-glass)] p-2 text-start sm:absolute sm:inset-x-auto sm:start-0 sm:top-full sm:mt-2 sm:w-[24rem]"
+          /* Panel opak kart: yeni dilde cam yalnız medya üstünde; sticky
+             açılırlar `--surface` kullanır (koyu temada da okunur). */
+          className="surface-lifted fixed inset-x-4 top-[4.25rem] z-30 flex max-h-[22rem] flex-col overflow-y-auto rounded-[var(--radius-glass)] p-2 text-start sm:absolute sm:inset-x-auto sm:start-0 sm:top-full sm:mt-2 sm:w-[24rem]"
         >
           {resetOption ? (
             <Row
@@ -646,8 +639,8 @@ function Row({
 }) {
   // `cursor-pointer` + `select-none`: satır tıklanabilir seçenek; metin imleci
   // (I-beam) "yazı seçilir" hissi verip tıklanamayacak gibi duruyordu.
-  const className = `flex w-full cursor-pointer select-none items-center justify-between gap-3 rounded-[var(--radius-glass-sm)] px-2 py-2 text-start text-sm transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] ${
-    active ? 'bg-[rgb(var(--glass-tint)_/_0.35)]' : ''
+  const className = `flex w-full cursor-pointer select-none items-center justify-between gap-3 rounded-[var(--radius-glass-sm)] px-2 py-2 text-start text-sm transition-colors duration-150 hover:bg-[color-mix(in_oklch,var(--fg)_8%,transparent)] ${
+    active ? 'bg-[color-mix(in_oklch,var(--fg)_12%,transparent)]' : ''
   }`
 
   // `onMouseDown` engelleniyor: tıklama input'un odağını almasın. Odak kaybı

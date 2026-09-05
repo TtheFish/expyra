@@ -34,6 +34,13 @@
     -->
     <EmbeddedResource Include="..\..\..\..\docs\payment-constraints.json"
                       LogicalName="Expyra.Infrastructure.Seed.payment-constraints.json" />
+    <!--
+      Demo ilan kapak/galeri fotoğrafları (Wikimedia Commons — SOURCES.md).
+      Eskiden DemoImage gradyan PNG üretiyordu; gerçek fotoğraf olmadan keşfet
+      ve detay "boş" görünüyordu. Ağdan indirme yok: seed offline ve tekrarlanabilir.
+    -->
+    <EmbeddedResource Include="Persistence\Seed\DemoPhotos\*.jpg"
+                      LogicalName="Expyra.Infrastructure.Seed.DemoPhotos.%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -65,15 +65,7 @@ export async function SiteHeader({ lang }: { lang: string }) {
     <HeaderShell>
         <BrandLogo href={path(lang, 'home')} />
 
-        <HeaderSearch
-          lang={lang}
-          labels={{
-            where: t('search.destination.label'),
-            when: t('search.date.label'),
-            who: t('search.guests.label'),
-            submit: t('search.submit'),
-          }}
-        />
+        <HeaderSearch lang={lang} />
 
         <div className="flex items-center justify-self-end gap-1 whitespace-nowrap">
           <nav className="hidden items-center lg:flex" aria-label={t('nav.primaryLabel')}>

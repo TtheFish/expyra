@@ -140,8 +140,7 @@ export function DateField({ lang, labels, defaultValue = '' }: DateFieldProps) {
           id={panelId}
           role="dialog"
           aria-label={labels.dialog}
-          style={{ backgroundColor: 'color-mix(in oklch, var(--bg) 97%, transparent)' }}
-          className="glass glass-edge fixed inset-x-4 top-[4.25rem] z-30 rounded-[var(--radius-glass)] p-3 sm:absolute sm:inset-x-auto sm:start-0 sm:top-full sm:mt-2 sm:w-[22rem]"
+          className="surface-lifted fixed inset-x-4 top-[4.25rem] z-30 rounded-[var(--radius-glass)] p-3 sm:absolute sm:inset-x-auto sm:start-0 sm:top-full sm:mt-2 sm:w-[22rem]"
         >
           <div className="date-wheel-columns">
             {columns.map((col) => {
@@ -193,7 +192,7 @@ export function DateField({ lang, labels, defaultValue = '' }: DateFieldProps) {
               <button
                 type="button"
                 onClick={clear}
-                className="flex-1 cursor-pointer rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[rgb(var(--glass-tint)_/_0.35)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
+                className="flex-1 cursor-pointer rounded-[var(--radius-glass-sm)] border border-[var(--line)] px-3 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[color-mix(in_oklch,var(--fg)_8%,transparent)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
               >
                 {labels.clear}
               </button>

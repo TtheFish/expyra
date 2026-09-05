@@ -131,10 +131,12 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
           )}
         </section>
 
-        {/* Arz tarafı çağrısı (VISION §8). Video ses YOK ve döngüde: dekor. */}
-        <section className="mt-16 grid items-center gap-8 rounded-[var(--radius-glass-xl)] bg-[oklch(0.97_0.02_25)] p-8 sm:p-12 lg:grid-cols-[1.2fr_1fr]">
+        {/* Arz tarafı çağrısı (VISION §8). Video ses YOK ve döngüde: dekor.
+            Zemin `--surface`: sabit açık mercan tint koyu temada kartı patlatıp
+            başlığı silikleştiriyordu. */}
+        <section className="mt-16 grid items-center gap-8 rounded-[var(--radius-glass-xl)] border border-[var(--line)] bg-[color-mix(in_oklch,var(--surface)_90%,var(--color-brand-500)_10%)] p-8 shadow-[var(--shadow-card)] sm:p-12 lg:grid-cols-[1.2fr_1fr]">
           <div>
-            <h2 className="text-3xl leading-tight font-extrabold tracking-[-0.03em]">
+            <h2 className="text-3xl leading-tight font-extrabold tracking-[-0.03em] text-fg">
               {t('host.invite.title')}
             </h2>
             <p className="mt-4 max-w-[34rem] text-[1.0625rem] leading-relaxed text-fg-muted">
@@ -164,7 +166,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
               aria-hidden="true"
               className="size-full object-cover"
             />
-            <span className="glass absolute bottom-4 left-4 rounded-full px-3 py-1.5 text-xs font-bold">
+            <span className="glass absolute bottom-4 left-4 rounded-full px-3 py-1.5 text-xs font-bold text-fg">
               {t('wallpaper.istanbul.place')} · {t('wallpaper.istanbul.label')}
             </span>
           </div>

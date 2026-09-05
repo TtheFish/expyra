@@ -125,16 +125,8 @@ export function GuestPicker({
           id={panelId}
           role="dialog"
           aria-label={labels.dialog}
-          /*
-            Panelin arkası OPAK. Cam malzeme yüzeyler için doğru ama okunacak bir
-            listenin arkasında video akarken "13 yaş ve üzeri" satırı arkadaki
-            butonun metniyle karışıyor — kontrast AA'nın altına düşüyor.
-            CLAUDE.md'nin kuralı bu: kontrast düşerse örtü artırılır, metin rengi değişmez.
-          */
-          style={{ backgroundColor: 'color-mix(in oklch, var(--bg) 97%, transparent)' }}
-          /* `end-0` (RTL), telefonda viewport'a sabit. `shadow-lg` YOK: .glass'ın
-             üç katmanlı gölgesini eziyor ve panel zeminden ayrılamıyor. */
-          className="glass glass-edge fixed inset-x-4 top-[4.25rem] z-30 rounded-[var(--radius-glass)] p-4 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[20rem]"
+          /* Panel opak kart — koyu temada cam+beyaz örtü patlıyordu. */
+          className="surface-lifted fixed inset-x-4 top-[4.25rem] z-30 rounded-[var(--radius-glass)] p-4 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[20rem]"
         >
           <Counter
             lang={lang}
@@ -148,7 +140,7 @@ export function GuestPicker({
             onChange={setAdults}
           />
 
-          <div className="my-3 h-px bg-[var(--glass-border)]" />
+          <div className="my-3 h-px bg-[var(--line)]" />
 
           <Counter
             lang={lang}
@@ -168,7 +160,7 @@ export function GuestPicker({
               setOpen(false)
               triggerRef.current?.focus()
             }}
-            className="mt-4 w-full rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] px-4 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[rgb(var(--glass-tint)_/_0.35)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
+            className="mt-4 w-full rounded-[var(--radius-glass-sm)] border border-[var(--line)] px-4 py-2 text-sm font-medium transition-colors duration-200 hover:bg-[color-mix(in_oklch,var(--fg)_8%,transparent)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
           >
             {labels.done}
           </button>
@@ -263,7 +255,7 @@ function StepButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--glass-border)] text-lg leading-none transition-all duration-200 hover:border-brand-400 hover:text-brand-400 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-[var(--glass-border)] disabled:hover:text-inherit focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
+      className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] text-lg leading-none transition-all duration-200 hover:border-brand-400 hover:text-brand-400 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-[var(--line)] disabled:hover:text-inherit focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-2"
     >
       {children}
     </button>

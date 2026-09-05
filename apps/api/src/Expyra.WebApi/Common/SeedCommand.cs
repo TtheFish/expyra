@@ -140,9 +140,14 @@ internal static class SeedCommand
             .ConfigureAwait(false);
 
         app.Logger.LogInformation(
-            "Demo veri seed edildi — {Experiences} yeni ilan. Hesaplar: {Ayse}, {Tuna}, {Guest} " +
-            "(giriş kodu ekranda görünür, docs/DEMO.md). Değişen satır: {Changed}.",
-            result.Experiences, DemoDataSeeder.HostAyse, DemoDataSeeder.HostTuna, DemoDataSeeder.Guest, result.ChangedRows);
+            "Demo veri seed edildi — {Experiences} yeni ilan, {MediaRefreshed} görsel yenilendi. " +
+            "Hesaplar: {Ayse}, {Tuna}, {Guest} (giriş kodu ekranda görünür, docs/DEMO.md). Değişen satır: {Changed}.",
+            result.Experiences,
+            result.MediaRefreshed,
+            DemoDataSeeder.HostAyse,
+            DemoDataSeeder.HostTuna,
+            DemoDataSeeder.Guest,
+            result.ChangedRows);
 
         return 0;
     }

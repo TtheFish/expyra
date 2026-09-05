@@ -115,7 +115,7 @@ export function AccountMenu({
         {avatarUrl === null ? (
           <span
             aria-hidden="true"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--glass-tint)_/_0.55)] text-xs font-semibold"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_oklch,var(--fg)_12%,transparent)] text-xs font-semibold"
           >
             {initial}
           </span>
@@ -143,13 +143,8 @@ export function AccountMenu({
           id={panelId}
           role="dialog"
           aria-label={labels.title}
-          /* Panel OPAK: arkasında video akarken satırlar okunmaz, kontrast AA
-             altına düşer. Kural gereği örtü artırılıyor, metin rengi değil. */
-          style={{ backgroundColor: 'color-mix(in oklch, var(--bg) 97%, transparent)' }}
-          /* `end-0` (RTL için `right` değil), telefonda viewport'a sabit:
-             tetikleyici sağ kenarda olduğu için `absolute` panel 375 px'te
-             ekranın soluna taşıyor. */
-          className="glass glass-edge fixed inset-x-4 top-[4.25rem] z-30 rounded-[var(--radius-glass)] p-2 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[17rem]"
+          /* Panel opak kart — koyu temada cam+beyaz örtü patlıyordu. */
+          className="surface-lifted fixed inset-x-4 top-[4.25rem] z-30 rounded-[var(--radius-glass)] p-2 sm:absolute sm:inset-x-auto sm:end-0 sm:top-full sm:mt-2 sm:w-[17rem]"
         >
           {labels.signedInAs ? (
             <p className="px-3 pb-2 pt-2 text-xs break-words text-fg-muted">{labels.signedInAs}</p>
@@ -158,17 +153,17 @@ export function AccountMenu({
           <a
             ref={firstItemRef}
             href={accountHref}
-            className="flex min-h-12 w-full items-center rounded-[var(--radius-glass-sm)] px-3 text-sm font-medium transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-[-2px]"
+            className="flex min-h-12 w-full items-center rounded-[var(--radius-glass-sm)] px-3 text-sm font-medium transition-colors duration-150 hover:bg-[color-mix(in_oklch,var(--fg)_8%,transparent)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-[-2px]"
           >
             {labels.account}
           </a>
 
-          <div className="my-1 h-px bg-[var(--glass-border)]" />
+          <div className="my-1 h-px bg-[var(--line)]" />
 
           <form action={signOutPath} method="post">
             <button
               type="submit"
-              className="flex min-h-12 w-full items-center rounded-[var(--radius-glass-sm)] px-3 text-left text-sm font-medium transition-colors duration-150 hover:bg-[rgb(var(--glass-tint)_/_0.22)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-[-2px]"
+              className="flex min-h-12 w-full items-center rounded-[var(--radius-glass-sm)] px-3 text-left text-sm font-medium transition-colors duration-150 hover:bg-[color-mix(in_oklch,var(--fg)_8%,transparent)] focus-visible:outline-2 focus-visible:outline-[var(--focus-ring)] focus-visible:outline-offset-[-2px]"
             >
               {labels.signOut}
             </button>

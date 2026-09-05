@@ -86,8 +86,9 @@ export function BrandLogo({ className = '', href = '/', markOnly = false }: Bran
   const classes = [
     'inline-flex items-center gap-2.5 whitespace-nowrap transition-opacity duration-300 hover:opacity-90',
     /* Varsayılan kelime markası MARKA RENGİNDE (tasarım): kağıt üstünde mürekkep
-       renginde bir "Expyra" logo değil başlık gibi okunuyordu. */
-    className || 'text-[var(--color-brand-600)]',
+       renginde bir "Expyra" logo değil başlık gibi okunuyordu. `--brand-ink`
+       koyu temada açılıyor. */
+    className || 'text-[var(--brand-ink)]',
   ].join(' ')
 
   if (href) {
