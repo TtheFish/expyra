@@ -39,7 +39,7 @@ type Parts = { year: number; month: number; day: number }
 export function DateField({ lang, labels, defaultValue = '' }: DateFieldProps) {
   const initial = parseIso(defaultValue) ?? todayParts()
   const [open, setOpen] = useState(false)
-  const [parts, setParts] = useState<Parts>(initial)
+  const [rawParts, setParts] = useState<Parts>(initial)
   const [committed, setCommitted] = useState<string | null>(
     defaultValue && parseIso(defaultValue) ? defaultValue : null,
   )
@@ -53,14 +53,15 @@ export function DateField({ lang, labels, defaultValue = '' }: DateFieldProps) {
     return range(y, y + YEAR_SPAN)
   }, [])
 
-  const daysInMonth = daysIn(parts.year, parts.month)
+  const daysInMonth = daysIn(rawParts.year, rawParts.month)
   const days = useMemo(() => range(1, daysInMonth), [daysInMonth])
   const months = useMemo(() => range(1, 12), [])
 
-  useEffect(() => {
-    if (parts.day <= daysInMonth) return
-    setParts((p) => ({ ...p, day: daysInMonth }))
-  }, [daysInMonth, parts.day])
+  // 31 Ocak → Şubat: gün ayın sınırına ÇİZİM SIRASINDA kırpılıyor, effect'te
+  // setState ile değil (react-hooks/set-state-in-effect; fazladan bir render
+  // ve bir kare boyunca geçersiz tarih). Durum ham kalıyor, türetilen değer
+  // her yerde `parts`.
+  const parts: Parts = rawParts.day > daysInMonth ? { ...rawParts, day: daysInMonth } : rawParts
 
   useEffect(() => {
     if (!open) return
