@@ -240,3 +240,114 @@ export function SpokenLanguagePicker({
     </>
   )
 }
+
+export type ItineraryRow = { title: string; body: string }
+
+/**
+ * Program adımları: satır ekle/kaldır. Alan adları tekrar ediyor (`getAll` sırayı
+ * koruyor); satırın kimliği DOM sırası, ayrı bir id alanı yok — sunucu listeyi
+ * toptan yazdığı için gerekmiyor.
+ *
+ * JS kapalıyken: mevcut satırlar + bir boş satır çiziliyor, "ekle" düğmesi yok.
+ * Bir kerede bir adım eklemek yine mümkün (boş satırı doldur, kaydet, yenisi gelir).
+ *
+ * `key`: satır kaldırılınca kalanların `defaultValue`'su kaymasın diye her satır
+ * artan bir sayaçla anahtarlanıyor; indeks anahtar olsaydı 2. satırı silmek 3.'nün
+ * metnini 2.'ye taşırdı.
+ */
+export function ItineraryEditor({
+  initial,
+  lang,
+  names,
+  labels,
+  maxSteps = 20,
+}: {
+  initial: readonly ItineraryRow[]
+  lang: string
+  names: { title: string; body: string }
+  labels: {
+    stepTitle: (n: number) => string
+    titlePlaceholder: string
+    bodyPlaceholder: string
+    add: string
+    remove: string
+    help: string
+  }
+  maxSteps?: number
+}) {
+  const seed = initial.length > 0 ? initial : [{ title: '', body: '' }]
+  const [rows, setRows] = useState<{ id: number; row: ItineraryRow }[]>(() =>
+    seed.map((row, index) => ({ id: index, row })),
+  )
+  const [nextId, setNextId] = useState(seed.length)
+  const helpId = useId()
+
+  const add = () => {
+    setRows((current) => [...current, { id: nextId, row: { title: '', body: '' } }])
+    setNextId((value) => value + 1)
+  }
+
+  const remove = (id: number) => {
+    setRows((current) => (current.length === 1 ? current : current.filter((item) => item.id !== id)))
+  }
+
+  return (
+    <div aria-describedby={helpId}>
+      <ol className="grid gap-4">
+        {rows.map(({ id, row }, index) => (
+          <li key={id} className="rounded-[var(--radius-glass-sm)] border border-[var(--glass-border)] p-3">
+            <div className="flex items-center justify-between gap-3">
+              <label className="auth-label" htmlFor={`adim-${id}-baslik`}>
+                {labels.stepTitle(index + 1)}
+              </label>
+              {rows.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => remove(id)}
+                  className="text-xs text-fg-muted underline underline-offset-4 hover:text-fg"
+                >
+                  {labels.remove}
+                </button>
+              ) : null}
+            </div>
+            <input
+              id={`adim-${id}-baslik`}
+              name={names.title}
+              className="auth-input"
+              type="text"
+              maxLength={120}
+              lang={lang}
+              defaultValue={row.title}
+              placeholder={labels.titlePlaceholder}
+            />
+            <textarea
+              name={names.body}
+              className="auth-input mt-2"
+              rows={2}
+              maxLength={600}
+              lang={lang}
+              defaultValue={row.body}
+              placeholder={labels.bodyPlaceholder}
+              aria-label={labels.stepTitle(index + 1)}
+            />
+          </li>
+        ))}
+      </ol>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        {rows.length < maxSteps ? (
+          <button
+            type="button"
+            onClick={add}
+            className="glass glass-edge glass-interactive rounded-[var(--radius-glass-sm)] px-4 py-2 text-sm font-medium"
+          >
+            {labels.add}
+          </button>
+        ) : null}
+        <p id={helpId} className="auth-help">
+          {labels.help}
+        </p>
+      </div>
+    </div>
+  )
+}

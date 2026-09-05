@@ -40,8 +40,30 @@ export type HostExperienceTranslation = {
   language: string
   title: string
   description: string | null
+  whatToBring: string | null
+  notIncluded: string | null
+  accessibility: string | null
+  meetingInstructions: string | null
   source: TranslationSource
   updatedAtUtc: string
+}
+
+/** Telde camelCase metin (CLAUDE.md #8); tek kelimeli olduğu için küçük harf. */
+export type ActivityLevel = 'light' | 'moderate' | 'strenuous'
+
+export const ACTIVITY_LEVELS: readonly ActivityLevel[] = ['light', 'moderate', 'strenuous']
+
+export type HostMeetingPoint = {
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+}
+
+export type HostItineraryStep = {
+  language: string
+  sortOrder: number
+  title: string
+  body: string | null
 }
 
 /**
@@ -64,10 +86,15 @@ export type HostExperience = {
   /** Şehirden TÜREYEN alan; istemci asla göndermiyor. */
   timeZoneId: string | null
   originalLanguage: string
+  minimumAge: number | null
+  activityLevel: ActivityLevel | null
+  meetingPoint: HostMeetingPoint | null
   /** Deneyim sırasında KONUŞULAN diller (docs/I18N.md §3). */
   spokenLanguages: string[]
   tags: string[]
   translations: HostExperienceTranslation[]
+  /** Tüm dillerin adımları; arayüz aktif metin diline göre süzüyor. */
+  itinerary: HostItineraryStep[]
   /**
    * Galeri, host'un verdiği sırada. **Yalnız doğrulanmış görseller**: imzalı adresi
    * alınmış ama yüklenmemiş satırlar burada çıkmıyor, aksi halde panelde kırık
@@ -431,6 +458,85 @@ export async function setExperienceTranslation(
   })
 
   return (await response.json()) as HostExperience
+}
+
+export type HostExperienceDetails = {
+  minimumAge: number | null
+  activityLevel: ActivityLevel | null
+  whatToBring: string | null
+  notIncluded: string | null
+  accessibility: string | null
+}
+
+/** Tam değiştirme: boş alan sunucuda temizleniyor (PATCH'in "dokunma"sının tersi). */
+export async function setExperienceDetails(
+  accessToken: string,
+  id: string,
+  language: string,
+  details: HostExperienceDetails,
+): Promise<HostExperience> {
+  const response = await send({
+    accessToken,
+    method: 'PUT',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/details/${encodeURIComponent(language)}`,
+    body: details,
+  })
+
+  return (await response.json()) as HostExperience
+}
+
+export async function setMeetingPoint(
+  accessToken: string,
+  id: string,
+  language: string,
+  meeting: HostMeetingPoint & { instructions: string | null },
+): Promise<HostExperience> {
+  const response = await send({
+    accessToken,
+    method: 'PUT',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/meeting-point/${encodeURIComponent(language)}`,
+    body: meeting,
+  })
+
+  return (await response.json()) as HostExperience
+}
+
+/** O dilin listesi TOPTAN yazılır; boş liste programı kaldırır. */
+export async function setItinerary(
+  accessToken: string,
+  id: string,
+  language: string,
+  steps: { title: string; body: string | null }[],
+): Promise<HostExperience> {
+  const response = await send({
+    accessToken,
+    method: 'PUT',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/itinerary/${encodeURIComponent(language)}`,
+    body: { steps },
+  })
+
+  return (await response.json()) as HostExperience
+}
+
+export type HostProfile = {
+  headline: string | null
+  bio: string | null
+  language: string
+  updatedAtUtc: string | null
+}
+
+export async function fetchHostProfile(accessToken: string): Promise<HostProfile> {
+  const response = await send({ accessToken, method: 'GET', path: '/api/host/profile' })
+  return (await response.json()) as HostProfile
+}
+
+/** İkisi de boşsa sunucu satırı siliyor; "boş profil" diye bir durum yok. */
+export async function setHostProfile(
+  accessToken: string,
+  profile: { headline: string | null; bio: string | null; language: string },
+): Promise<HostProfile> {
+  const response = await send({ accessToken, method: 'PUT', path: '/api/host/profile', body: profile })
+  return (await response.json()) as HostProfile
 }
 
 /** Eksik ilan **409** alır ve taslak DEĞİŞMEDEN kalır. İdempotent: yayındaki ilan 200. */

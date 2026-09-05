@@ -15,6 +15,9 @@ import {
   deleteBlackoutAction,
   setSlotStatusAction,
   setTranslationAction,
+  setDetailsAction,
+  setMeetingPointAction,
+  setItineraryAction,
   stopRecurrenceAction,
   updateExperienceAction,
   updatePricingAction,
@@ -41,12 +44,24 @@ import {
   TAGS_FIELD,
   TEXT_LANGUAGE_PARAM,
   TITLE_FIELD,
+  STEP_TITLE_FIELD,
+  STEP_BODY_FIELD,
+  MEETING_ADDRESS_FIELD,
+  MEETING_LATITUDE_FIELD,
+  MEETING_LONGITUDE_FIELD,
+  MEETING_INSTRUCTIONS_FIELD,
+  MINIMUM_AGE_FIELD,
+  ACTIVITY_LEVEL_FIELD,
+  WHAT_TO_BRING_FIELD,
+  NOT_INCLUDED_FIELD,
+  ACCESSIBILITY_FIELD,
   WEEKDAYS,
   toMajorAmountInput,
 } from '@/features/host/experience-fields'
-import { ExperienceForm, SpokenLanguagePicker } from '@/features/host/experience-forms'
+import { ExperienceForm, ItineraryEditor, SpokenLanguagePicker } from '@/features/host/experience-forms'
 import { MediaUploader } from '@/features/host/media-uploader'
 import {
+  ACTIVITY_LEVELS,
   HostExperienceAccessError,
   categoryMessageKey,
   fetchCategorySlugs,
@@ -323,10 +338,105 @@ export default async function EditExperiencePage({
             </ExperienceForm>
           </Section>
 
+          {/*
+            Üç bölüm (program, buluşma noktası, bilmen gerekenler) 01'deki dil
+            sekmesine BAĞLI: metinleri içerik, yani dil başına ayrı satır. Sekme
+            değişince `key` formu yeniden kuruyor (01 ile aynı gerekçe).
+          */}
+          <Section
+            index={6}
+            title={t('host.experience.section.itinerary')}
+            help={t('host.experience.section.itineraryHelp')}
+          >
+            <TextLanguageNote lang={lang} activeLanguage={activeLanguage} t={t} />
+            <ExperienceForm
+              key={`program-${activeLanguage}`}
+              action={setItineraryAction}
+              lang={lang}
+              experienceId={experience.id}
+              textLanguage={activeLanguage}
+              className="auth-form"
+              labels={{
+                submit: t('host.experience.save'),
+                pending: t('host.experience.saving'),
+              }}
+            >
+              <ItineraryEditor
+                lang={activeLanguage}
+                initial={experience.itinerary
+                  .filter((step) => step.language === activeLanguage)
+                  .map((step) => ({ title: step.title, body: step.body ?? '' }))}
+                names={{ title: STEP_TITLE_FIELD, body: STEP_BODY_FIELD }}
+                labels={{
+                  stepTitle: (n) => t('host.experience.itinerary.stepTitle.label', { n }),
+                  titlePlaceholder: t('host.experience.itinerary.stepTitle.placeholder'),
+                  bodyPlaceholder: t('host.experience.itinerary.stepBody.placeholder'),
+                  add: t('host.experience.itinerary.add'),
+                  remove: t('host.experience.itinerary.remove'),
+                  help: t('host.experience.itinerary.help'),
+                }}
+              />
+            </ExperienceForm>
+          </Section>
+
+          <Section
+            index={7}
+            title={t('host.experience.section.meeting')}
+            help={t('host.experience.section.meetingHelp')}
+          >
+            <TextLanguageNote lang={lang} activeLanguage={activeLanguage} t={t} />
+            <ExperienceForm
+              key={`bulusma-${activeLanguage}`}
+              action={setMeetingPointAction}
+              lang={lang}
+              experienceId={experience.id}
+              textLanguage={activeLanguage}
+              className="auth-form"
+              labels={{
+                submit: t('host.experience.save'),
+                pending: t('host.experience.saving'),
+              }}
+            >
+              <MeetingPointFields
+                experience={experience}
+                translation={activeTranslation}
+                activeLanguage={activeLanguage}
+                t={t}
+              />
+            </ExperienceForm>
+          </Section>
+
+          <Section
+            index={8}
+            title={t('host.experience.section.details')}
+            help={t('host.experience.section.detailsHelp')}
+          >
+            <TextLanguageNote lang={lang} activeLanguage={activeLanguage} t={t} />
+            <ExperienceForm
+              key={`bilgi-${activeLanguage}`}
+              action={setDetailsAction}
+              lang={lang}
+              experienceId={experience.id}
+              textLanguage={activeLanguage}
+              className="auth-form"
+              labels={{
+                submit: t('host.experience.save'),
+                pending: t('host.experience.saving'),
+              }}
+            >
+              <DetailsFields
+                experience={experience}
+                translation={activeTranslation}
+                activeLanguage={activeLanguage}
+                t={t}
+              />
+            </ExperienceForm>
+          </Section>
+
           {/* Yayından ÖNCE: kapak görseli bir yayın koşulu (PLAN Blok 6 kabul
               kriteri 3) ve sihirbazın sırası koşulların sırasını izliyor. */}
           <Section
-            index={6}
+            index={9}
             title={t('host.media.heading')}
             help={t('host.media.hint')}
           >
@@ -356,7 +466,7 @@ export default async function EditExperiencePage({
           </Section>
 
           <Section
-            index={7}
+            index={10}
             title={t('host.experience.section.schedule')}
             help={t('host.experience.section.scheduleHelp')}
           >
@@ -369,7 +479,7 @@ export default async function EditExperiencePage({
           </Section>
 
           <Section
-            index={8}
+            index={11}
             title={t('host.experience.section.pricing')}
             help={t('host.experience.section.pricingHelp')}
           >
@@ -388,7 +498,7 @@ export default async function EditExperiencePage({
           </Section>
 
           <Section
-            index={9}
+            index={12}
             title={t('host.experience.section.status')}
             help={t('host.experience.section.statusHelp')}
           >
@@ -890,6 +1000,232 @@ async function SpokenLanguageField({
         }}
       />
     </fieldset>
+  )
+}
+
+/**
+ * "Bu bölümün metinleri Türkçe" notu. Üç bölüm 01'deki sekmeyi paylaşıyor ama
+ * sekme ekranın üstünde; host 08'e indiğinde hangi dilde yazdığını görmeli.
+ */
+function TextLanguageNote({
+  lang,
+  activeLanguage,
+  t,
+}: {
+  lang: string
+  activeLanguage: string
+  t: Translate
+}) {
+  return (
+    <p className="mt-3 text-xs text-fg-muted">
+      {t('host.experience.textLanguage.note', {
+        dil: localNameOf(activeLanguage, lang) ?? activeLanguage,
+      })}
+    </p>
+  )
+}
+
+function MeetingPointFields({
+  experience,
+  translation,
+  activeLanguage,
+  t,
+}: {
+  experience: HostExperience
+  translation: HostExperienceTranslation | null
+  activeLanguage: string
+  t: Translate
+}) {
+  const point = experience.meetingPoint
+
+  return (
+    <>
+      <div>
+        <label className="auth-label" htmlFor="bulusma-adres">
+          {t('host.experience.meeting.address.label')}
+        </label>
+        <input
+          id="bulusma-adres"
+          name={MEETING_ADDRESS_FIELD}
+          className="auth-input"
+          type="text"
+          maxLength={240}
+          defaultValue={point?.address ?? ''}
+          placeholder={t('host.experience.meeting.address.placeholder')}
+        />
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="auth-label" htmlFor="bulusma-enlem">
+            {t('host.experience.meeting.latitude.label')}
+          </label>
+          {/* `type="text"` + `inputMode="decimal"`: number alanı bazı tarayıcılarda
+              virgülü yutuyor; ayrıştırma sunucu eyleminde (`readCoordinate`). */}
+          <input
+            id="bulusma-enlem"
+            name={MEETING_LATITUDE_FIELD}
+            className="auth-input"
+            type="text"
+            inputMode="decimal"
+            defaultValue={point?.latitude ?? ''}
+            placeholder="41.0256"
+            aria-describedby="bulusma-koordinat-yardim"
+          />
+        </div>
+        <div>
+          <label className="auth-label" htmlFor="bulusma-boylam">
+            {t('host.experience.meeting.longitude.label')}
+          </label>
+          <input
+            id="bulusma-boylam"
+            name={MEETING_LONGITUDE_FIELD}
+            className="auth-input"
+            type="text"
+            inputMode="decimal"
+            defaultValue={point?.longitude ?? ''}
+            placeholder="28.9744"
+            aria-describedby="bulusma-koordinat-yardim"
+          />
+        </div>
+      </div>
+      <p id="bulusma-koordinat-yardim" className="auth-help">
+        {t('host.experience.meeting.coords.help')}
+      </p>
+
+      <div>
+        <label className="auth-label" htmlFor="bulusma-yonerge">
+          {t('host.experience.meeting.instructions.label')}
+        </label>
+        <textarea
+          id="bulusma-yonerge"
+          name={MEETING_INSTRUCTIONS_FIELD}
+          className="auth-input"
+          rows={3}
+          maxLength={1000}
+          lang={activeLanguage}
+          defaultValue={translation?.meetingInstructions ?? ''}
+          placeholder={t('host.experience.meeting.instructions.placeholder')}
+        />
+      </div>
+    </>
+  )
+}
+
+function DetailsFields({
+  experience,
+  translation,
+  activeLanguage,
+  t,
+}: {
+  experience: HostExperience
+  translation: HostExperienceTranslation | null
+  activeLanguage: string
+  t: Translate
+}) {
+  return (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="auth-label" htmlFor="yas-siniri">
+            {t('host.experience.details.minimumAge.label')}
+          </label>
+          <input
+            id="yas-siniri"
+            name={MINIMUM_AGE_FIELD}
+            className="auth-input"
+            type="number"
+            min={1}
+            max={99}
+            step={1}
+            defaultValue={experience.minimumAge ?? ''}
+            aria-describedby="yas-siniri-yardim"
+          />
+          <p id="yas-siniri-yardim" className="auth-help">
+            {t('host.experience.details.minimumAge.help')}
+          </p>
+        </div>
+        <div>
+          <label className="auth-label" htmlFor="aktivite-seviyesi">
+            {t('host.experience.details.activityLevel.label')}
+          </label>
+          {/* `key`: form gönderiminden sonra select sıfırlanıyor (kategori seçicisi notu). */}
+          <select
+            key={experience.activityLevel ?? ''}
+            id="aktivite-seviyesi"
+            name={ACTIVITY_LEVEL_FIELD}
+            className="auth-input"
+            defaultValue={experience.activityLevel ?? ''}
+          >
+            <option value="">{t('host.experience.details.activityLevel.none')}</option>
+            {ACTIVITY_LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {t(`experience.activity.${level}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <DetailTextArea
+        id="yaninda-getir"
+        name={WHAT_TO_BRING_FIELD}
+        label={t('host.experience.details.whatToBring.label')}
+        placeholder={t('host.experience.details.whatToBring.placeholder')}
+        value={translation?.whatToBring}
+        lang={activeLanguage}
+      />
+      <DetailTextArea
+        id="dahil-degil"
+        name={NOT_INCLUDED_FIELD}
+        label={t('host.experience.details.notIncluded.label')}
+        placeholder={t('host.experience.details.notIncluded.placeholder')}
+        value={translation?.notIncluded}
+        lang={activeLanguage}
+      />
+      <DetailTextArea
+        id="erisilebilirlik"
+        name={ACCESSIBILITY_FIELD}
+        label={t('host.experience.details.accessibility.label')}
+        placeholder={t('host.experience.details.accessibility.placeholder')}
+        value={translation?.accessibility}
+        lang={activeLanguage}
+      />
+    </>
+  )
+}
+
+function DetailTextArea({
+  id,
+  name,
+  label,
+  placeholder,
+  value,
+  lang,
+}: {
+  id: string
+  name: string
+  label: string
+  placeholder: string
+  value: string | null | undefined
+  lang: string
+}) {
+  return (
+    <div>
+      <label className="auth-label" htmlFor={id}>
+        {label}
+      </label>
+      <textarea
+        id={id}
+        name={name}
+        className="auth-input"
+        rows={3}
+        maxLength={1000}
+        lang={lang}
+        defaultValue={value ?? ''}
+        placeholder={placeholder}
+      />
+    </div>
   )
 }
 

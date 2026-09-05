@@ -8,6 +8,7 @@ import {
   experienceCoverStyle,
   formatExperienceDuration,
 } from '@/components/experience/experience-card'
+import { ExperienceCard } from '@/components/experience/experience-card'
 import { GlassButton } from '@/components/ui/glass-button'
 import {
   countryDisplayName,
@@ -19,6 +20,7 @@ import {
   type GuestAvailability,
   type GuestExperienceDetail,
   type GuestQuote,
+  fetchExperiences,
 } from '@/features/experiences/api'
 import {
   categoryMessageKey,
@@ -135,6 +137,18 @@ export default async function ExperienceDetail({
   // Para birimi kayıt defteri: anonim ve bir saat önbellekli, yani seçici bedava.
   const currencies = await fetchCurrencies()
 
+  /*
+    "Bu şehirdeki diğer deneyimler": Blok 8'in liste ucu şehir filtresiyle,
+    yeni uç yok (#37). Kendisi listeden çıkarılıyor; başka ilan yoksa bölüm
+    çizilmiyor. Liste başarısız olursa sayfa DÜŞMÜYOR — ikincil içerik.
+  */
+  const nearby = await fetchExperiences({ lang, city: cityKeyOf(experience.city) })
+    .then((page) => page.items.filter((item) => item.slug !== experience.slug).slice(0, 6))
+    .catch((error: unknown) => {
+      console.error('experience.nearby.failed', error)
+      return []
+    })
+
   const categoryKey = categoryMessageKey(experience.categorySlug)
   const cityName = cityDisplayName(lang, experience.city)
   const textLanguage = localNameOf(experience.text.language, lang) ?? experience.text.language
@@ -250,6 +264,40 @@ export default async function ExperienceDetail({
               )}
             </Section>
 
+            {experience.itinerary && experience.itinerary.steps.length > 0 && (
+              <Section heading={t('experience.detail.itinerary.heading')}>
+                {experience.itinerary.isFallback && (
+                  <p className="glass glass-edge mb-3 inline-block rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs text-fg-muted">
+                    {t('experience.detail.text.fallback', {
+                      dil: localNameOf(experience.itinerary.language, lang) ?? experience.itinerary.language,
+                    })}
+                  </p>
+                )}
+                {/* Sıralı liste: adımların sırası içeriğin parçası, ekran okuyucu
+                    "1/5" diye duyuruyor. */}
+                <ol className="grid gap-3" lang={experience.itinerary.language}>
+                  {experience.itinerary.steps.map((step, index) => (
+                    <li key={`${index}-${step.title}`} className="flex gap-3">
+                      <span
+                        aria-hidden="true"
+                        className="glass glass-edge flex size-7 shrink-0 items-center justify-center rounded-full font-mono text-xs"
+                      >
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium">{step.title}</p>
+                        {step.body && (
+                          <p className="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-fg-muted">
+                            {step.body}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </Section>
+            )}
+
             <Section
               heading={t('experience.detail.spoken.heading')}
               help={t('experience.detail.spoken.help')}
@@ -287,6 +335,81 @@ export default async function ExperienceDetail({
               </Section>
             )}
 
+            {(experience.meetingPoint || experience.text.meetingInstructions) && (
+              <Section heading={t('experience.detail.meeting.heading')}>
+                {experience.meetingPoint?.address && (
+                  <p className="text-sm font-medium">{experience.meetingPoint.address}</p>
+                )}
+                {experience.text.meetingInstructions && (
+                  <p
+                    className="mt-1 whitespace-pre-line text-sm leading-relaxed text-fg-muted"
+                    lang={experience.text.language}
+                  >
+                    {experience.text.meetingInstructions}
+                  </p>
+                )}
+                {/*
+                  Harita BAĞLANTI, gömülü değil: üçüncü taraf iframe/script CSP ve
+                  KVKK sorusu açıyor (#34'te karar). OSM bağlantısı herkeste çalışıyor
+                  ve telefon onu harita uygulamasına devrediyor.
+                */}
+                {experience.meetingPoint?.latitude != null && experience.meetingPoint.longitude != null && (
+                  <a
+                    href={`https://www.openstreetmap.org/?mlat=${experience.meetingPoint.latitude}&mlon=${experience.meetingPoint.longitude}#map=17/${experience.meetingPoint.latitude}/${experience.meetingPoint.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="glass glass-edge glass-interactive mt-3 inline-flex rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs font-medium"
+                  >
+                    {t('experience.detail.meeting.map')}
+                  </a>
+                )}
+              </Section>
+            )}
+
+            {(experience.minimumAge !== null ||
+              experience.activityLevel !== null ||
+              experience.text.whatToBring ||
+              experience.text.notIncluded ||
+              experience.text.accessibility) && (
+              <Section heading={t('experience.detail.know.heading')}>
+                <dl className="grid gap-3">
+                  {experience.minimumAge !== null && (
+                    <KnowRow
+                      label={t('experience.detail.know.minimumAge')}
+                      value={t('experience.detail.know.minimumAgeValue', { n: experience.minimumAge })}
+                    />
+                  )}
+                  {experience.activityLevel !== null && (
+                    <KnowRow
+                      label={t('experience.detail.know.activityLevel')}
+                      value={t(`experience.activity.${experience.activityLevel}`)}
+                    />
+                  )}
+                  {experience.text.whatToBring && (
+                    <KnowRow
+                      label={t('experience.detail.know.whatToBring')}
+                      value={experience.text.whatToBring}
+                      lang={experience.text.language}
+                    />
+                  )}
+                  {experience.text.notIncluded && (
+                    <KnowRow
+                      label={t('experience.detail.know.notIncluded')}
+                      value={experience.text.notIncluded}
+                      lang={experience.text.language}
+                    />
+                  )}
+                  {experience.text.accessibility && (
+                    <KnowRow
+                      label={t('experience.detail.know.accessibility')}
+                      value={experience.text.accessibility}
+                      lang={experience.text.language}
+                    />
+                  )}
+                </dl>
+              </Section>
+            )}
+
             {/*
               Host kartı: misafirin "kime güveniyorum" sorusunun cevabı ve VISION §8'in
               arz tarafı vurgusunun görünen yüzü. Profil sayfası henüz yok, o yüzden
@@ -315,10 +438,36 @@ export default async function ExperienceDetail({
                   />
                 )}
 
-                <p className="text-sm font-medium">
-                  {experience.host.displayName ?? t('experience.detail.host.anonymous')}
-                </p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">
+                    {experience.host.displayName ?? t('experience.detail.host.anonymous')}
+                  </p>
+                  {experience.host.headline && (
+                    <p className="text-xs text-fg-muted" lang={experience.host.bioLanguage ?? undefined}>
+                      {experience.host.headline}
+                    </p>
+                  )}
+                </div>
               </div>
+              {experience.host.bio && (
+                <>
+                  {/* Biyografi tek dilde (host_profile notu); arayüz diliyle
+                      eşleşmiyorsa rozet — metin rozetiyle aynı cümle. */}
+                  {experience.host.bioLanguage && experience.host.bioLanguage !== lang && (
+                    <p className="glass glass-edge mt-3 inline-block rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs text-fg-muted">
+                      {t('experience.detail.text.fallback', {
+                        dil: localNameOf(experience.host.bioLanguage, lang) ?? experience.host.bioLanguage,
+                      })}
+                    </p>
+                  )}
+                  <p
+                    className="mt-3 whitespace-pre-line text-sm leading-relaxed text-fg-muted"
+                    lang={experience.host.bioLanguage ?? undefined}
+                  >
+                    {experience.host.bio}
+                  </p>
+                </>
+              )}
             </Section>
 
             {experience.images.length > 1 && (
@@ -368,6 +517,22 @@ export default async function ExperienceDetail({
           </div>
         </article>
 
+        {nearby.length > 0 && (
+          <section className="mt-10" aria-labelledby="yakindaki-deneyimler">
+            <h2
+              id="yakindaki-deneyimler"
+              className="text-on-media mb-4 text-sm font-medium text-white/85"
+            >
+              {t('experience.detail.nearby.heading', { sehir: cityName })}
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {nearby.map((item) => (
+                <ExperienceCard key={item.slug} item={item} lang={lang} t={t} />
+              ))}
+            </div>
+          </section>
+        )}
+
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <GlassButton href={cityHref}>
             {t('experience.detail.cityLink', { sehir: cityName })}
@@ -377,6 +542,17 @@ export default async function ExperienceDetail({
       </main>
 
       <SiteFooter lang={lang} />
+    </div>
+  )
+}
+
+function KnowRow({ label, value, lang }: { label: string; value: string; lang?: string }) {
+  return (
+    <div className="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-3">
+      <dt className="text-xs font-medium text-fg-muted">{label}</dt>
+      <dd className="whitespace-pre-line text-sm leading-relaxed" lang={lang}>
+        {value}
+      </dd>
     </div>
   )
 }

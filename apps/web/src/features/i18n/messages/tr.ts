@@ -306,6 +306,18 @@ export const tr = {
   'experience.detail.tags.heading': 'Etiketler',
   'experience.detail.gallery.heading': 'Galeri',
   'experience.detail.host.heading': 'Bu deneyimi düzenleyen',
+  // --- Detay bölümleri (Airbnb karşılığı) ---
+  'experience.detail.itinerary.heading': 'Neler yapacağız',
+  'experience.detail.meeting.heading': 'Buluşma noktası',
+  'experience.detail.meeting.map': 'Haritada aç',
+  'experience.detail.know.heading': 'Bilmen gerekenler',
+  'experience.detail.know.minimumAge': 'Yaş sınırı',
+  'experience.detail.know.minimumAgeValue': '{n} yaş ve üzeri',
+  'experience.detail.know.activityLevel': 'Yoğunluk',
+  'experience.detail.know.whatToBring': 'Yanında getir',
+  'experience.detail.know.notIncluded': 'Fiyata dahil değil',
+  'experience.detail.know.accessibility': 'Erişilebilirlik',
+  'experience.detail.nearby.heading': '{sehir} şehrindeki diğer deneyimler',
   'experience.detail.host.anonymous': "Expyra host'u",
   /**
    * Takvim Blok 7, rezervasyon Blok 9. Sessiz bir boşluk "bu sayfa yarım"
@@ -753,6 +765,64 @@ export const tr = {
   'host.experience.error.capacity': 'Kapasiteyi kişi olarak yaz: en az 1, en fazla 500.',
   'host.experience.error.city': 'Şehri listeden seç — yazdığın metin tek başına yeterli değil.',
   'host.experience.error.category': 'Listeden bir kategori seç.',
+  // --- Detay bölümleri (Airbnb karşılığı: #33 #34 #35) ---
+  'host.experience.section.itinerary': 'Neler yapacağız',
+  'host.experience.section.itineraryHelp':
+    'Deneyimin adımları, sırayla. Her adım bir başlık ve isteğe bağlı bir iki cümle. Liste ilan metniyle aynı dilde yazılır; yukarıdaki dil sekmesi burada da geçerli.',
+  'host.experience.section.meeting': 'Buluşma noktası',
+  'host.experience.section.meetingHelp':
+    'Misafir nerede bulacak seni? Adres dil bağımsız, yönerge seçili dilde. Koordinat girersen misafir haritada açabilir.',
+  'host.experience.section.details': 'Bilmen gerekenler',
+  'host.experience.section.detailsHelp':
+    'Yaş sınırı, yoğunluk ve misafirin önceden bilmesi gerekenler. Boş bıraktığın alan sayfada görünmez.',
+  'host.experience.textLanguage.note': 'Bu bölümün metinleri {dil} dilinde. Dili değiştirmek için 01’deki sekmeleri kullan.',
+
+  'host.experience.itinerary.stepTitle.label': 'Adım {n}',
+  'host.experience.itinerary.stepTitle.placeholder': 'Hipodrom’da buluşuyoruz',
+  'host.experience.itinerary.stepBody.placeholder': 'Bizans’ın araba yarışı pisti; Dikilitaş ve Yılanlı Sütun burada.',
+  'host.experience.itinerary.add': 'Adım ekle',
+  'host.experience.itinerary.remove': 'Adımı kaldır',
+  'host.experience.itinerary.help': 'Boş bırakılan satır kaydedilmez. En fazla 20 adım.',
+
+  'host.experience.meeting.address.label': 'Adres',
+  'host.experience.meeting.address.placeholder': 'Galata Kulesi önü, Bereketzade, Beyoğlu',
+  'host.experience.meeting.latitude.label': 'Enlem',
+  'host.experience.meeting.longitude.label': 'Boylam',
+  'host.experience.meeting.coords.help': 'İkisi birlikte ya da ikisi boş. Ondalık: 41.0256 / 28.9744.',
+  'host.experience.meeting.instructions.label': 'Yönerge',
+  'host.experience.meeting.instructions.placeholder': 'Kulenin kuzey kapısında, sarı şemsiyeli rehberi ara.',
+
+  'host.experience.details.minimumAge.label': 'En az yaş',
+  'host.experience.details.minimumAge.help': 'Boş = sınır yok. 1–99.',
+  'host.experience.details.activityLevel.label': 'Yoğunluk',
+  'host.experience.details.activityLevel.none': 'Belirtilmedi',
+  'host.experience.details.whatToBring.label': 'Yanında getir',
+  'host.experience.details.whatToBring.placeholder': 'Su, rahat ayakkabı, başörtüsü (cami ziyareti için)',
+  'host.experience.details.notIncluded.label': 'Fiyata dahil değil',
+  'host.experience.details.notIncluded.placeholder': 'Müze biletleri, öğle yemeği',
+  'host.experience.details.accessibility.label': 'Erişilebilirlik',
+  'host.experience.details.accessibility.placeholder': 'Rota merdivenli; tekerlekli sandalye için uygun değil.',
+
+  'host.experience.error.translationMissing': 'Bu dilde önce başlık yaz (01. bölüm), sonra bu alanları doldur.',
+  'host.experience.error.minimumAge': 'Yaş sınırı 1 ile 99 arasında bir tam sayı olmalı.',
+  'host.experience.error.coordinates': 'Enlem ve boylam birlikte girilmeli; enlem ±90, boylam ±180.',
+  'host.experience.error.itinerary': 'Her adımın bir başlığı olmalı; en fazla 20 adım.',
+
+  // Yoğunluk seviyeleri; host formu ve misafir detayı aynı anahtarları kullanıyor.
+  'experience.activity.light': 'Hafif',
+  'experience.activity.moderate': 'Orta',
+  'experience.activity.strenuous': 'Yorucu',
+
+  // --- Host tanıtımı (#36) ---
+  'host.profile.heading': 'Kendini tanıt',
+  'host.profile.lede':
+    'İlan sayfasında adının altında görünür. Kim olduğunu ve neden bu deneyimi sen anlatmalısın, iki cümle yeter.',
+  'host.profile.headline.label': 'Unvan',
+  'host.profile.headline.placeholder': 'İstanbul’da yerel rehber ve tarihçi',
+  'host.profile.bio.label': 'Hakkımda',
+  'host.profile.bio.placeholder': 'On yıldır şehrin ara sokaklarını gezdiriyorum…',
+  'host.profile.language.label': 'Metnin dili',
+  'host.profile.error.invalid': 'Unvan en fazla 80, tanıtım en fazla 2000 karakter olabilir.',
   'host.experience.error.spokenLanguages': 'En fazla on dil işaretleyebilirsin.',
   'host.experience.error.tags': 'Etiketler boş olamaz; en fazla on tane ve her biri kısa olmalı.',
   /**

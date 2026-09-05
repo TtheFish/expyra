@@ -4,9 +4,24 @@
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@expyra/web", "dev"],
+      "runtimeArgs": [
+        "--filter",
+        "@expyra/web",
+        "dev"
+      ],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run",
+        "--project",
+        "apps/api/src/Expyra.WebApi",
+        "--no-build"
+      ],
+      "port": 5205
     }
   ]
 }

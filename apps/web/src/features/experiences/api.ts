@@ -57,6 +57,25 @@ export type GuestExperienceText = {
 /** Detayın metni: yukarıdakinin üstüne açıklama. `null` = host yazmamış. */
 export type GuestExperienceDetailText = GuestExperienceText & {
   description: string | null
+  whatToBring: string | null
+  notIncluded: string | null
+  accessibility: string | null
+  meetingInstructions: string | null
+}
+
+export type GuestActivityLevel = 'light' | 'moderate' | 'strenuous'
+
+export type GuestMeetingPoint = {
+  address: string | null
+  latitude: number | null
+  longitude: number | null
+}
+
+/** Tek dilin listesi; `isFallback` metinden bağımsız çözülüyor (API notu). */
+export type GuestItinerary = {
+  language: string
+  isFallback: boolean
+  steps: { title: string; body: string | null }[]
 }
 
 /**
@@ -111,6 +130,10 @@ export type GuestExperienceDetail = Omit<GuestExperienceSummary, 'text'> & {
   /** Galeri, kapak ilk sırada. Kapaksız eski ilanlarda boş. */
   images: GuestExperienceImage[]
   host: GuestExperienceHost
+  minimumAge: number | null
+  activityLevel: GuestActivityLevel | null
+  meetingPoint: GuestMeetingPoint | null
+  itinerary: GuestItinerary | null
 }
 
 /**
@@ -124,6 +147,10 @@ export type GuestExperienceDetail = Omit<GuestExperienceSummary, 'text'> & {
 export type GuestExperienceHost = {
   displayName: string | null
   avatarUrl: string | null
+  headline: string | null
+  bio: string | null
+  /** Biyografinin yazıldığı dil; arayüz diliyle eşleşmiyorsa rozet. */
+  bioLanguage: string | null
 }
 
 export type GuestExperiencePage = {

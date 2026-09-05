@@ -38,6 +38,20 @@ import {
   TAGS_FIELD,
   TEXT_LANGUAGE_FIELD,
   TITLE_FIELD,
+  STEP_TITLE_FIELD,
+  STEP_BODY_FIELD,
+  MEETING_ADDRESS_FIELD,
+  MEETING_LATITUDE_FIELD,
+  MEETING_LONGITUDE_FIELD,
+  MEETING_INSTRUCTIONS_FIELD,
+  MINIMUM_AGE_FIELD,
+  ACTIVITY_LEVEL_FIELD,
+  WHAT_TO_BRING_FIELD,
+  NOT_INCLUDED_FIELD,
+  ACCESSIBILITY_FIELD,
+  PROFILE_HEADLINE_FIELD,
+  PROFILE_BIO_FIELD,
+  PROFILE_LANGUAGE_FIELD,
   type ExperienceSection,
 } from './experience-fields'
 import {
@@ -57,6 +71,12 @@ import {
   reorderMedia,
   requirementMessageKey,
   setExperienceTranslation,
+  setExperienceDetails,
+  setMeetingPoint,
+  setItinerary,
+  setHostProfile,
+  ACTIVITY_LEVELS,
+  type ActivityLevel,
   setMediaCover,
   setPricing,
   setSlotStatus,
@@ -1264,4 +1284,241 @@ export async function deleteBlackoutAction(
  */
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10)
+}
+
+// ---------------------------------------------------------------------------
+// Detay bölümleri (#33 program, #34 buluşma noktası, #35 bilmen gerekenler)
+// ---------------------------------------------------------------------------
+
+/**
+ * Üç bölümün ortak açılışı: dil, kimlik, token, metin dili. `setTranslationAction`
+ * ile aynı sıra; ayrı yazıldı çünkü bu üç uç PUT + tam değiştirme ve 409'un anlamı
+ * farklı (aşağıda `detailFailure`).
+ */
+async function textContext(formData: FormData): Promise<
+  | { ok: true; lang: UiLocale; t: Translate; experienceId: string; here: string; accessToken: string; textLanguage: string }
+  | { ok: false; state: ExperienceFormState }
+> {
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(lang)
+
+  const experienceId = readField(formData, EXPERIENCE_ID_FIELD)
+  if (!experienceId) {
+    return { ok: false, state: fail(t, 'host.experience.error.notFound') }
+  }
+
+  const here = hostExperiencePath(lang, experienceId)
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, here), RedirectType.replace)
+  }
+
+  const textLanguage = readField(formData, TEXT_LANGUAGE_FIELD)
+  if (!textLanguage) {
+    return { ok: false, state: fail(t, 'host.experience.error.language') }
+  }
+
+  return { ok: true, lang, t, experienceId, here, accessToken, textLanguage }
+}
+
+/**
+ * Ortak kapanış: erişim hatasında yönlendir, sayfayı tazele, "kaydedildi" de.
+ * `redirect` NEXT_REDIRECT fırlatıyor; bu yüzden çağıran `try` dışında çağırıyor.
+ */
+async function finishText(
+  ctx: { lang: UiLocale; t: Translate; here: string },
+  call: () => Promise<unknown>,
+): Promise<ExperienceFormState> {
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await call()
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return detailFailure(ctx.t, error)
+    }
+  }
+
+  if (access) {
+    redirect(accessHref(ctx.lang, access, ctx.here), RedirectType.replace)
+  }
+
+  revalidatePath('/', 'layout')
+
+  return succeed(ctx.t('host.experience.saved'))
+}
+
+/**
+ * 409 burada "önce arşivle" DEĞİL: `translation-missing`, o dilde başlık yazılmadan
+ * metin girilmeye çalışıldı demek. `writeFailure`'ın genel 409 cümlesi host'a yanlış
+ * çözümü söylerdi; kod eşlemesi önce, gerisi ona.
+ */
+function detailFailure(t: Translate, error: unknown): ExperienceFormState {
+  if (error instanceof ApiError) {
+    if (error.code === 'translation-missing') {
+      return fail(t, 'host.experience.error.translationMissing')
+    }
+    if (error.status === 400) {
+      if (error.hasFieldError('minimumAge')) return fail(t, 'host.experience.error.minimumAge')
+      if (error.hasFieldError('latitude') || error.hasFieldError('longitude')) {
+        return fail(t, 'host.experience.error.coordinates')
+      }
+      if (error.hasFieldError('steps')) return fail(t, 'host.experience.error.itinerary')
+    }
+  }
+
+  return writeFailure(t, error)
+}
+
+export async function setDetailsAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const ctx = await textContext(formData)
+  if (!ctx.ok) return ctx.state
+
+  // Yaş: boş = sınır yok. Dolu ama tam sayı değilse hata — sessizce null'a
+  // çevirmek "kaydedildi" derdi (CLAUDE.md #1).
+  const ageRaw = readField(formData, MINIMUM_AGE_FIELD)
+  let minimumAge: number | null = null
+  if (ageRaw !== null) {
+    const parsed = Number(ageRaw)
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 99) {
+      return fail(ctx.t, 'host.experience.error.minimumAge')
+    }
+    minimumAge = parsed
+  }
+
+  const levelRaw = readField(formData, ACTIVITY_LEVEL_FIELD)
+  const activityLevel = ACTIVITY_LEVELS.find((level) => level === levelRaw) ?? null
+  if (levelRaw !== null && activityLevel === null) {
+    return fail(ctx.t, 'host.experience.error.invalid')
+  }
+
+  return finishText(ctx, () =>
+    setExperienceDetails(ctx.accessToken, ctx.experienceId, ctx.textLanguage, {
+      minimumAge,
+      activityLevel: activityLevel as ActivityLevel | null,
+      whatToBring: readField(formData, WHAT_TO_BRING_FIELD),
+      notIncluded: readField(formData, NOT_INCLUDED_FIELD),
+      accessibility: readField(formData, ACCESSIBILITY_FIELD),
+    }))
+}
+
+export async function setMeetingPointAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const ctx = await textContext(formData)
+  if (!ctx.ok) return ctx.state
+
+  const latitude = readCoordinate(formData, MEETING_LATITUDE_FIELD, 90)
+  const longitude = readCoordinate(formData, MEETING_LONGITUDE_FIELD, 180)
+
+  // Tek başına enlem anlamsız; sunucu da reddediyor ama host'a alanın hatasını
+  // gönderimden önce söylemek daha iyi.
+  if (latitude === false || longitude === false || (latitude === null) !== (longitude === null)) {
+    return fail(ctx.t, 'host.experience.error.coordinates')
+  }
+
+  return finishText(ctx, () =>
+    setMeetingPoint(ctx.accessToken, ctx.experienceId, ctx.textLanguage, {
+      address: readField(formData, MEETING_ADDRESS_FIELD),
+      latitude,
+      longitude,
+      instructions: readField(formData, MEETING_INSTRUCTIONS_FIELD),
+    }))
+}
+
+/** Boş → null; sayı değil ya da aralık dışı → false. Ondalık ayracı virgül de olabilir. */
+function readCoordinate(formData: FormData, field: string, limit: number): number | null | false {
+  const raw = readField(formData, field)
+  if (raw === null) return null
+
+  const parsed = Number(raw.replace(',', '.'))
+  if (!Number.isFinite(parsed) || Math.abs(parsed) > limit) return false
+
+  return parsed
+}
+
+export async function setItineraryAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const ctx = await textContext(formData)
+  if (!ctx.ok) return ctx.state
+
+  // `getAll` sırayı koruyor; başlık ve açıklama aynı indeksle eşleşiyor. Tamamen
+  // boş satır (eklenip doldurulmamış) atlanıyor; açıklaması olup başlığı olmayan
+  // satır HATA — sessizce atmak host'un yazdığını kaybederdi.
+  const titles = formData.getAll(STEP_TITLE_FIELD).map((value) => String(value).trim())
+  const bodies = formData.getAll(STEP_BODY_FIELD).map((value) => String(value).trim())
+
+  const steps: { title: string; body: string | null }[] = []
+  for (let index = 0; index < titles.length; index++) {
+    const title = titles[index]
+    const body = bodies[index] ?? ''
+
+    if (title === '' && body === '') continue
+    if (title === '') return fail(ctx.t, 'host.experience.error.itinerary')
+
+    steps.push({ title, body: body === '' ? null : body })
+  }
+
+  if (steps.length > 20) return fail(ctx.t, 'host.experience.error.itinerary')
+
+  return finishText(ctx, () =>
+    setItinerary(ctx.accessToken, ctx.experienceId, ctx.textLanguage, steps))
+}
+
+// ---------------------------------------------------------------------------
+// Host tanıtımı (#36) — /host-ol sayfasındaki form
+// ---------------------------------------------------------------------------
+
+export async function setHostProfileAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(lang)
+  const here = path(lang, 'becomeHost')
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, here), RedirectType.replace)
+  }
+
+  const language = readField(formData, PROFILE_LANGUAGE_FIELD)
+  if (!language) {
+    return fail(t, 'host.experience.error.language')
+  }
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await setHostProfile(accessToken, {
+      headline: readField(formData, PROFILE_HEADLINE_FIELD),
+      bio: readField(formData, PROFILE_BIO_FIELD),
+      language,
+    })
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else if (error instanceof ApiError && error.status === 400) {
+      return fail(t, 'host.profile.error.invalid')
+    } else {
+      throw error
+    }
+  }
+
+  if (access) {
+    redirect(accessHref(lang, access, here), RedirectType.replace)
+  }
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.experience.saved'))
 }

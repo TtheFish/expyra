@@ -12,6 +12,7 @@
     "api:test": "dotnet test apps/api",
     "api:migrate": "dotnet ef database update --project apps/api/src/Expyra.Infrastructure --startup-project apps/api/src/Expyra.WebApi",
     "api:seed": "dotnet run --project apps/api/src/Expyra.WebApi -- seed reference-data",
+    "api:seed:demo": "dotnet run --project apps/api/src/Expyra.WebApi -- seed demo-data",
     "web": "pnpm --filter @expyra/web dev",
     "mobile": "pnpm --filter @expyra/mobile start",
     "types:generate": "pnpm --filter @expyra/shared-types generate",

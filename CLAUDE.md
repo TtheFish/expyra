@@ -19,6 +19,7 @@ pnpm web            # web'i çalıştır
 pnpm db:up          # local postgres hazırla (kurulum: docs/DATABASE.md)
 pnpm api:migrate    # migration uygula
 pnpm api:seed       # referans veri (ülke/şehir/para birimi/kategori/kur)
+pnpm api:seed:demo  # demo hesaplar + ilanlar — hesaplar ve giriş: docs/DEMO.md
 pnpm api:test       # yalnız API testleri
 ```
 

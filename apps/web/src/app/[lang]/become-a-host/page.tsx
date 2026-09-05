@@ -7,12 +7,22 @@ import { experiencePath } from '@/features/experiences/api'
 import { RETURN_TO_PARAM } from '@/features/auth/return-to'
 import { getSession } from '@/features/auth/session'
 import { ActivateHostForm } from '@/features/host/activate-host-form'
+import { setHostProfileAction } from '@/features/host/experience-actions'
+import {
+  PROFILE_BIO_FIELD,
+  PROFILE_HEADLINE_FIELD,
+  PROFILE_LANGUAGE_FIELD,
+} from '@/features/host/experience-fields'
+import { ExperienceForm } from '@/features/host/experience-forms'
 import {
   HostExperienceAccessError,
   fetchHostExperiences,
+  fetchHostProfile,
   hostExperiencePath,
   type HostExperience,
+  type HostProfile,
 } from '@/features/host/experiences-api'
+import { contentLanguages, localNameOf } from '@/lib/languages'
 import type { MessageKey, Translate } from '@/features/i18n/dictionary'
 import { getTranslator } from '@/features/i18n/translator'
 import { alternateLinks, path } from '@/lib/routes'
@@ -84,6 +94,8 @@ type Panel = {
    * silindiğini düşündürürdü (CLAUDE.md #1).
    */
   experiences: HostExperience[] | null
+  /** Yalnız host'ta; satır yoksa alanlar null ve dil tercih dili. */
+  profile?: HostProfile | null
 }
 
 export default async function BecomeHostPage({ params }: { params: Promise<{ lang: string }> }) {
@@ -123,6 +135,7 @@ export default async function BecomeHostPage({ params }: { params: Promise<{ lan
         )}
 
         {isHost ? <ListingsSection experiences={panel.experiences} lang={lang} t={t} /> : null}
+        {isHost ? <ProfileSection profile={panel.profile ?? null} lang={lang} t={t} /> : null}
 
         {/*
           "Nasıl başlarım" ilanı olan host'a gösterilmiyor: o adımları çoktan
@@ -211,7 +224,11 @@ async function resolvePanel(): Promise<Panel> {
   }
 
   try {
-    return { viewer: 'host', experiences: await fetchHostExperiences(accessToken) }
+    const [experiences, profile] = await Promise.all([
+      fetchHostExperiences(accessToken),
+      fetchHostProfile(accessToken),
+    ])
+    return { viewer: 'host', experiences, profile }
   } catch (error) {
     /*
       403 burada BEKLENEN bir durum: `/me` veritabanına bakıyor ve "host" diyor
@@ -232,6 +249,95 @@ async function resolvePanel(): Promise<Panel> {
 }
 
 /** Host olduktan sonra "Host ol" düğmesinin yerini alan bilgi. */
+/**
+ * Host tanıtımı (#36): ilan sayfasındaki host kartını dolduran iki alan. İlan
+ * sihirbazında DEĞİL, burada — metin host'a ait, ilana değil; on ilanı olan host
+ * bunu bir kez yazıyor.
+ */
+function ProfileSection({
+  profile,
+  lang,
+  t,
+}: {
+  profile: HostProfile | null
+  lang: string
+  t: Translate
+}) {
+  const language = profile?.language ?? lang
+  const collator = new Intl.Collator(lang)
+  const options = contentLanguages
+    .map((item) => ({ code: item.code, label: localNameOf(item.code, lang) ?? item.englishName }))
+    .sort((a, b) => collator.compare(a.label, b.label))
+
+  return (
+    <section className="mt-14" aria-labelledby="host-profil">
+      <div className="glass glass-edge rounded-[var(--radius-glass-lg)] p-6 sm:p-8">
+        <h2 id="host-profil" className="text-lg font-semibold">
+          {t('host.profile.heading')}
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-fg-muted">{t('host.profile.lede')}</p>
+
+        {/* `key`: sunucu kaydı değişince form yeniden kuruluyor (select sıfırlanma notu). */}
+        <ExperienceForm
+          key={profile?.updatedAtUtc ?? 'yeni'}
+          action={setHostProfileAction}
+          lang={lang}
+          className="auth-form"
+          labels={{ submit: t('host.experience.save'), pending: t('host.experience.saving') }}
+        >
+          <div>
+            <label className="auth-label" htmlFor="unvan">
+              {t('host.profile.headline.label')}
+            </label>
+            <input
+              id="unvan"
+              name={PROFILE_HEADLINE_FIELD}
+              className="auth-input"
+              type="text"
+              maxLength={80}
+              lang={language}
+              defaultValue={profile?.headline ?? ''}
+              placeholder={t('host.profile.headline.placeholder')}
+            />
+          </div>
+          <div>
+            <label className="auth-label" htmlFor="tanitim">
+              {t('host.profile.bio.label')}
+            </label>
+            <textarea
+              id="tanitim"
+              name={PROFILE_BIO_FIELD}
+              className="auth-input"
+              rows={5}
+              maxLength={2000}
+              lang={language}
+              defaultValue={profile?.bio ?? ''}
+              placeholder={t('host.profile.bio.placeholder')}
+            />
+          </div>
+          <div>
+            <label className="auth-label" htmlFor="tanitim-dili">
+              {t('host.profile.language.label')}
+            </label>
+            <select
+              id="tanitim-dili"
+              name={PROFILE_LANGUAGE_FIELD}
+              className="auth-input"
+              defaultValue={language}
+            >
+              {options.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </ExperienceForm>
+      </div>
+    </section>
+  )
+}
+
 function HostStatus({ t }: { t: Translate }) {
   return (
     <p className="glass glass-edge mt-8 inline-flex items-center rounded-[var(--radius-glass-sm)] px-4 py-2 text-sm font-medium">

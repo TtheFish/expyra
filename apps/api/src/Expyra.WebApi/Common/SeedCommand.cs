@@ -1,5 +1,7 @@
+using Expyra.Application.Common.Interfaces;
 using Expyra.Infrastructure.Persistence;
 using Expyra.Infrastructure.Persistence.Seed;
+using Expyra.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 
 namespace Expyra.WebApi.Common;
@@ -24,11 +26,18 @@ internal static class SeedCommand
 
     internal const string ReferenceDataTarget = "reference-data";
 
+    /// <summary>Demo hesaplar ve ilanlar (docs/DEMO.md). Yalnız Development.</summary>
+    internal const string DemoDataTarget = "demo-data";
+
     /// <summary>Bilinmeyen hedef — kullanıcı hatası, veri durumu değişmedi.</summary>
     private const int ExitUnknownTarget = 2;
 
     /// <summary>Bekleyen migration var — seed edilecek tablo henüz yok.</summary>
     private const int ExitPendingMigrations = 3;
+
+    private const int ExitNotDevelopment = 4;
+
+    private const int ExitMissingReferenceData = 5;
 
     internal static bool Matches(string[] args, out string target)
     {
@@ -47,11 +56,14 @@ internal static class SeedCommand
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        if (!string.Equals(target, ReferenceDataTarget, StringComparison.Ordinal))
+        var isReference = string.Equals(target, ReferenceDataTarget, StringComparison.Ordinal);
+        var isDemo = string.Equals(target, DemoDataTarget, StringComparison.Ordinal);
+
+        if (!isReference && !isDemo)
         {
             app.Logger.LogError(
-                "Bilinmeyen seed hedefi: '{Target}'. Kullanım: -- {Verb} {ValidTarget}",
-                target, Verb, ReferenceDataTarget);
+                "Bilinmeyen seed hedefi: '{Target}'. Kullanım: -- {Verb} {ValidTarget} | {DemoTarget}",
+                target, Verb, ReferenceDataTarget, DemoDataTarget);
 
             return ExitUnknownTarget;
         }
@@ -74,6 +86,11 @@ internal static class SeedCommand
         // Hata YUTULMUYOR (CLAUDE.md #1): bozuk seed verisinde seeder açıklayıcı bir
         // mesajla patlıyor ve süreç sıfırdan farklı bir kodla ölüyor. Sessizce
         // "0 satır yazıldı" demek, sorunun ancak arama boş dönünce fark edilmesi demek.
+        if (isDemo)
+        {
+            return await RunDemoAsync(app, scope.ServiceProvider, dbContext).ConfigureAwait(false);
+        }
+
         var result = await ReferenceDataSeeder.SeedAsync(dbContext).ConfigureAwait(false);
 
         app.Logger.LogInformation(
@@ -87,6 +104,45 @@ internal static class SeedCommand
             result.Categories,
             result.ExchangeRates,
             result.ChangedRows);
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Demo veri yalnız Development'ta: depo yazıcısı (<see cref="ILocalUploadSink"/>)
+    /// üretimde kayıtlı değil ve zaten üretime demo hesap yazılmaz. Servis yoksa
+    /// açıklayan bir hata, sessiz bir "0 satır" değil.
+    /// </summary>
+    private static async Task<int> RunDemoAsync(WebApplication app, IServiceProvider services, AppDbContext dbContext)
+    {
+        var sink = services.GetService<ILocalUploadSink>();
+
+        if (!app.Environment.IsDevelopment() || sink is null)
+        {
+            app.Logger.LogError("Demo veri yalnız Development ortamında seed edilir (ASPNETCORE_ENVIRONMENT=Development).");
+            return ExitNotDevelopment;
+        }
+
+        var hasReference = await dbContext.Cities.AnyAsync().ConfigureAwait(false)
+            && await dbContext.Categories.AnyAsync().ConfigureAwait(false);
+
+        if (!hasReference)
+        {
+            app.Logger.LogError("Önce referans veri gerekiyor: `pnpm api:seed`.");
+            return ExitMissingReferenceData;
+        }
+
+        var result = await DemoDataSeeder.SeedAsync(
+                dbContext,
+                services.GetRequiredService<IObjectStorage>(),
+                sink,
+                services.GetRequiredService<IDateTimeProvider>())
+            .ConfigureAwait(false);
+
+        app.Logger.LogInformation(
+            "Demo veri seed edildi — {Experiences} yeni ilan. Hesaplar: {Ayse}, {Tuna}, {Guest} " +
+            "(giriş kodu ekranda görünür, docs/DEMO.md). Değişen satır: {Changed}.",
+            result.Experiences, DemoDataSeeder.HostAyse, DemoDataSeeder.HostTuna, DemoDataSeeder.Guest, result.ChangedRows);
 
         return 0;
     }

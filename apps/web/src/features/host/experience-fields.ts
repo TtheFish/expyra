@@ -56,6 +56,28 @@ export const TAGS_FIELD = 'etiketler'
  */
 export const CITY_FIELD = 'nerede'
 
+// Program: aynı adla tekrar eden alanlar, `getAll` sırayı koruyor.
+export const STEP_TITLE_FIELD = 'adim-baslik'
+export const STEP_BODY_FIELD = 'adim-aciklama'
+
+// Buluşma noktası
+export const MEETING_ADDRESS_FIELD = 'bulusma-adres'
+export const MEETING_LATITUDE_FIELD = 'bulusma-enlem'
+export const MEETING_LONGITUDE_FIELD = 'bulusma-boylam'
+export const MEETING_INSTRUCTIONS_FIELD = 'bulusma-yonerge'
+
+// Bilmen gerekenler
+export const MINIMUM_AGE_FIELD = 'yas-siniri'
+export const ACTIVITY_LEVEL_FIELD = 'aktivite-seviyesi'
+export const WHAT_TO_BRING_FIELD = 'yaninda-getir'
+export const NOT_INCLUDED_FIELD = 'dahil-degil'
+export const ACCESSIBILITY_FIELD = 'erisilebilirlik'
+
+// Host tanıtımı
+export const PROFILE_HEADLINE_FIELD = 'unvan'
+export const PROFILE_BIO_FIELD = 'tanitim'
+export const PROFILE_LANGUAGE_FIELD = 'tanitim-dili'
+
 /** Çeviri sekmelerinin URL parametresi: hangi dilin metni düzenleniyor. */
 export const TEXT_LANGUAGE_PARAM = 'metin-dili'
 
