@@ -154,86 +154,57 @@ export default async function ExperienceDetail({
   const textLanguage = localNameOf(experience.text.language, lang) ?? experience.text.language
   const cityHref = `${path(lang, 'explore')}?nerede=${encodeURIComponent(cityKeyOf(experience.city))}`
 
+  const booking = (
+    <BookingPanel
+      lang={lang}
+      experience={experience}
+      availability={availability}
+      quote={quote}
+      party={party}
+      selectedSlotId={selectedSlotId}
+      displayCurrency={displayCurrency}
+      currencies={currencies}
+      t={t}
+    />
+  )
+
   return (
     <div className="flex min-h-dvh flex-col">
       <SiteHeader lang={lang} />
 
-      <main className="relative z-10 mx-auto w-full max-w-3xl flex-1 px-4 py-10">
-        <article className="glass glass-edge glass-thick overflow-hidden rounded-[var(--radius-glass-xl)]">
-          <div className="relative h-56 w-full sm:h-72">
-            {experience.images.length > 0 ? (
-              /*
-                Kapak API'de zaten ilk sırada (GuestExperienceQuery.LoadImagesAsync),
-                yani kartta görülen görsel ile burada görülen aynı.
+      {/*
+        Expyra deneyim sahnesi — Airbnb'nin iki kolon + sticky kart kopyası değil.
+        Sinematik kapak, başlık medyanın üstünde, hikâye kartı kapağın üzerine
+        biner; rezervasyon "bilet şeridi" olarak hikâyenin ortasında. Marka
+        mercanı vurgu; okunabilirlik için kağıt yüzey koyu mürekkep taşır.
+      */}
+      <main className="relative z-10 mx-auto w-full max-w-3xl flex-1 px-4 pb-12 pt-6 sm:px-5 sm:pb-16 sm:pt-8">
+        <article>
+          <HeroMedia
+            experience={experience}
+            categoryLabel={categoryKey ? t(categoryKey) : null}
+            cityHref={cityHref}
+            placeLabel={t('experience.place', {
+              sehir: cityName,
+              ulke: countryDisplayName(lang, experience.city.countryCode),
+            })}
+            title={experience.text.title}
+            titleLang={experience.text.language}
+          />
 
-                Bu görsel sayfanın LCP öğesi, o yüzden tembel DEĞİL.
-
-                `priority` KULLANILMIYOR: Next 16'da kaldırılmaya alındı
-                (node_modules/next/dist/docs/.../image.md — "deprecated in favor of
-                preload"). `preload` de doğru araç değil; o, `<head>`'e bir
-                `<link rel=preload>` koyuyor ve geç KEŞFEDİLEN görseller için var.
-                Bu görsel ilk HTML'de zaten duruyor, yani tarayıcı onu görüyor —
-                gereken tek şey sıraya öncelikli girmesi. Doküman da bu durumda
-                `loading="eager"` + `fetchPriority="high"` diyor.
-              */
-              <Image
-                src={experience.images[0].url}
-                alt=""
-                fill
-                loading="eager"
-                fetchPriority="high"
-                sizes="(min-width: 768px) 768px, 100vw"
-                className="object-cover"
-              />
-            ) : (
-              /* Kapaksız eski ilanlar. Gradyan kartla AYNI fonksiyondan geliyor —
-                 aynı ilan listede ve detayda aynı rengi taşıyor. */
-              <div
-                className="h-full w-full"
-                style={experienceCoverStyle(experience.slug)}
-                aria-hidden="true"
-              />
-            )}
-
-            {categoryKey && (
-              <span className="glass glass-edge absolute bottom-4 left-4 rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs font-medium">
-                {t(categoryKey)}
-              </span>
-            )}
-          </div>
-
-          <div className="p-6 sm:p-8">
-            <p className="text-sm font-medium text-fg-muted">
-              <a href={cityHref} className="underline-offset-4 hover:underline">
-                {t('experience.place', {
-                  sehir: cityName,
-                  ulke: countryDisplayName(lang, experience.city.countryCode),
-                })}
-              </a>
-            </p>
-
-            {/* Başlık host'un dilinde: ekran okuyucu doğru fonetikle okusun
-                (WCAG 3.1.2). Sayfanın `<html lang>`i değişmiyor — arayüz hâlâ
-                kullanıcının dilinde. */}
-            <h1
-              className="mt-2 text-pretty text-3xl font-semibold tracking-tight sm:text-4xl"
-              lang={experience.text.language}
-            >
-              {experience.text.title}
-            </h1>
-
+          <div className="experience-sheet relative z-10 -mt-10 rounded-[var(--radius-glass-xl)] px-5 py-7 sm:-mt-14 sm:px-8 sm:py-9">
             {experience.text.isFallback && (
               /*
                 İstenen dilde çeviri yoktu; zincir (docs/I18N.md §2) başka bir dile
                 düştü ve arayüz bunu GİZLEMİYOR. Dil ADI `Intl.DisplayNames`'ten:
                 kendi çeviri tablomuzu tutmuyoruz.
               */
-              <p className="glass glass-edge mt-3 inline-block rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs text-fg-muted">
+              <p className="mb-5 inline-flex rounded-full bg-brand-500/12 px-3 py-1 text-xs font-medium text-brand-700">
                 {t('experience.detail.text.fallback', { dil: textLanguage })}
               </p>
             )}
 
-            <dl className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2 border-b border-[color-mix(in_oklch,var(--fg)_10%,transparent)] pb-5 text-sm">
               <Fact
                 label={t('experience.detail.duration.label')}
                 value={formatExperienceDuration(t, experience.durationMinutes)}
@@ -242,7 +213,7 @@ export default async function ExperienceDetail({
                 label={t('experience.detail.capacity.label')}
                 value={t('experience.detail.capacity.value', { n: experience.capacity })}
               />
-            </dl>
+            </div>
 
             <Section heading={t('experience.detail.about')}>
               {experience.text.description ? (
@@ -252,7 +223,7 @@ export default async function ExperienceDetail({
                   edilemiyor.
                 */
                 <p
-                  className="whitespace-pre-line text-pretty text-sm leading-relaxed text-fg-muted"
+                  className="whitespace-pre-line text-pretty text-[1.05rem] leading-[1.7] text-fg"
                   lang={experience.text.language}
                 >
                   {experience.text.description}
@@ -260,43 +231,51 @@ export default async function ExperienceDetail({
               ) : (
                 /* Yayın doğrulaması çeviri SATIRINI şart koşuyor, açıklamanın dolu
                    olmasını değil — yani bu boşluk bir hata değil, bir durum. */
-                <p className="text-sm text-fg-muted">{t('experience.detail.noDescription')}</p>
+                <p className="text-[0.9375rem] text-fg-muted">{t('experience.detail.noDescription')}</p>
               )}
             </Section>
 
             {experience.itinerary && experience.itinerary.steps.length > 0 && (
               <Section heading={t('experience.detail.itinerary.heading')}>
                 {experience.itinerary.isFallback && (
-                  <p className="glass glass-edge mb-3 inline-block rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs text-fg-muted">
+                  <p className="mb-4 inline-flex rounded-full bg-brand-500/12 px-3 py-1 text-xs font-medium text-brand-700">
                     {t('experience.detail.text.fallback', {
-                      dil: localNameOf(experience.itinerary.language, lang) ?? experience.itinerary.language,
+                      dil:
+                        localNameOf(experience.itinerary.language, lang) ??
+                        experience.itinerary.language,
                     })}
                   </p>
                 )}
                 {/* Sıralı liste: adımların sırası içeriğin parçası, ekran okuyucu
-                    "1/5" diye duyuruyor. */}
-                <ol className="grid gap-3" lang={experience.itinerary.language}>
-                  {experience.itinerary.steps.map((step, index) => (
-                    <li key={`${index}-${step.title}`} className="flex gap-3">
-                      <span
-                        aria-hidden="true"
-                        className="glass glass-edge flex size-7 shrink-0 items-center justify-center rounded-full font-mono text-xs"
-                      >
-                        {index + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">{step.title}</p>
-                        {step.body && (
-                          <p className="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-fg-muted">
-                            {step.body}
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  ))}
+                    "1/5" diye duyuruyor. Ray: Airbnb numaralı daire yerine
+                    Expyra zaman çizgisi. */}
+                <ol className="relative grid gap-0" lang={experience.itinerary.language}>
+                  {experience.itinerary.steps.map((step, index) => {
+                    const last = index === experience.itinerary!.steps.length - 1
+                    return (
+                      <li key={`${index}-${step.title}`} className="relative grid grid-cols-[1.25rem_1fr] gap-4">
+                        <span className="relative flex justify-center" aria-hidden="true">
+                          {!last && (
+                            <span className="absolute top-3 bottom-0 w-px bg-gradient-to-b from-brand-500 to-brand-500/10" />
+                          )}
+                          <span className="relative z-[1] mt-1.5 size-2.5 rounded-full bg-brand-500 ring-4 ring-brand-500/15" />
+                        </span>
+                        <div className={last ? 'pb-0' : 'pb-6'}>
+                          <p className="text-[0.9375rem] font-semibold text-fg">{step.title}</p>
+                          {step.body && (
+                            <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-fg-muted">
+                              {step.body}
+                            </p>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ol>
               </Section>
             )}
+
+            <div className="my-9">{booking}</div>
 
             <Section
               heading={t('experience.detail.spoken.heading')}
@@ -305,10 +284,7 @@ export default async function ExperienceDetail({
               {experience.spokenLanguages.length > 0 ? (
                 <ul className="flex flex-wrap gap-2">
                   {experience.spokenLanguages.map((code) => (
-                    <li
-                      key={code}
-                      className="glass glass-edge rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs"
-                    >
+                    <li key={code} className="chip-brand">
                       {localNameOf(code, lang) ?? code}
                     </li>
                   ))}
@@ -324,7 +300,7 @@ export default async function ExperienceDetail({
                   {experience.tags.map((tag) => (
                     <li
                       key={tag}
-                      className="glass glass-edge rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs"
+                      className="chip-brand"
                       /* Etiketler host'un yazdığı içerik — ilan metniyle aynı dilde. */
                       lang={experience.text.language}
                     >
@@ -338,11 +314,13 @@ export default async function ExperienceDetail({
             {(experience.meetingPoint || experience.text.meetingInstructions) && (
               <Section heading={t('experience.detail.meeting.heading')}>
                 {experience.meetingPoint?.address && (
-                  <p className="text-sm font-medium">{experience.meetingPoint.address}</p>
+                  <p className="text-[0.9375rem] font-semibold text-fg">
+                    {experience.meetingPoint.address}
+                  </p>
                 )}
                 {experience.text.meetingInstructions && (
                   <p
-                    className="mt-1 whitespace-pre-line text-sm leading-relaxed text-fg-muted"
+                    className="mt-1.5 whitespace-pre-line text-[0.9375rem] leading-relaxed text-fg"
                     lang={experience.text.language}
                   >
                     {experience.text.meetingInstructions}
@@ -353,16 +331,18 @@ export default async function ExperienceDetail({
                   KVKK sorusu açıyor (#34'te karar). OSM bağlantısı herkeste çalışıyor
                   ve telefon onu harita uygulamasına devrediyor.
                 */}
-                {experience.meetingPoint?.latitude != null && experience.meetingPoint.longitude != null && (
-                  <a
-                    href={`https://www.openstreetmap.org/?mlat=${experience.meetingPoint.latitude}&mlon=${experience.meetingPoint.longitude}#map=17/${experience.meetingPoint.latitude}/${experience.meetingPoint.longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="glass glass-edge glass-interactive mt-3 inline-flex rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs font-medium"
-                  >
-                    {t('experience.detail.meeting.map')}
-                  </a>
-                )}
+                {experience.meetingPoint?.latitude != null &&
+                  experience.meetingPoint.longitude != null && (
+                    <a
+                      href={`https://www.openstreetmap.org/?mlat=${experience.meetingPoint.latitude}&mlon=${experience.meetingPoint.longitude}#map=17/${experience.meetingPoint.latitude}/${experience.meetingPoint.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-600 underline-offset-4 hover:underline"
+                    >
+                      {t('experience.detail.meeting.map')}
+                      <span aria-hidden="true">→</span>
+                    </a>
+                  )}
               </Section>
             )}
 
@@ -372,11 +352,13 @@ export default async function ExperienceDetail({
               experience.text.notIncluded ||
               experience.text.accessibility) && (
               <Section heading={t('experience.detail.know.heading')}>
-                <dl className="grid gap-3">
+                <dl className="grid gap-5">
                   {experience.minimumAge !== null && (
                     <KnowRow
                       label={t('experience.detail.know.minimumAge')}
-                      value={t('experience.detail.know.minimumAgeValue', { n: experience.minimumAge })}
+                      value={t('experience.detail.know.minimumAgeValue', {
+                        n: experience.minimumAge,
+                      })}
                     />
                   )}
                   {experience.activityLevel !== null && (
@@ -417,14 +399,14 @@ export default async function ExperienceDetail({
               hiç tıklanabilir olmamaktan kötü.
             */}
             <Section heading={t('experience.detail.host.heading')}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 {experience.host.avatarUrl === null ? (
                   /* Fotoğraf yok: baş harf. Uydurma bir avatar (gravatar, harf
                      üreteci) göstermek, olmayan bir kişiselleştirmeyi varmış gibi
                      sunardı. `aria-hidden`: ad hemen yanında zaten yazıyor. */
                   <span
                     aria-hidden="true"
-                    className="glass glass-edge flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+                    className="flex size-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-base font-bold text-white"
                   >
                     {initialOf(experience.host.displayName) ?? '·'}
                   </span>
@@ -432,18 +414,21 @@ export default async function ExperienceDetail({
                   <Image
                     src={experience.host.avatarUrl}
                     alt=""
-                    width={44}
-                    height={44}
-                    className="size-11 shrink-0 rounded-full object-cover"
+                    width={56}
+                    height={56}
+                    className="size-14 shrink-0 rounded-full object-cover"
                   />
                 )}
 
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">
+                <div className="min-w-0 border-l-2 border-brand-500 pl-4">
+                  <p className="text-[0.9375rem] font-semibold text-fg">
                     {experience.host.displayName ?? t('experience.detail.host.anonymous')}
                   </p>
                   {experience.host.headline && (
-                    <p className="text-xs text-fg-muted" lang={experience.host.bioLanguage ?? undefined}>
+                    <p
+                      className="mt-0.5 text-sm text-fg-muted"
+                      lang={experience.host.bioLanguage ?? undefined}
+                    >
                       {experience.host.headline}
                     </p>
                   )}
@@ -454,14 +439,16 @@ export default async function ExperienceDetail({
                   {/* Biyografi tek dilde (host_profile notu); arayüz diliyle
                       eşleşmiyorsa rozet — metin rozetiyle aynı cümle. */}
                   {experience.host.bioLanguage && experience.host.bioLanguage !== lang && (
-                    <p className="glass glass-edge mt-3 inline-block rounded-[var(--radius-glass-sm)] px-3 py-1.5 text-xs text-fg-muted">
+                    <p className="mt-3 inline-flex rounded-full bg-brand-500/12 px-3 py-1 text-xs font-medium text-brand-700">
                       {t('experience.detail.text.fallback', {
-                        dil: localNameOf(experience.host.bioLanguage, lang) ?? experience.host.bioLanguage,
+                        dil:
+                          localNameOf(experience.host.bioLanguage, lang) ??
+                          experience.host.bioLanguage,
                       })}
                     </p>
                   )}
                   <p
-                    className="mt-3 whitespace-pre-line text-sm leading-relaxed text-fg-muted"
+                    className="mt-3 whitespace-pre-line text-[0.9375rem] leading-relaxed text-fg"
                     lang={experience.host.bioLanguage ?? undefined}
                   >
                     {experience.host.bio}
@@ -484,17 +471,17 @@ export default async function ExperienceDetail({
                   Host'tan görsel başına alt metin istemek gerçek bir eksik ve kendi
                   işini hak ediyor.
                 */}
-                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <ul className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2">
                   {experience.images.slice(1).map((image) => (
                     <li
                       key={image.url}
-                      className="relative aspect-[4/3] overflow-hidden rounded-[var(--radius-glass-sm)]"
+                      className="relative aspect-[5/4] w-[min(70vw,16rem)] shrink-0 snap-start overflow-hidden rounded-[var(--radius-glass)]"
                     >
                       <Image
                         src={image.url}
                         alt=""
                         fill
-                        sizes="(min-width: 640px) 240px, 45vw"
+                        sizes="256px"
                         className="object-cover"
                       />
                     </li>
@@ -502,26 +489,14 @@ export default async function ExperienceDetail({
                 </ul>
               </Section>
             )}
-
-            <BookingPanel
-              lang={lang}
-              experience={experience}
-              availability={availability}
-              quote={quote}
-              party={party}
-              selectedSlotId={selectedSlotId}
-              displayCurrency={displayCurrency}
-              currencies={currencies}
-              t={t}
-            />
           </div>
         </article>
 
         {nearby.length > 0 && (
-          <section className="mt-10" aria-labelledby="yakindaki-deneyimler">
+          <section className="mt-12" aria-labelledby="yakindaki-deneyimler">
             <h2
               id="yakindaki-deneyimler"
-              className="text-on-media mb-4 text-sm font-medium text-white/85"
+              className="text-on-media mb-5 text-lg font-semibold tracking-tight text-white"
             >
               {t('experience.detail.nearby.heading', { sehir: cityName })}
             </h2>
@@ -533,8 +508,8 @@ export default async function ExperienceDetail({
           </section>
         )}
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <GlassButton href={cityHref}>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <GlassButton href={cityHref} variant="primary">
             {t('experience.detail.cityLink', { sehir: cityName })}
           </GlassButton>
           <GlassButton href={path(lang, 'explore')}>{t('experience.detail.back')}</GlassButton>
@@ -546,11 +521,96 @@ export default async function ExperienceDetail({
   )
 }
 
+function HeroMedia({
+  experience,
+  categoryLabel,
+  cityHref,
+  placeLabel,
+  title,
+  titleLang,
+}: {
+  experience: GuestExperienceDetail
+  categoryLabel: string | null
+  cityHref: string
+  placeLabel: string
+  title: string
+  titleLang: string
+}) {
+  const cover = experience.images[0]
+
+  return (
+    <div className="relative isolate overflow-hidden rounded-[var(--radius-glass-xl)]">
+      <div className="relative aspect-[5/4] w-full sm:aspect-[16/11]">
+        {cover ? (
+          /*
+            Kapak API'de zaten ilk sırada (GuestExperienceQuery.LoadImagesAsync),
+            yani kartta görülen görsel ile burada görülen aynı.
+
+            Bu görsel sayfanın LCP öğesi, o yüzden tembel DEĞİL.
+
+            `priority` KULLANILMIYOR: Next 16'da kaldırılmaya alındı
+            (node_modules/next/dist/docs/.../image.md — "deprecated in favor of
+            preload"). `preload` de doğru araç değil; o, `<head>`'e bir
+            `<link rel=preload>` koyuyor ve geç KEŞFEDİLEN görseller için var.
+            Bu görsel ilk HTML'de zaten duruyor, yani tarayıcı onu görüyor —
+            gereken tek şey sıraya öncelikli girmesi. Doküman da bu durumda
+            `loading="eager"` + `fetchPriority="high"` diyor.
+          */
+          <Image
+            src={cover.url}
+            alt=""
+            fill
+            loading="eager"
+            fetchPriority="high"
+            sizes="(min-width: 768px) 768px, 100vw"
+            className="object-cover"
+          />
+        ) : (
+          /* Kapaksız eski ilanlar. Gradyan kartla AYNI fonksiyondan geliyor —
+             aynı ilan listede ve detayda aynı rengi taşıyor. */
+          <div className="h-full w-full" style={experienceCoverStyle(experience.slug)} aria-hidden="true" />
+        )}
+
+        {/* Alttan marka tonlu örtü — başlık medyada okunur kalsın. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-[oklch(0.18_0.03_25_/_0.92)] via-[oklch(0.18_0.02_25_/_0.35)] to-transparent"
+        />
+      </div>
+
+      <div className="text-on-media absolute inset-x-0 bottom-0 px-5 pb-14 pt-20 sm:px-7 sm:pb-16">
+        {categoryLabel && (
+          <p className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-white/90 uppercase">
+            <span aria-hidden="true" className="inline-block h-3 w-1 rounded-full bg-brand-400" />
+            {categoryLabel}
+          </p>
+        )}
+
+        <p className="text-sm font-medium text-white/80">
+          <a href={cityHref} className="underline-offset-4 hover:text-white hover:underline">
+            {placeLabel}
+          </a>
+        </p>
+
+        {/* Başlık host'un dilinde: ekran okuyucu doğru fonetikle okusun
+            (WCAG 3.1.2). Sayfanın `<html lang>`i değişmiyor — arayüz hâlâ
+            kullanıcının dilinde. */}
+        <h1
+          className="mt-2 max-w-[22ch] text-pretty text-[1.85rem] font-semibold leading-[1.12] tracking-tight text-white sm:text-[2.35rem]"
+          lang={titleLang}
+        >
+          {title}
+        </h1>
+      </div>
+    </div>
+  )
+}
+
 function KnowRow({ label, value, lang }: { label: string; value: string; lang?: string }) {
   return (
-    <div className="grid gap-0.5 sm:grid-cols-[10rem_1fr] sm:gap-3">
-      <dt className="text-xs font-medium text-fg-muted">{label}</dt>
-      <dd className="whitespace-pre-line text-sm leading-relaxed" lang={lang}>
+    <div className="grid gap-1 sm:grid-cols-[9.5rem_1fr] sm:gap-4">
+      <dt className="text-xs font-semibold tracking-wide text-brand-600 uppercase">{label}</dt>
+      <dd className="whitespace-pre-line text-[0.9375rem] leading-relaxed text-fg" lang={lang}>
         {value}
       </dd>
     </div>
@@ -559,9 +619,11 @@ function KnowRow({ label, value, lang }: { label: string; value: string; lang?: 
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="glass glass-edge rounded-[var(--radius-glass-sm)] px-4 py-3">
-      <dt className="text-xs font-medium text-fg-muted">{label}</dt>
-      <dd className="mt-0.5 text-sm font-semibold">{value}</dd>
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <p className="text-[0.6875rem] font-semibold tracking-[0.12em] text-brand-600 uppercase">
+        {label}
+      </p>
+      <p className="text-sm font-semibold text-fg">{value}</p>
     </div>
   )
 }
@@ -577,9 +639,9 @@ function Section({
 }) {
   return (
     <section className="mt-8">
-      <h2 className="text-sm font-semibold">{heading}</h2>
-      {help && <p className="mt-1 text-xs text-fg-muted">{help}</p>}
-      <div className="mt-3">{children}</div>
+      <h2 className="text-base font-semibold tracking-tight text-fg">{heading}</h2>
+      {help && <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">{help}</p>}
+      <div className="mt-4">{children}</div>
     </section>
   )
 }
@@ -698,6 +760,21 @@ function slotFrom(query: Record<string, string | string[] | undefined>): string 
   return single && single.length > 0 ? single : null
 }
 
+/**
+ * Duvar saati dizgesine dakika ekler (`2026-10-13T14:00` → `…T16:30`).
+ * Saat dilimi YOK — zaten local duvar saati; DST kayması seans üretirken
+ * çözülmüş durumda (API `startsAtLocal`/`durationMinutes` çifti).
+ */
+function wallClockPlusMinutes(startsAtLocal: string, durationMinutes: number): string {
+  const [datePart, timePart = '00:00'] = startsAtLocal.split('T')
+  const [hourText = '0', minuteText = '0'] = timePart.split(':')
+  const total = Number(hourText) * 60 + Number(minuteText) + durationMinutes
+  const hours = Math.floor(total / 60) % 24
+  const minutes = ((total % 60) + 60) % 60
+
+  return `${datePart}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
 function bookingQuery(
   input: PartySelection & { slotId: string; currency: string | null },
 ): string {
@@ -766,53 +843,71 @@ function BookingPanel({
   return (
     <BookingShell title={t('experience.detail.booking.title')}>
       {pricing ? (
-        <p className="text-sm">
-          <span className="font-semibold">
+        <p className="text-base">
+          <span className="text-xl font-semibold tracking-tight text-fg">
             {formatMinorMoney(lang, pricing.fromAmountMinor, pricing.chargeCurrency, pricing.chargeMinorUnits)}
           </span>{' '}
-          <span className="text-fg-muted">{t('experience.detail.booking.perPerson')}</span>
+          <span className="text-sm text-fg-muted">{t('experience.detail.booking.perPerson')}</span>
         </p>
       ) : null}
 
-      <div className="mt-4">
-        <p className="text-sm font-medium">{t('experience.detail.booking.pickDate')}</p>
+      <div className="mt-5">
+        <p className="text-sm font-semibold text-fg">{t('experience.detail.booking.pickDate')}</p>
 
         {/*
           Seans seçimi LİNK, form değil: bir seçim URL'yi değiştiriyor ve o URL
           paylaşılabilir. Radyo düğmeli bir form aynı şeyi yapardı ama JS'siz
           her seçimde ayrıca "uygula"ya basmak gerekirdi.
+
+          Yatay şerit: Airbnb dikey satır listesi değil — bilet delikli şerit.
         */}
-        <ul className="mt-2 flex flex-wrap gap-2">
+        <ul className="-mx-1 mt-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-1">
           {availability.slots.map((slot) => {
             const selected = slot.slotId === selectedSlotId
+            const scarce = slot.remainingCapacity > 0 && slot.remainingCapacity <= 2
 
             return (
-              <li key={slot.slotId}>
+              <li key={slot.slotId} className="snap-start">
                 <a
                   href={`${here}?${bookingQuery({ ...party, slotId: slot.slotId, currency: displayCurrency })}`}
                   aria-current={selected ? 'true' : undefined}
-                  className={`inline-flex flex-col rounded-[var(--radius-glass-sm)] border px-3 py-2 text-sm transition-colors ${
+                  className={[
+                    'flex min-w-[9.5rem] flex-col rounded-[1.15rem] border px-3.5 py-3 transition-[border-color,background-color,box-shadow,transform] duration-200',
                     selected
-                      ? 'border-[var(--focus-ring)] bg-[rgb(var(--glass-tint)_/_0.35)] font-semibold'
-                      : 'border-[var(--glass-border)] hover:bg-[rgb(var(--glass-tint)_/_0.22)]'
-                  }`}
+                      ? 'border-brand-500 bg-brand-500 text-white shadow-[0_12px_28px_-12px_oklch(0.55_0.24_25_/_0.65)]'
+                      : 'border-[color-mix(in_oklch,var(--fg)_12%,transparent)] bg-[color-mix(in_oklch,white_55%,transparent)] hover:border-brand-500/40',
+                  ].join(' ')}
                 >
-                  <span>
+                  <span className={['text-sm font-semibold', selected ? 'text-white' : 'text-fg'].join(' ')}>
                     {formatWallClock(lang, slot.startsAtLocal, {
                       weekday: 'short',
                       day: 'numeric',
                       month: 'short',
                     })}
                   </span>
-                  <span className="text-fg-muted">
+                  <span className={['mt-1 text-xs', selected ? 'text-white/85' : 'text-fg-muted'].join(' ')}>
                     {formatWallClock(lang, slot.startsAtLocal, {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                    –
+                    {formatWallClock(lang, wallClockPlusMinutes(slot.startsAtLocal, slot.durationMinutes), {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
                   </span>
                   {/* Kalan yer: "son 2 yer" bir karar bilgisi. Dolu seans listede
                       yok (sunucu eliyor), o yüzden "Doldu" dalı burada değil. */}
-                  <span className="text-xs text-fg-muted">
+                  <span
+                    className={[
+                      'mt-2 text-[0.6875rem] font-semibold',
+                      selected
+                        ? 'text-white'
+                        : scarce
+                          ? 'text-brand-600'
+                          : 'text-fg-muted',
+                    ].join(' ')}
+                  >
                     {t('experience.detail.booking.spotsLeft', { n: slot.remainingCapacity })}
                   </span>
                 </a>
@@ -826,7 +921,7 @@ function BookingPanel({
           misafir başka bir dilimde olabilir. Yazmasaydık, kendi saatiyle
           okuyup uçağı kaçıran biri olurdu.
         */}
-        <p className="mt-2 text-xs text-fg-muted">
+        <p className="mt-3 text-xs text-fg-muted">
           {t('experience.detail.booking.timeZone', { bolge: availability.timeZoneId })}
         </p>
       </div>
@@ -881,7 +976,7 @@ function BookingPanel({
         </div>
 
         <div className="sm:col-span-3">
-          <GlassButton type="submit" size="sm">
+          <GlassButton type="submit" size="sm" variant="primary" className="w-full sm:w-auto">
             {t('experience.detail.booking.update')}
           </GlassButton>
         </div>
@@ -900,9 +995,14 @@ function BookingPanel({
 
 function BookingShell({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="mt-8 rounded-[var(--radius-glass)] border border-[rgb(var(--glass-tint)_/_0.18)] p-5">
-      <p className="text-sm font-semibold">{title}</p>
-      <div className="mt-3">{children}</div>
+    <div className="relative overflow-hidden rounded-[var(--radius-glass-xl)] border border-brand-500/20 bg-gradient-to-br from-brand-500/[0.08] via-[color-mix(in_oklch,white_70%,transparent)] to-brand-500/[0.04] p-5 sm:p-6">
+      {/* Bilet kenarı — noktalı kesik hissi */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-5 left-0 w-px border-l border-dashed border-brand-500/35"
+      />
+      <p className="pl-3 text-base font-semibold tracking-tight text-fg">{title}</p>
+      <div className="mt-4 pl-3">{children}</div>
     </div>
   )
 }
