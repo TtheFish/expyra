@@ -8,6 +8,7 @@ import {
 } from '@/features/experiences/api'
 import { categoryMessageKey } from '@/features/host/experiences-api'
 import type { Translate } from '@/features/i18n/dictionary'
+import { formatMinorMoney } from '@/features/i18n/format'
 import { cityDisplayName } from '@/features/places/api'
 import { localNameOf } from '@/lib/languages'
 
@@ -41,94 +42,94 @@ export function ExperienceCard({
 
   return (
     /*
-      `glass-interactive` GERİ GELDİ ve artık dürüst: hover'da yükselen, basılınca
-      çöken yüzeyin gerçekten gittiği bir yer var (detay sayfası). Blok 1'de
-      kaldırılmasının sebebi tam olarak bunun yokluğuydu — yanlış afordans.
+      Kart bir YÜZEY DEĞİL: kağıdın üstünde çerçevesiz duruyor, onu ayıran tek
+      şey görselin köşe yarıçapı (tasarım). Çerçeve + gölge eklemek ızgarayı
+      kutu tarlasına çeviriyordu.
 
       Kart komple <a> ile SARILMIYOR: ekran okuyucu sarmalayıcı bir linkin tüm
-      metnini tek link adı olarak okur ("Prag, Çekya Vltava kıyısında fotoğraf turu
-      2 saat en fazla 6 kişi"). Link BAŞLIKTA, tıklama alanı `after:inset-0` ile
-      karta yayılıyor; article'daki `relative` o mutlak konumlandırmanın çerçevesi.
+      metnini tek link adı olarak okur ("Prag, Çekya Vltava kıyısında fotoğraf
+      turu 2 saat en fazla 6 kişi"). Link BAŞLIKTA, tıklama alanı `after:inset-0`
+      ile karta yayılıyor; article'daki `relative` o mutlak konumlandırmanın
+      çerçevesi.
+
+      Tasarımdaki KALP DÜĞMESİ bilinçli olarak yok: favori ucu Blok 15'te
+      (#23). Çalışmayan bir kalp, host kartının bir gün link olmaması kararıyla
+      aynı sebeple yanlış — tıklanabilir görünüp hiçbir şey yapmamak.
     */
-    <article className="glass glass-edge glass-interactive relative overflow-hidden rounded-[var(--radius-glass-lg)]">
-      <div className="relative h-40 w-full">
+    <article className="group relative">
+      <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-glass)] bg-[var(--surface-sunken)]">
         <ExperienceCover image={item.cover} slug={item.slug} />
 
         {categoryKey && (
-          <span className="glass glass-edge absolute bottom-3 left-3 rounded-[var(--radius-glass-sm)] px-2.5 py-1 text-[0.6875rem] font-medium">
+          /* Fotoğrafın üstünde duruyor: `glass` burada YERİNDE (bkz. globals.css). */
+          <span className="glass absolute top-3 left-3 rounded-full px-3 py-1.5 text-xs font-bold">
             {t(categoryKey)}
           </span>
         )}
       </div>
 
-      <div className="p-5">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          {/* Şehir/ülke sırası da anahtarın içinde: her dilde aynı değil. */}
-          <span className="text-xs font-medium text-fg-muted">
-            {t('experience.place', {
-              sehir: cityDisplayName(lang, item.city),
-              ulke: countryDisplayName(lang, item.city.countryCode),
-            })}
-          </span>
-
-          {item.text.isFallback && (
-            /*
-              İstenen dilde çeviri yoktu; metin başka bir dilde geldi ve arayüz
-              bunu GİZLEMİYOR (docs/I18N.md §2). Rozet dilin ADINI yazıyor —
-              görsel olarak kısa, ekran okuyucuya tam cümle olarak veriliyor.
-              Rozetin kendisinde `lang` YOK: içinde yazan "Çekçe" kullanıcının
-              dilinde bir sözcük, Çekçe bir metin değil.
-            */
-            <span className="shrink-0 text-xs font-medium text-fg-muted">
-              <span className="sr-only">{t('experience.card.language', { dil: textLanguage })}</span>
-              <span aria-hidden="true">{textLanguage}</span>
-            </span>
-          )}
-        </div>
-
-        <h3 className="text-base font-semibold leading-snug">
+      <div className="mt-3">
+        <h3 className="text-base leading-snug font-bold">
           <a
             href={experiencePath(lang, item.slug)}
-            /* Odak halkası LİNKTE: article odak alamıyor, dolayısıyla
-               `glass-interactive`'in kendi `:focus-visible` kuralı hiç ateşlenmez. */
-            className="rounded-[4px] after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
-            /* Başlık host'un dilinde olabilir: ekran okuyucu doğru fonetikle
-               okusun (WCAG 3.1.2). */
+            /* Odak halkası LİNKTE: kartın kendisi odak almıyor. */
+            className="line-clamp-2 rounded-[4px] after:absolute after:inset-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+            /* Başlık host'un dilinde: ekran okuyucu doğru fonetikle okusun (WCAG 3.1.2). */
             lang={item.text.language}
           >
             {item.text.title}
           </a>
         </h3>
 
+        <p className="mt-1 text-sm text-fg-muted">
+          {t('experience.place', {
+            sehir: cityDisplayName(lang, item.city),
+            ulke: countryDisplayName(lang, item.city.countryCode),
+          })}
+        </p>
+
         {/*
-          Süre önce KENDİ anahtarlarında çekimleniyor, sonra `{sure}` olarak satıra
-          yerleşiyor: bir metin tek çoğul sayacı taşıyabiliyor, burada ise iki sayım
-          var (süre ve kişi). İngilizce'de "1 hour"/"2 hours" ve "1 person"/"6 people"
-          ayrımı ancak böyle korunuyor.
+          Süre önce KENDİ anahtarlarında çekimleniyor, sonra `{sure}` olarak
+          satıra yerleşiyor: bir metin tek çoğul sayacı taşıyabiliyor, burada ise
+          iki sayım var (süre ve kişi).
         */}
-        <p className="mt-4 text-xs text-fg-muted">
+        <p className="mt-0.5 text-sm text-fg-muted">
           {t('experience.meta', {
             sure: formatExperienceDuration(t, item.durationMinutes),
             n: item.capacity,
           })}
         </p>
+
+        {item.pricing && (
+          <p className="mt-1.5 text-sm text-fg-muted">
+            <span className="font-bold text-fg">
+              {formatMinorMoney(
+                lang,
+                item.pricing.fromAmountMinor,
+                item.pricing.chargeCurrency,
+                item.pricing.chargeMinorUnits,
+              )}
+            </span>{' '}
+            {t('experience.card.perPerson')}
+          </p>
+        )}
+
+        {item.text.isFallback && (
+          /*
+            İstenen dilde çeviri yoktu; metin başka bir dilde geldi ve arayüz
+            bunu GİZLEMİYOR (docs/I18N.md §2). Rozetin kendisinde `lang` YOK:
+            içinde yazan "Çekçe" kullanıcının dilinde bir sözcük.
+          */
+          <p className="mt-1.5 text-xs text-fg-muted">
+            <span className="sr-only">{t('experience.card.language', { dil: textLanguage })}</span>
+            <span aria-hidden="true">{textLanguage}</span>
+          </p>
+        )}
       </div>
     </article>
   )
 }
 
-/**
- * Kapak: gerçek görsel varsa o, yoksa slug'dan türeyen gradyan.
- *
- * **`alt` bilerek BOŞ ve `title` da yok.** Görsel kartı süslüyor; hemen
- * yanındaki başlık aynı ilanı zaten adlandırıyor. `alt="Alaçatı Rüzgar Sörfü"`
- * yazılsaydı ekran okuyucu aynı adı iki kez okurdu (WCAG H67 — dekoratif görselin
- * adı boş bırakılır) ve `title` da aynı tekrarı bazı okuyucularda geri getirirdi.
- *
- * `sizes` GEREKLİ: `fill` kullanan bir görsel, kaç piksel geniş çizileceğini
- * kendi başına bilemiyor ve sizes olmadan Next her ekrana en büyük varyantı
- * gönderiyor. Kart üç sütunlu ızgarada ~1/3 ekran, mobilde tam genişlik.
- */
 function ExperienceCover({ image, slug }: { image: GuestExperienceImage | null; slug: string }) {
   if (!image) {
     // Kapak Blok 6'da yayın koşulu oldu; buraya yalnız ondan ÖNCE yayınlanmış
@@ -141,7 +142,7 @@ function ExperienceCover({ image, slug }: { image: GuestExperienceImage | null; 
       src={image.url}
       alt=""
       fill
-      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+      sizes="(min-width: 1280px) 18vw, (min-width: 768px) 30vw, 50vw"
       className="object-cover"
     />
   )

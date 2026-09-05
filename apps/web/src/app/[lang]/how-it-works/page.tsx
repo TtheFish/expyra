@@ -41,17 +41,25 @@ export default async function HowItWorksPage({ params }: { params: Promise<{ lan
   return (
     <div className="flex min-h-dvh flex-col">
       <HeaderShell>
-          <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
-          <GlassButton variant="ghost" size="sm" href={path(lang, 'home')} className="text-nav-link">
+          <BrandLogo href={path(lang, 'home')} />
+          {/* Orta sütun boş: bu sayfada arama bağlamı yok. Izgara yine üç
+              sütunlu ki logo solda, çıkış sağda kalsın. */}
+          <span />
+          <GlassButton
+            variant="ghost"
+            size="sm"
+            href={path(lang, 'home')}
+            className="justify-self-end"
+          >
             {t('howItWorks.back')}
           </GlassButton>
       </HeaderShell>
 
       <main className="relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 py-16">
-        <h1 className="text-on-media text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+        <h1 className="text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl">
           {t('nav.howItWorks')}
         </h1>
-        <p className="text-on-media mt-3 max-w-lg text-white/85">{t('howItWorks.lede')}</p>
+        <p className="mt-3 max-w-lg text-fg-muted">{t('howItWorks.lede')}</p>
 
         <ol className="mt-12 space-y-4">
           {steps.map((step, index) => (

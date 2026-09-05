@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { BrandLogo } from '@/components/brand/brand-logo'
+import { HeaderSearch } from '@/components/brand/header-search'
 import { LanguagePicker } from '@/components/i18n/language-picker'
 import { GlassButton } from '@/components/ui/glass-button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
@@ -37,10 +38,17 @@ import { path } from '@/lib/routes'
  */
 export function HeaderShell({ children }: { children: React.ReactNode }) {
   return (
-    /* z-30: nav'daki açılır paneller (dil seçici, hesap menüsü) main'in üstünde
-       çizilmeli. Header ve main aynı z-10'daysa DOM'da sonra gelen main kazanır. */
-    <header className="relative z-30 px-4 pt-4">
-      <div className="glass glass-edge glass-nav mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-3 pl-4">
+    /*
+      Tam genişlikte YAPIŞKAN bar (tasarım). Eskiden sayfanın üstünde yüzen bir
+      haptı çünkü altında video vardı; artık altından beyaz sayfa geçiyor ve
+      camın işi yalnız sınırı belli etmek.
+
+      `z-40`: nav'daki açılır paneller (dil seçici, hesap menüsü) ve şehir
+      seçicinin paneli (z-30) main'in üstünde çizilmeli; bar da onların
+      bağlamını taşıdığı için en üstte.
+    */
+    <header className="glass-nav sticky top-0 z-40 border-b border-[var(--line)]">
+      <div className="mx-auto grid h-20 w-full max-w-[90rem] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-4 sm:px-10">
         {children}
       </div>
     </header>
@@ -55,31 +63,30 @@ export async function SiteHeader({ lang }: { lang: string }) {
 
   return (
     <HeaderShell>
-        <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
+        <BrandLogo href={path(lang, 'home')} />
 
-        <nav className="hidden items-center gap-1 sm:flex" aria-label={t('nav.primaryLabel')}>
-          <GlassButton variant="ghost" size="sm" href={path(lang, 'explore')} className="text-nav-link">
-            {t('nav.explore')}
-          </GlassButton>
-          <GlassButton
-            variant="ghost"
-            size="sm"
-            href={path(lang, 'myExperiences')}
-            className="text-nav-link"
-          >
-            {t('nav.myExperiences')}
-          </GlassButton>
-          <GlassButton
-            variant="ghost"
-            size="sm"
-            href={path(lang, 'becomeHost')}
-            className="text-nav-link"
-          >
-            {t('nav.becomeHost')}
-          </GlassButton>
-        </nav>
+        <HeaderSearch
+          lang={lang}
+          labels={{
+            where: t('search.destination.label'),
+            when: t('search.date.label'),
+            who: t('search.guests.label'),
+            submit: t('search.submit'),
+          }}
+        />
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-self-end gap-1 whitespace-nowrap">
+          <nav className="hidden items-center lg:flex" aria-label={t('nav.primaryLabel')}>
+            <GlassButton variant="ghost" size="sm" href={path(lang, 'explore')}>
+              {t('nav.explore')}
+            </GlassButton>
+            <GlassButton variant="ghost" size="sm" href={path(lang, 'myExperiences')}>
+              {t('nav.myExperiences')}
+            </GlassButton>
+            <GlassButton variant="ghost" size="sm" href={path(lang, 'becomeHost')}>
+              {t('nav.becomeHost')}
+            </GlassButton>
+          </nav>
           <LanguagePicker
             current={lang}
             labels={{

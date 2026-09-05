@@ -107,12 +107,12 @@ export default async function NewExperiencePage({
       <main className="relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 py-12 sm:py-16">
         <a
           href={path(lang, 'becomeHost')}
-          className="text-on-media text-sm text-white/80 underline underline-offset-4 hover:text-white"
+          className="text-sm font-semibold text-fg-muted underline underline-offset-4 hover:text-fg"
         >
           {t('host.experience.back')}
         </a>
 
-        <GlassSurface tone="thick" className="auth-card mt-4">
+        <GlassSurface tone="paper" className="auth-card mt-4">
           <h1 className="auth-title">{t('host.experience.new.title')}</h1>
           <p className="auth-lede">{t('host.experience.new.lede')}</p>
 

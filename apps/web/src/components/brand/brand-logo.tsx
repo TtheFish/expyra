@@ -75,17 +75,19 @@ export function BrandLogo({ className = '', href = '/', markOnly = false }: Bran
     <>
       {/* text-on-media gölgesi SVG barlarını karartmasın */}
       <span className="inline-flex [filter:none] [text-shadow:none]">
-        <ExpyraMark className="size-8" />
+        <ExpyraMark className="size-[2.125rem]" />
       </span>
       {!markOnly && (
-        <span className="text-[1.05rem] font-semibold tracking-tight">Expyra</span>
+        <span className="text-[1.25rem] font-extrabold tracking-[-0.03em]">Expyra</span>
       )}
     </>
   )
 
   const classes = [
-    'inline-flex items-center gap-2.5 transition-opacity duration-300 hover:opacity-90',
-    className || 'text-fg',
+    'inline-flex items-center gap-2.5 whitespace-nowrap transition-opacity duration-300 hover:opacity-90',
+    /* Varsayılan kelime markası MARKA RENGİNDE (tasarım): kağıt üstünde mürekkep
+       renginde bir "Expyra" logo değil başlık gibi okunuyordu. */
+    className || 'text-[var(--color-brand-600)]',
   ].join(' ')
 
   if (href) {

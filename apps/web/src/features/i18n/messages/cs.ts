@@ -154,6 +154,7 @@ export const cs = {
     many: '{sure} · až pro {n} osoby',
     other: '{sure} · až pro {n} osob',
   },
+  'experience.card.perPerson': 'za osobu',
   'experience.card.language': 'Tato nabídka je napsaná v jazyce {dil}',
 
   'explore.heading.all': 'Všechny zážitky',

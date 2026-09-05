@@ -23,13 +23,14 @@ export async function SiteFooter({ lang }: { lang: string }) {
   ]
 
   return (
-    <footer className="relative z-10 mx-auto w-full max-w-5xl px-4 pb-8">
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-[var(--glass-border)] px-1 py-5 text-xs">
+    /* Sayfanın sonu: kağıttan bir ton koyu zemin + üstte çizgi (tasarım). */
+    <footer className="mt-auto border-t border-[var(--line)] bg-[var(--surface-sunken)]">
+      <div className="mx-auto flex w-full max-w-[90rem] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-8 text-sm text-fg-muted sm:px-10">
         {/* Marka adı çevrilmiyor. */}
-        <span className="font-semibold tracking-tight text-fg">Expyra</span>
+        <span className="font-bold tracking-[-0.02em] text-fg">Expyra</span>
 
         <nav aria-label={t('nav.footerLabel')}>
-          <ul className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <ul className="flex flex-wrap items-center gap-x-6 gap-y-2 font-semibold">
             {links.map((link) => (
               <li key={link.href}>
                 <a

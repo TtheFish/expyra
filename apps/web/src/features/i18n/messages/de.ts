@@ -96,6 +96,7 @@ export const de = {
     one: '{sure} · bis zu {n} Person',
     other: '{sure} · bis zu {n} Personen',
   },
+  'experience.card.perPerson': 'pro Person',
   'experience.card.language': 'Dieses Angebot ist auf {dil} verfasst',
 
   'explore.heading.all': 'Alle Erlebnisse',

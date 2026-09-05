@@ -102,6 +102,12 @@ export type GuestExperienceSummary = {
    * gradyan yer tutucuya düşüyor — hiç çizmemek yerine.
    */
   cover: GuestExperienceImage | null
+  /**
+   * "Şu tutardan başlayan" fiyat. Uç bunu BAŞTAN BERİ gönderiyordu
+   * (`GuestExperienceSummaryResponse.Pricing`); tipte yoktu, dolayısıyla kart
+   * fiyatı çizemiyordu. Fiyatsız ilan (henüz kademe girilmemiş) `null`.
+   */
+  pricing: GuestPricing | null
   publishedAtUtc: string
 }
 

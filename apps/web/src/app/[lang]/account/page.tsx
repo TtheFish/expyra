@@ -66,7 +66,7 @@ export default async function AccountPage({ params }: { params: Promise<{ lang: 
       <SiteHeader lang={lang} />
 
       <main className="relative z-10 mx-auto w-full max-w-2xl flex-1 px-4 py-12 sm:py-16">
-        <GlassSurface tone="thick" className="auth-card">
+        <GlassSurface tone="paper" className="auth-card">
           <h1 className="auth-title">{t('account.title')}</h1>
           <p className="auth-lede">{t('account.lede')}</p>
 

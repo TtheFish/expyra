@@ -10,7 +10,13 @@ import { useRef, type ComponentPropsWithoutRef, type ElementType, type ReactNode
  * React state'i yok, bu yüzden yeniden render tetiklemiyor.
  */
 
-type GlassTone = 'default' | 'thick' | 'brand'
+/**
+ * `paper`: kağıt üstünde duran KART — cam değil. Beyaz zeminde cam görünmez,
+ * o yüzden içerik yüzeyleri bunu kullanıyor (globals.css başlığı).
+ * `default` / `thick`: gerçek cam — yalnız fotoğraf, video ya da kayan sayfa
+ * üstünde. `brand`: dolu mercan yüzey.
+ */
+type GlassTone = 'paper' | 'default' | 'thick' | 'brand'
 
 type GlassSurfaceProps<T extends ElementType> = {
   as?: T
@@ -22,6 +28,7 @@ type GlassSurfaceProps<T extends ElementType> = {
 } & Omit<ComponentPropsWithoutRef<T>, 'as' | 'className' | 'children'>
 
 const toneClass: Record<GlassTone, string> = {
+  paper: '',
   default: '',
   thick: 'glass-thick',
   brand: 'glass-brand',
@@ -50,7 +57,7 @@ export function GlassSurface<T extends ElementType = 'div'>({
     : undefined
 
   const classes = [
-    'glass glass-edge',
+    tone === 'paper' ? 'surface' : 'glass glass-edge',
     toneClass[tone],
     interactive ? 'glass-interactive' : '',
     sheen ? 'glass-sheen' : '',

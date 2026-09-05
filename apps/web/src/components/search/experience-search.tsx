@@ -44,6 +44,13 @@ type ExperienceSearchProps = {
   defaultDate?: string
   defaultAdults?: number
   defaultChildren?: number
+  /**
+   * Çubuk neyin üstünde duruyor.
+   *
+   * `paper` (varsayılan): beyaz sayfa. Katı kart — cam beyaz üstünde beyazdır,
+   * yani görünmez. `media`: hero videosunun üstünde; orada cam YERİNDE.
+   */
+  tone?: 'paper' | 'media'
   className?: string
 }
 
@@ -55,6 +62,7 @@ export async function ExperienceSearch({
   defaultDate = '',
   defaultAdults,
   defaultChildren,
+  tone = 'paper',
   className = '',
 }: ExperienceSearchProps) {
   const [
@@ -89,7 +97,9 @@ export async function ExperienceSearch({
         (context İÇİNDE z-30) DOM'da sonra gelen kardeşlerin — butonlar, kartlar —
         altında çizilir. Paneldeki z-index tek başına yetmez.
       */
-      className={`glass glass-edge glass-thick search-bar relative z-20 mx-auto w-full max-w-4xl ${className}`}
+      className={`search-bar relative z-20 w-full max-w-4xl ${
+        tone === 'media' ? 'glass glass-edge glass-thick' : 'surface'
+      } ${className}`}
     >
       <div className="search-group">
         <CityPicker

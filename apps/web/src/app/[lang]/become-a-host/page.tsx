@@ -113,10 +113,10 @@ export default async function BecomeHostPage({ params }: { params: Promise<{ lan
       <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:py-16">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-on-media text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            <h1 className="text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl">
               {isHost ? t('host.panel.title') : t('host.invite.title')}
             </h1>
-            <p className="text-on-media mt-2 max-w-xl text-white/85">
+            <p className="mt-2 max-w-xl text-fg-muted">
               {isHost ? t('host.panel.lede') : t('host.invite.lede')}
             </p>
           </div>
@@ -144,7 +144,7 @@ export default async function BecomeHostPage({ params }: { params: Promise<{ lan
         */}
         {hasListings ? null : (
           <section className="mt-14" aria-labelledby="host-adimlar">
-            <h2 id="host-adimlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
+            <h2 id="host-adimlar" className="mb-4 text-sm font-semibold text-fg-muted">
               {t('host.steps.heading')}
             </h2>
 
@@ -406,7 +406,7 @@ function ListingsSection({
   if (experiences === null) {
     return (
       <section className="mt-10" aria-labelledby="host-ilanlar">
-        <h2 id="host-ilanlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
+        <h2 id="host-ilanlar" className="mb-4 text-sm font-semibold text-fg-muted">
           {t('host.listings.errorHeading')}
         </h2>
         <div className="glass glass-edge rounded-[var(--radius-glass)] p-5 text-sm text-fg-muted">
@@ -419,7 +419,7 @@ function ListingsSection({
   if (experiences.length === 0) {
     return (
       <section className="mt-10" aria-labelledby="host-ilanlar">
-        <h2 id="host-ilanlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
+        <h2 id="host-ilanlar" className="mb-4 text-sm font-semibold text-fg-muted">
           {t('host.listings.empty.heading')}
         </h2>
 
@@ -440,7 +440,7 @@ function ListingsSection({
 
   return (
     <section className="mt-10" aria-labelledby="host-ilanlar">
-      <h2 id="host-ilanlar" className="text-on-media mb-4 text-sm font-medium text-white/75">
+      <h2 id="host-ilanlar" className="mb-4 text-sm font-semibold text-fg-muted">
         {t('host.listings.heading', { sayi: experiences.length })}
       </h2>
 

@@ -1,26 +1,15 @@
-'use client'
-
 import type { ReactNode } from 'react'
-import { HeroWallpaper, type WallpaperLabels } from '@/components/brand/hero-wallpaper'
 
 /**
- * Tüm sayfalarda ortak video duvar kağıdı + içerik katmanı.
- * Duvar kağıdı layout'ta yaşar; sekme değişince unmount olmaz.
+ * Sayfa kabuğu. **Duvar kağıdı ARTIK BURADA DEĞİL**: eskiden tüm sayfanın
+ * arkasında sabit bir video vardı ve her ekran onun üstünde okunuyordu. Yeni
+ * tasarımda sayfa düz beyaz kağıt; video yalnız ana sayfanın hero kartında
+ * (`HeroWallpaper`, `app/[lang]/page.tsx`).
  *
- * `labels` buradan GEÇİYOR ama burada üretilmiyor: bu bir istemci bileşeni ve
- * sözlük `server-only`. Metinleri layout çözüp veriyor (docs/I18N.md §5).
+ * Bileşen bir sarmalayıcıya indi ama SİLİNMEDİ: layout'un tek çocuğu olması
+ * `min-h-dvh` + `flex-col` düzenini tek yerde tutuyor ve sayfa başına
+ * kopyalanmasını engelliyor. İstemci bileşeni olması da gerekmiyor artık.
  */
-export function SiteChrome({
-  children,
-  wallpaperLabels,
-}: {
-  children: ReactNode
-  wallpaperLabels: WallpaperLabels
-}) {
-  return (
-    <>
-      <HeroWallpaper labels={wallpaperLabels} />
-      <div className="relative z-10 flex min-h-dvh flex-col">{children}</div>
-    </>
-  )
+export function SiteChrome({ children }: { children: ReactNode }) {
+  return <div className="relative flex min-h-dvh flex-col">{children}</div>
 }

@@ -1,16 +1,20 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist_Mono, Manrope } from 'next/font/google'
 import { notFound } from 'next/navigation'
 import { SiteChrome } from '@/components/brand/site-chrome'
 import { getTranslator } from '@/features/i18n/translator'
-import { WALLPAPER_CLIPS } from '@/lib/wallpaper-clips'
 import { findLanguage } from '@/lib/languages'
 import { isRoutableLanguage, routableLanguages } from '@/lib/routes'
 import '../globals.css'
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
+/*
+  Manrope: tasarımın tipografisi (bkz. globals.css başlığı). Latin-ext ALTKÜME
+  DAHİL — Türkçe ğ/ş/İ ve Çekçe ě/ř/ů latin'de yok; eksik bırakmak o harflerde
+  sistem fontuna düşürüp satırı bozardı.
+*/
+const manrope = Manrope({
+  variable: '--font-manrope',
+  subsets: ['latin', 'latin-ext'],
 })
 
 const geistMono = Geist_Mono({
@@ -40,7 +44,7 @@ export async function generateMetadata({
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f2f3f7' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#16181f' },
   ],
 }
@@ -80,31 +84,17 @@ export default async function RootLayout({
 
   const language = findLanguage(lang)
 
-  // Duvar kağıdı metinleri SUNUCUDA çözülüyor: bileşen istemci tarafında ve sözlük
-  // `server-only`. Önceden bu metinler kaynak dosyaya gömülüydü ve ortak layout'ta
-  // yaşadığı için /en dahil her sayfada Türkçe görünüyorlardı.
-  const t = await getTranslator(lang)
-
-  const wallpaperLabels = {
-    captions: WALLPAPER_CLIPS.map((clip) => ({
-      place: t(clip.placeKey),
-      label: t(clip.labelKey),
-    })),
-    pause: t('wallpaper.pause'),
-    play: t('wallpaper.play'),
-  }
-
   return (
     <html
       lang={lang}
       dir={language?.rtl ? 'rtl' : 'ltr'}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <SiteChrome wallpaperLabels={wallpaperLabels}>{children}</SiteChrome>
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   )

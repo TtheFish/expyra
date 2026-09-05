@@ -56,8 +56,16 @@ export default async function SignInPage({
   return (
     <div className="flex min-h-dvh flex-col">
       <HeaderShell>
-          <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
-          <GlassButton variant="ghost" size="sm" href={path(lang, 'home')} className="text-nav-link">
+          <BrandLogo href={path(lang, 'home')} />
+          {/* Orta sütun boş: bu sayfada arama bağlamı yok. Izgara yine üç
+              sütunlu ki logo solda, çıkış sağda kalsın. */}
+          <span />
+          <GlassButton
+            variant="ghost"
+            size="sm"
+            href={path(lang, 'home')}
+            className="justify-self-end"
+          >
             {t('auth.back')}
           </GlassButton>
       </HeaderShell>

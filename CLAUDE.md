@@ -68,12 +68,24 @@ Request + response + handler aynı dosyada; validator ayrı dosyada; controller
 
 ## Tasarım sistemi
 
-Liquid Glass (iOS 26 uyarlaması). Tanım: `apps/web/src/app/globals.css`.
-Bileşenler: `apps/web/src/components/ui/`.
+Kaynak tasarım: **"Expyra Yeni"** (Claude Design, 05.09.2026). Tanım ve gerekçeler
+`apps/web/src/app/globals.css` başlığında; burada yalnız uyulması gerekenler.
 
-- Yeni yüzey `GlassSurface` üzerine kurulur, elle `backdrop-filter` yazılmaz.
-- Cam ancak arkasında renk varsa görünür — zemindeki mesh gradient buna hizmet eder.
-- Kontrast WCAG AA altına düşerse `--veil` artırılır, metin rengi değiştirilmez.
+Üç malzeme var ve **işleri ayrı** — birini diğerinin yerine kullanmak tasarımı bozar:
+
+| Malzeme | Ne zaman | Nasıl |
+|---|---|---|
+| Kağıt (`--bg`) | sayfanın kendisi | düz beyaz, deseni yok |
+| Kart (`surface`) | **içerik okunacak her yüzey** | opak + 1px `--line` + yumuşak gölge |
+| Cam (`glass`) | yalnız bir şeyin ÜSTÜNDE duran öğe | sticky header, fotoğraf üstündeki rozet, video üstündeki arama |
+
+- **Beyaz zeminde cam kullanma.** Görünmez; oraya `surface` gider.
+- Zeminde mesh gradient YOK (05.09.2026'da kaldırıldı). Camı fotoğraf ve video besliyor.
+- Tipografi Manrope; başlıklar 800 ağırlık + negatif harf aralığı (`section-title`).
+- Birincil aksiyon `glass-brand` (mercan gradyan). Kontrast gerekçesi CSS'te yazılı.
+- Koyu tema yalnız kullanıcı AÇIKÇA seçerse; sistem tercihiyle otomatik geçiş yok.
+- Kontrast WCAG AA altına düşerse örtü (`--veil`, hero `--media-scrim`) artırılır,
+  metin rengi değiştirilmez.
 - **Metin hardcode edilmez ve YARIM ÇEVİRİ PUSH EDİLMEZ.** Kendi başlığı var:
   aşağıdaki "Çeviri" bölümü.
 

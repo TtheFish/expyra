@@ -211,6 +211,7 @@ export const tr = {
    * görünen kısım dilin adı ("Çekçe"); tam cümle görsel olarak yer kaplamadan
    * aynı bilgiyi veriyor.
    */
+  'experience.card.perPerson': 'kişi başı',
   'experience.card.language': 'Bu ilan {dil} yazılmış',
 
   // --- Arama sonucu ----------------------------------------------------------

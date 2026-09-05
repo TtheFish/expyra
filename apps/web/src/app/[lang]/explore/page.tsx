@@ -157,7 +157,7 @@ export default async function Explore({
     <div className="flex min-h-dvh flex-col">
       <SiteHeader lang={lang} />
 
-      <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 py-10">
+      <main className="mx-auto w-full max-w-[90rem] flex-1 px-4 py-8 sm:px-10">
         <ExperienceSearch
           lang={lang}
           action={path(lang, 'explore')}
@@ -179,11 +179,8 @@ export default async function Explore({
           defaultChildren={children}
         />
 
-        <section className="mt-10" aria-labelledby="sonuc-basligi">
-          <h1
-            id="sonuc-basligi"
-            className="text-on-media text-xl font-semibold text-white sm:text-2xl"
-          >
+        <section className="mt-9" aria-labelledby="sonuc-basligi">
+          <h1 id="sonuc-basligi" className="text-3xl font-extrabold tracking-[-0.03em]">
             {cityMissing
               ? t('explore.heading.query', { arama: requestedCity.slice(0, MAX_QUERY_ECHO) })
               : city
@@ -215,21 +212,19 @@ export default async function Explore({
             />
           ) : (
             <>
-              <p className="text-on-media mt-1 text-sm text-white/85">{summary}</p>
+              <p className="mt-1.5 text-[0.9375rem] text-fg-muted">{summary}</p>
 
               {/*
                 Uyarı sonuçların ÜSTÜNDE: listeye baktıktan sonra okunan bir
                 dipnot, listeye bakarken kurulan yanlış izlenimi geri almıyor.
               */}
               {inertNotice && (
-                <p className="glass glass-edge mt-4 rounded-[var(--radius-glass-sm)] px-4 py-3 text-sm text-fg-muted">
-                  {inertNotice}
-                </p>
+                <p className="surface mt-4 px-4 py-3 text-sm text-fg-muted">{inertNotice}</p>
               )}
 
               {page.items.length > 0 ? (
                 <>
-                  <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="mt-7 grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-x-5 gap-y-8">
                     {page.items.map((item) => (
                       <ExperienceCard key={item.slug} item={item} lang={lang} t={t} />
                     ))}
@@ -304,8 +299,8 @@ function Panel({
   secondary?: PanelLink
 }) {
   return (
-    <div className="glass glass-edge glass-thick mt-6 rounded-[var(--radius-glass-lg)] p-8 text-center">
-      <p className="text-base font-semibold">{title}</p>
+    <div className="surface mt-6 p-8 text-center">
+      <p className="text-base font-bold">{title}</p>
       <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">{body}</p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
         <GlassButton variant="primary" href={cta.href}>

@@ -200,7 +200,7 @@ export default async function EditExperiencePage({
       <main className="relative z-10 mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:py-16">
         <a
           href={path(lang, 'becomeHost')}
-          className="text-on-media text-sm text-white/80 underline underline-offset-4 hover:text-white"
+          className="text-sm font-semibold text-fg-muted underline underline-offset-4 hover:text-fg"
         >
           {t('host.experience.back')}
         </a>
@@ -214,11 +214,11 @@ export default async function EditExperiencePage({
             */}
             <h1
               lang={experience.originalLanguage}
-              className="text-on-media text-3xl font-semibold tracking-tight text-white sm:text-4xl"
+              className="text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl"
             >
               {heading}
             </h1>
-            <p className="text-on-media mt-2 max-w-xl text-white/85">
+            <p className="mt-2 max-w-xl text-fg-muted">
               {t('host.experience.edit.lede')}
             </p>
           </div>

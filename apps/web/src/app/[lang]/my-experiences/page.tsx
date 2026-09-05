@@ -53,35 +53,31 @@ export default async function MyExperiencesPage({
   return (
     <div className="flex min-h-dvh flex-col">
       <HeaderShell>
-          <BrandLogo className="text-white text-on-media" href={path(lang, 'home')} />
-          <nav className="flex items-center gap-1" aria-label={t('nav.primaryLabel')}>
-            <GlassButton
-              variant="ghost"
-              size="sm"
-              href={path(lang, 'explore')}
-              className="text-nav-link"
-            >
+          <BrandLogo href={path(lang, 'home')} />
+          {/* Orta sütun (arama hapı) bu sayfada boş: bilet listesinde arama
+              bağlamı yok. Izgara üç sütunlu kalıyor ki logo ve nav kaymasın. */}
+          <span />
+          <nav
+            className="flex items-center justify-self-end gap-1"
+            aria-label={t('nav.primaryLabel')}
+          >
+            <GlassButton variant="ghost" size="sm" href={path(lang, 'explore')}>
               {t('nav.explore')}
             </GlassButton>
-            <GlassButton
-              variant="ghost"
-              size="sm"
-              href={path(lang, 'myExperiences')}
-              className="text-nav-link !text-white"
-            >
+            <GlassButton variant="ghost" size="sm" href={path(lang, 'myExperiences')}>
               {t('nav.myExperiences')}
             </GlassButton>
           </nav>
       </HeaderShell>
 
       <main className="relative z-10 mx-auto w-full max-w-5xl flex-1 px-4 py-12 sm:py-16">
-        <h1 className="text-on-media text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+        <h1 className="text-3xl font-extrabold tracking-[-0.03em] sm:text-4xl">
           {t('nav.myExperiences')}
         </h1>
-        <p className="text-on-media mt-2 text-white/85">{t('myExperiences.lede')}</p>
+        <p className="mt-2 text-fg-muted">{t('myExperiences.lede')}</p>
 
         <section className="mt-10" aria-labelledby="yaklasan">
-          <h2 id="yaklasan" className="text-on-media mb-5 text-sm font-medium text-white/75">
+          <h2 id="yaklasan" className="mb-5 text-sm font-semibold text-fg-muted">
             {t('myExperiences.upcoming', { sayi: upcoming.length })}
           </h2>
 
@@ -106,7 +102,7 @@ export default async function MyExperiencesPage({
         </section>
 
         <section className="mt-14" aria-labelledby="gecmis">
-          <h2 id="gecmis" className="text-on-media mb-5 text-sm font-medium text-white/75">
+          <h2 id="gecmis" className="mb-5 text-sm font-semibold text-fg-muted">
             {t('myExperiences.past', { sayi: past.length })}
           </h2>
 

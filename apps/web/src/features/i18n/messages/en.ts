@@ -109,6 +109,7 @@ export const en = {
     one: '{sure} · up to {n} person',
     other: '{sure} · up to {n} people',
   },
+  'experience.card.perPerson': 'per guest',
   'experience.card.language': 'This listing is written in {dil}',
 
   'explore.heading.all': 'All experiences',

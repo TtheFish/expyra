@@ -11,7 +11,6 @@ import {
 import { ExperienceCard } from '@/components/experience/experience-card'
 import { GlassButton } from '@/components/ui/glass-button'
 import {
-  countryDisplayName,
   experienceAlternates,
   experiencePath,
   fetchAvailability,
@@ -168,77 +167,144 @@ export default async function ExperienceDetail({
     />
   )
 
+  const knowRows = [
+    experience.minimumAge !== null
+      ? {
+          label: t('experience.detail.know.minimumAge'),
+          value: t('experience.detail.know.minimumAgeValue', { n: experience.minimumAge }),
+          lang: undefined,
+        }
+      : null,
+    experience.activityLevel !== null
+      ? {
+          label: t('experience.detail.know.activityLevel'),
+          value: t(`experience.activity.${experience.activityLevel}`),
+          lang: undefined,
+        }
+      : null,
+    experience.text.whatToBring
+      ? {
+          label: t('experience.detail.know.whatToBring'),
+          value: experience.text.whatToBring,
+          lang: experience.text.language,
+        }
+      : null,
+    experience.text.notIncluded
+      ? {
+          label: t('experience.detail.know.notIncluded'),
+          value: experience.text.notIncluded,
+          lang: experience.text.language,
+        }
+      : null,
+    experience.text.accessibility
+      ? {
+          label: t('experience.detail.know.accessibility'),
+          value: experience.text.accessibility,
+          lang: experience.text.language,
+        }
+      : null,
+  ].filter((row) => row !== null)
+
   return (
     <div className="flex min-h-dvh flex-col">
       <SiteHeader lang={lang} />
 
-      {/*
-        Expyra deneyim sahnesi — Airbnb'nin iki kolon + sticky kart kopyası değil.
-        Sinematik kapak, başlık medyanın üstünde, hikâye kartı kapağın üzerine
-        biner; rezervasyon "bilet şeridi" olarak hikâyenin ortasında. Marka
-        mercanı vurgu; okunabilirlik için kağıt yüzey koyu mürekkep taşır.
-      */}
-      <main className="relative z-10 mx-auto w-full max-w-3xl flex-1 px-4 pb-12 pt-6 sm:px-5 sm:pb-16 sm:pt-8">
-        <article>
-          <HeroMedia
-            experience={experience}
-            categoryLabel={categoryKey ? t(categoryKey) : null}
-            cityHref={cityHref}
-            placeLabel={t('experience.place', {
-              sehir: cityName,
-              ulke: countryDisplayName(lang, experience.city.countryCode),
-            })}
-            title={experience.text.title}
-            titleLang={experience.text.language}
-          />
+      <main className="mx-auto w-full max-w-[90rem] flex-1 px-4 pt-6 pb-16 sm:px-10">
+        <a
+          href={cityHref}
+          className="inline-flex items-center gap-2 rounded-[4px] text-sm font-semibold text-fg-muted underline-offset-4 hover:text-fg hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]"
+        >
+          <span aria-hidden="true">←</span>
+          {t('experience.detail.cityLink', { sehir: cityName })}
+        </a>
 
-          <div className="experience-sheet relative z-10 -mt-10 rounded-[var(--radius-glass-xl)] px-5 py-7 sm:-mt-14 sm:px-8 sm:py-9">
+        {/*
+          Üst blok: solda fotoğraf ızgarası, sağda kimlik. Tek kolonda (mobil)
+          ızgara önce geliyor — başlığı okumadan önce görsel karar veriliyor.
+        */}
+        <section className="mt-5 grid items-start gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-12">
+          <PhotoGrid experience={experience} />
+
+          <div className="lg:pt-2">
+            {categoryKey && (
+              <p className="text-[0.8125rem] font-bold tracking-[0.12em] text-brand-600 uppercase">
+                {t(categoryKey)} · {cityName}
+              </p>
+            )}
+
+            {/* Başlık host'un dilinde: ekran okuyucu doğru fonetikle okusun
+                (WCAG 3.1.2). Sayfanın `<html lang>`i değişmiyor. */}
+            <h1
+              className="mt-3 text-[2rem] leading-[1.05] font-extrabold tracking-[-0.035em] text-balance sm:text-[2.75rem]"
+              lang={experience.text.language}
+            >
+              {experience.text.title}
+            </h1>
+
             {experience.text.isFallback && (
               /*
                 İstenen dilde çeviri yoktu; zincir (docs/I18N.md §2) başka bir dile
-                düştü ve arayüz bunu GİZLEMİYOR. Dil ADI `Intl.DisplayNames`'ten:
-                kendi çeviri tablomuzu tutmuyoruz.
+                düştü ve arayüz bunu GİZLEMİYOR. Dil ADI `Intl.DisplayNames`'ten.
               */
-              <p className="mb-5 inline-flex rounded-full bg-brand-500/12 px-3 py-1 text-xs font-medium text-brand-700">
+              <p className="mt-4 inline-flex rounded-full bg-brand-500/12 px-3 py-1 text-xs font-semibold text-brand-700">
                 {t('experience.detail.text.fallback', { dil: textLanguage })}
               </p>
             )}
 
-            <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2 border-b border-[color-mix(in_oklch,var(--fg)_10%,transparent)] pb-5 text-sm">
-              <Fact
-                label={t('experience.detail.duration.label')}
-                value={formatExperienceDuration(t, experience.durationMinutes)}
-              />
-              <Fact
-                label={t('experience.detail.capacity.label')}
-                value={t('experience.detail.capacity.value', { n: experience.capacity })}
-              />
+            {experience.text.description && (
+              <p
+                className="mt-5 text-[1.0625rem] leading-relaxed text-pretty text-fg-muted"
+                lang={experience.text.language}
+              >
+                {summarize(experience.text.description)}
+              </p>
+            )}
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              <span className="pill">{formatExperienceDuration(t, experience.durationMinutes)}</span>
+              <span className="pill">
+                {t('experience.detail.capacity.value', { n: experience.capacity })}
+              </span>
+              {experience.spokenLanguages.length > 0 && (
+                <span className="pill">
+                  {experience.spokenLanguages
+                    .map((code) => localNameOf(code, lang) ?? code)
+                    .join(' · ')}
+                </span>
+              )}
             </div>
 
-            <Section heading={t('experience.detail.about')}>
-              {experience.text.description ? (
-                /*
-                  Host'un yazdığı düz metin. `whitespace-pre-line` paragraf
-                  aralarını koruyor; React zaten kaçırıyor, yani HTML enjekte
-                  edilemiyor.
-                */
-                <p
-                  className="whitespace-pre-line text-pretty text-[1.05rem] leading-[1.7] text-fg"
-                  lang={experience.text.language}
-                >
-                  {experience.text.description}
+            {/*
+              Host satırı: misafirin "kime güveniyorum" sorusunun ilk cevabı.
+              Profil sayfası henüz yok, o yüzden LİNK DEĞİL — tıklanabilir görünüp
+              hiçbir yere gitmemek, hiç tıklanabilir olmamaktan kötü.
+            */}
+            <div className="mt-8 flex items-center gap-4 border-t border-[var(--line)] pt-6">
+              <HostAvatar host={experience.host} size={48} />
+              <div className="min-w-0">
+                <p className="text-[0.9375rem] font-bold">
+                  {experience.host.displayName ?? t('experience.detail.host.anonymous')}
                 </p>
-              ) : (
-                /* Yayın doğrulaması çeviri SATIRINI şart koşuyor, açıklamanın dolu
-                   olmasını değil — yani bu boşluk bir hata değil, bir durum. */
-                <p className="text-[0.9375rem] text-fg-muted">{t('experience.detail.noDescription')}</p>
-              )}
-            </Section>
+                {experience.host.headline && (
+                  <p
+                    className="mt-0.5 text-sm text-fg-muted"
+                    lang={experience.host.bioLanguage ?? undefined}
+                  >
+                    {experience.host.headline}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
 
+        {/* Alt blok: solda hikâye, sağda YAPIŞKAN rezervasyon kartı. */}
+        <section className="mt-12 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-16">
+          <div className="grid gap-10">
             {experience.itinerary && experience.itinerary.steps.length > 0 && (
-              <Section heading={t('experience.detail.itinerary.heading')}>
+              <Section heading={t('experience.detail.itinerary.heading')} first>
                 {experience.itinerary.isFallback && (
-                  <p className="mb-4 inline-flex rounded-full bg-brand-500/12 px-3 py-1 text-xs font-medium text-brand-700">
+                  <p className="mb-4 inline-flex rounded-full bg-brand-500/12 px-3 py-1 text-xs font-semibold text-brand-700">
                     {t('experience.detail.text.fallback', {
                       dil:
                         localNameOf(experience.itinerary.language, lang) ??
@@ -247,23 +313,27 @@ export default async function ExperienceDetail({
                   </p>
                 )}
                 {/* Sıralı liste: adımların sırası içeriğin parçası, ekran okuyucu
-                    "1/5" diye duyuruyor. Ray: Airbnb numaralı daire yerine
-                    Expyra zaman çizgisi. */}
-                <ol className="relative grid gap-0" lang={experience.itinerary.language}>
+                    "1/5" diye duyuruyor. */}
+                <ol className="grid" lang={experience.itinerary.language}>
                   {experience.itinerary.steps.map((step, index) => {
                     const last = index === experience.itinerary!.steps.length - 1
                     return (
-                      <li key={`${index}-${step.title}`} className="relative grid grid-cols-[1.25rem_1fr] gap-4">
+                      <li
+                        key={`${index}-${step.title}`}
+                        className="relative grid grid-cols-[2.5rem_1fr] items-start gap-5"
+                      >
                         <span className="relative flex justify-center" aria-hidden="true">
                           {!last && (
-                            <span className="absolute top-3 bottom-0 w-px bg-gradient-to-b from-brand-500 to-brand-500/10" />
+                            <span className="absolute top-10 bottom-0 w-px bg-[var(--line-strong)]" />
                           )}
-                          <span className="relative z-[1] mt-1.5 size-2.5 rounded-full bg-brand-500 ring-4 ring-brand-500/15" />
+                          <span className="flex size-10 items-center justify-center rounded-full bg-[rgb(16_24_40_/_0.05)] font-mono text-sm font-bold">
+                            {index + 1}
+                          </span>
                         </span>
-                        <div className={last ? 'pb-0' : 'pb-6'}>
-                          <p className="text-[0.9375rem] font-semibold text-fg">{step.title}</p>
+                        <div className={last ? 'pt-1.5' : 'pt-1.5 pb-8'}>
+                          <p className="text-[1.0625rem] font-bold">{step.title}</p>
                           {step.body && (
-                            <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-fg-muted">
+                            <p className="mt-1 text-[0.9375rem] leading-relaxed whitespace-pre-line text-fg-muted">
                               {step.body}
                             </p>
                           )}
@@ -275,52 +345,38 @@ export default async function ExperienceDetail({
               </Section>
             )}
 
-            <div className="my-9">{booking}</div>
-
-            <Section
-              heading={t('experience.detail.spoken.heading')}
-              help={t('experience.detail.spoken.help')}
-            >
-              {experience.spokenLanguages.length > 0 ? (
-                <ul className="flex flex-wrap gap-2">
-                  {experience.spokenLanguages.map((code) => (
-                    <li key={code} className="chip-brand">
-                      {localNameOf(code, lang) ?? code}
-                    </li>
-                  ))}
-                </ul>
+            <Section heading={t('experience.detail.about')} first={!experience.itinerary}>
+              {experience.text.description ? (
+                /*
+                  Host'un yazdığı düz metin. `whitespace-pre-line` paragraf
+                  aralarını koruyor; React zaten kaçırıyor, yani HTML enjekte
+                  edilemiyor.
+                */
+                <p
+                  className="max-w-[42rem] text-[1.0625rem] leading-[1.7] text-pretty whitespace-pre-line"
+                  lang={experience.text.language}
+                >
+                  {experience.text.description}
+                </p>
               ) : (
-                <p className="text-sm text-fg-muted">{t('experience.detail.spoken.none')}</p>
+                /* Yayın doğrulaması çeviri SATIRINI şart koşuyor, açıklamanın dolu
+                   olmasını değil — yani bu boşluk bir hata değil, bir durum. */
+                <p className="text-[0.9375rem] text-fg-muted">
+                  {t('experience.detail.noDescription')}
+                </p>
               )}
             </Section>
-
-            {experience.tags.length > 0 && (
-              <Section heading={t('experience.detail.tags.heading')}>
-                <ul className="flex flex-wrap gap-2">
-                  {experience.tags.map((tag) => (
-                    <li
-                      key={tag}
-                      className="chip-brand"
-                      /* Etiketler host'un yazdığı içerik — ilan metniyle aynı dilde. */
-                      lang={experience.text.language}
-                    >
-                      {tag}
-                    </li>
-                  ))}
-                </ul>
-              </Section>
-            )}
 
             {(experience.meetingPoint || experience.text.meetingInstructions) && (
               <Section heading={t('experience.detail.meeting.heading')}>
                 {experience.meetingPoint?.address && (
-                  <p className="text-[0.9375rem] font-semibold text-fg">
+                  <p className="text-[1.0625rem] font-semibold">
                     {experience.meetingPoint.address}
                   </p>
                 )}
                 {experience.text.meetingInstructions && (
                   <p
-                    className="mt-1.5 whitespace-pre-line text-[0.9375rem] leading-relaxed text-fg"
+                    className="mt-1 text-[0.9375rem] leading-relaxed whitespace-pre-line text-fg-muted"
                     lang={experience.text.language}
                   >
                     {experience.text.meetingInstructions}
@@ -328,8 +384,8 @@ export default async function ExperienceDetail({
                 )}
                 {/*
                   Harita BAĞLANTI, gömülü değil: üçüncü taraf iframe/script CSP ve
-                  KVKK sorusu açıyor (#34'te karar). OSM bağlantısı herkeste çalışıyor
-                  ve telefon onu harita uygulamasına devrediyor.
+                  KVKK sorusu açıyor (#34'te karar). OSM bağlantısı herkeste
+                  çalışıyor ve telefon onu harita uygulamasına devrediyor.
                 */}
                 {experience.meetingPoint?.latitude != null &&
                   experience.meetingPoint.longitude != null && (
@@ -337,7 +393,7 @@ export default async function ExperienceDetail({
                       href={`https://www.openstreetmap.org/?mlat=${experience.meetingPoint.latitude}&mlon=${experience.meetingPoint.longitude}#map=17/${experience.meetingPoint.latitude}/${experience.meetingPoint.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-600 underline-offset-4 hover:underline"
+                      className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-brand-600 underline-offset-4 hover:underline"
                     >
                       {t('experience.detail.meeting.map')}
                       <span aria-hidden="true">→</span>
@@ -346,82 +402,22 @@ export default async function ExperienceDetail({
               </Section>
             )}
 
-            {(experience.minimumAge !== null ||
-              experience.activityLevel !== null ||
-              experience.text.whatToBring ||
-              experience.text.notIncluded ||
-              experience.text.accessibility) && (
+            {knowRows.length > 0 && (
               <Section heading={t('experience.detail.know.heading')}>
-                <dl className="grid gap-5">
-                  {experience.minimumAge !== null && (
-                    <KnowRow
-                      label={t('experience.detail.know.minimumAge')}
-                      value={t('experience.detail.know.minimumAgeValue', {
-                        n: experience.minimumAge,
-                      })}
-                    />
-                  )}
-                  {experience.activityLevel !== null && (
-                    <KnowRow
-                      label={t('experience.detail.know.activityLevel')}
-                      value={t(`experience.activity.${experience.activityLevel}`)}
-                    />
-                  )}
-                  {experience.text.whatToBring && (
-                    <KnowRow
-                      label={t('experience.detail.know.whatToBring')}
-                      value={experience.text.whatToBring}
-                      lang={experience.text.language}
-                    />
-                  )}
-                  {experience.text.notIncluded && (
-                    <KnowRow
-                      label={t('experience.detail.know.notIncluded')}
-                      value={experience.text.notIncluded}
-                      lang={experience.text.language}
-                    />
-                  )}
-                  {experience.text.accessibility && (
-                    <KnowRow
-                      label={t('experience.detail.know.accessibility')}
-                      value={experience.text.accessibility}
-                      lang={experience.text.language}
-                    />
-                  )}
+                {/* Tasarımın üç sütunu; satır sayısı içeriğe göre değişiyor. */}
+                <dl className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {knowRows.map((row) => (
+                    <KnowRow key={row.label} label={row.label} value={row.value} lang={row.lang} />
+                  ))}
                 </dl>
               </Section>
             )}
 
-            {/*
-              Host kartı: misafirin "kime güveniyorum" sorusunun cevabı ve VISION §8'in
-              arz tarafı vurgusunun görünen yüzü. Profil sayfası henüz yok, o yüzden
-              kart bir bağlantı DEĞİL — tıklanabilir görünüp hiçbir yere gitmemek,
-              hiç tıklanabilir olmamaktan kötü.
-            */}
             <Section heading={t('experience.detail.host.heading')}>
-              <div className="flex items-center gap-4">
-                {experience.host.avatarUrl === null ? (
-                  /* Fotoğraf yok: baş harf. Uydurma bir avatar (gravatar, harf
-                     üreteci) göstermek, olmayan bir kişiselleştirmeyi varmış gibi
-                     sunardı. `aria-hidden`: ad hemen yanında zaten yazıyor. */
-                  <span
-                    aria-hidden="true"
-                    className="flex size-14 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-base font-bold text-white"
-                  >
-                    {initialOf(experience.host.displayName) ?? '·'}
-                  </span>
-                ) : (
-                  <Image
-                    src={experience.host.avatarUrl}
-                    alt=""
-                    width={56}
-                    height={56}
-                    className="size-14 shrink-0 rounded-full object-cover"
-                  />
-                )}
-
-                <div className="min-w-0 border-l-2 border-brand-500 pl-4">
-                  <p className="text-[0.9375rem] font-semibold text-fg">
+              <div className="surface grid grid-cols-[auto_1fr] items-start gap-6 p-6">
+                <HostAvatar host={experience.host} size={72} />
+                <div className="min-w-0">
+                  <p className="text-lg font-extrabold">
                     {experience.host.displayName ?? t('experience.detail.host.anonymous')}
                   </p>
                   {experience.host.headline && (
@@ -432,88 +428,71 @@ export default async function ExperienceDetail({
                       {experience.host.headline}
                     </p>
                   )}
+                  {experience.host.bio && (
+                    <>
+                      {/* Biyografi tek dilde (host_profile notu); arayüz diliyle
+                          eşleşmiyorsa rozet — metin rozetiyle aynı cümle. */}
+                      {experience.host.bioLanguage && experience.host.bioLanguage !== lang && (
+                        <p className="mt-3 inline-flex rounded-full bg-brand-500/12 px-3 py-1 text-xs font-semibold text-brand-700">
+                          {t('experience.detail.text.fallback', {
+                            dil:
+                              localNameOf(experience.host.bioLanguage, lang) ??
+                              experience.host.bioLanguage,
+                          })}
+                        </p>
+                      )}
+                      <p
+                        className="mt-3.5 text-[0.9375rem] leading-relaxed whitespace-pre-line"
+                        lang={experience.host.bioLanguage ?? undefined}
+                      >
+                        {experience.host.bio}
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
-              {experience.host.bio && (
-                <>
-                  {/* Biyografi tek dilde (host_profile notu); arayüz diliyle
-                      eşleşmiyorsa rozet — metin rozetiyle aynı cümle. */}
-                  {experience.host.bioLanguage && experience.host.bioLanguage !== lang && (
-                    <p className="mt-3 inline-flex rounded-full bg-brand-500/12 px-3 py-1 text-xs font-medium text-brand-700">
-                      {t('experience.detail.text.fallback', {
-                        dil:
-                          localNameOf(experience.host.bioLanguage, lang) ??
-                          experience.host.bioLanguage,
-                      })}
-                    </p>
-                  )}
-                  <p
-                    className="mt-3 whitespace-pre-line text-[0.9375rem] leading-relaxed text-fg"
-                    lang={experience.host.bioLanguage ?? undefined}
-                  >
-                    {experience.host.bio}
-                  </p>
-                </>
-              )}
             </Section>
 
-            {experience.images.length > 1 && (
-              <Section heading={t('experience.detail.gallery.heading')}>
-                {/*
-                  Işık kutusu (lightbox) YOK ve bu bilinçli: küçük resimler tıklanınca
-                  açılan bir katman, klavye tuzağı ve odak yönetimi demek — doğru
-                  yapılmadığında erişilebilirliği bozar, doğru yapmak da bu bloğun işi
-                  değil. Görseller doğrudan okunabilir boyutta çiziliyor.
-
-                  `alt` BOŞ: host'tan alternatif metin ALINMIYOR, dolayısıyla
-                  uyduracağımız her metin ("deneyimden bir kare") ekran okuyucuya
-                  bilgi değil gürültü taşırdı. Açıklama metni ilanı zaten anlatıyor.
-                  Host'tan görsel başına alt metin istemek gerçek bir eksik ve kendi
-                  işini hak ediyor.
-                */}
-                <ul className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2">
-                  {experience.images.slice(1).map((image) => (
+            {experience.tags.length > 0 && (
+              <Section heading={t('experience.detail.tags.heading')}>
+                <ul className="flex flex-wrap gap-2">
+                  {experience.tags.map((tag) => (
                     <li
-                      key={image.url}
-                      className="relative aspect-[5/4] w-[min(70vw,16rem)] shrink-0 snap-start overflow-hidden rounded-[var(--radius-glass)]"
+                      key={tag}
+                      className="pill"
+                      /* Etiketler host'un yazdığı içerik — ilan metniyle aynı dilde. */
+                      lang={experience.text.language}
                     >
-                      <Image
-                        src={image.url}
-                        alt=""
-                        fill
-                        sizes="256px"
-                        className="object-cover"
-                      />
+                      {tag}
                     </li>
                   ))}
                 </ul>
               </Section>
             )}
           </div>
-        </article>
+
+          {/*
+            `top-24`: yapışkan header 5rem; kart onun altına girmesin.
+            Mobilde yapışkan DEĞİL — küçük ekranda ekranın yarısını yer.
+          */}
+          <aside className="lg:sticky lg:top-24">{booking}</aside>
+        </section>
 
         {nearby.length > 0 && (
-          <section className="mt-12" aria-labelledby="yakindaki-deneyimler">
-            <h2
-              id="yakindaki-deneyimler"
-              className="text-on-media mb-5 text-lg font-semibold tracking-tight text-white"
-            >
+          <section
+            className="mt-16 border-t border-[var(--line)] pt-10"
+            aria-labelledby="yakindaki-deneyimler"
+          >
+            <h2 id="yakindaki-deneyimler" className="section-title">
               {t('experience.detail.nearby.heading', { sehir: cityName })}
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-x-5 gap-y-8">
               {nearby.map((item) => (
                 <ExperienceCard key={item.slug} item={item} lang={lang} t={t} />
               ))}
             </div>
           </section>
         )}
-
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <GlassButton href={cityHref} variant="primary">
-            {t('experience.detail.cityLink', { sehir: cityName })}
-          </GlassButton>
-          <GlassButton href={path(lang, 'explore')}>{t('experience.detail.back')}</GlassButton>
-        </div>
       </main>
 
       <SiteFooter lang={lang} />
@@ -521,136 +500,151 @@ export default async function ExperienceDetail({
   )
 }
 
-function HeroMedia({
-  experience,
-  categoryLabel,
-  cityHref,
-  placeLabel,
-  title,
-  titleLang,
-}: {
-  experience: GuestExperienceDetail
-  categoryLabel: string | null
-  cityHref: string
-  placeLabel: string
-  title: string
-  titleLang: string
-}) {
-  const cover = experience.images[0]
+/**
+ * Fotoğraf ızgarası: tasarımın 2×2 karesi.
+ *
+ * Işık kutusu (lightbox) YOK ve bu bilinçli: açılan bir katman klavye tuzağı ve
+ * odak yönetimi demek — yarım yapıldığında erişilebilirliği bozar. Tasarımdaki
+ * "N fotoğrafın tümü" düğmesi de bu yüzden yok; dördün üstündeki görseller
+ * ızgaranın altındaki şeritte, doğrudan okunabilir boyutta.
+ *
+ * `alt` BOŞ: host'tan alternatif metin ALINMIYOR (#11), uyduracağımız her metin
+ * ekran okuyucuya bilgi değil gürültü taşırdı.
+ */
+function PhotoGrid({ experience }: { experience: GuestExperienceDetail }) {
+  const tiles = experience.images.slice(0, 4)
+  const rest = experience.images.slice(4)
+
+  if (tiles.length === 0) {
+    /* Kapaksız eski ilanlar. Gradyan kartla AYNI fonksiyondan geliyor — aynı ilan
+       listede ve detayda aynı rengi taşıyor. */
+    return (
+      <div
+        className="aspect-[4/3] w-full rounded-[var(--radius-glass-lg)]"
+        style={experienceCoverStyle(experience.slug)}
+        aria-hidden="true"
+      />
+    )
+  }
 
   return (
-    <div className="relative isolate overflow-hidden rounded-[var(--radius-glass-xl)]">
-      <div className="relative aspect-[5/4] w-full sm:aspect-[16/11]">
-        {cover ? (
-          /*
-            Kapak API'de zaten ilk sırada (GuestExperienceQuery.LoadImagesAsync),
-            yani kartta görülen görsel ile burada görülen aynı.
-
-            Bu görsel sayfanın LCP öğesi, o yüzden tembel DEĞİL.
-
-            `priority` KULLANILMIYOR: Next 16'da kaldırılmaya alındı
-            (node_modules/next/dist/docs/.../image.md — "deprecated in favor of
-            preload"). `preload` de doğru araç değil; o, `<head>`'e bir
-            `<link rel=preload>` koyuyor ve geç KEŞFEDİLEN görseller için var.
-            Bu görsel ilk HTML'de zaten duruyor, yani tarayıcı onu görüyor —
-            gereken tek şey sıraya öncelikli girmesi. Doküman da bu durumda
-            `loading="eager"` + `fetchPriority="high"` diyor.
-          */
-          <Image
-            src={cover.url}
-            alt=""
-            fill
-            loading="eager"
-            fetchPriority="high"
-            sizes="(min-width: 768px) 768px, 100vw"
-            className="object-cover"
-          />
-        ) : (
-          /* Kapaksız eski ilanlar. Gradyan kartla AYNI fonksiyondan geliyor —
-             aynı ilan listede ve detayda aynı rengi taşıyor. */
-          <div className="h-full w-full" style={experienceCoverStyle(experience.slug)} aria-hidden="true" />
-        )}
-
-        {/* Alttan marka tonlu örtü — başlık medyada okunur kalsın. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-t from-[oklch(0.18_0.03_25_/_0.92)] via-[oklch(0.18_0.02_25_/_0.35)] to-transparent"
-        />
+    <div>
+      <div className="grid grid-cols-2 gap-2 overflow-hidden rounded-[var(--radius-glass-lg)]">
+        {tiles.map((image, index) => (
+          <div
+            key={image.url}
+            /* Tek görselde iki sütunu kaplıyor. İki `aspect-*` sınıfını AYNI
+               dizede yan yana yazmak işe yaramıyor: hangisinin kazandığını
+               stylesheet sırası belirliyor, koşul değil. */
+            className={
+              tiles.length === 1
+                ? 'relative col-span-2 aspect-[4/3]'
+                : 'relative aspect-square'
+            }
+          >
+            <Image
+              src={image.url}
+              alt=""
+              fill
+              /*
+                İlk görsel sayfanın LCP öğesi, o yüzden tembel DEĞİL. `priority`
+                Next 16'da kaldırılmaya alındı; doküman bu durumda
+                `loading="eager"` + `fetchPriority="high"` diyor.
+              */
+              loading={index === 0 ? 'eager' : 'lazy'}
+              fetchPriority={index === 0 ? 'high' : undefined}
+              sizes="(min-width: 1024px) 25vw, 50vw"
+              className="object-cover"
+            />
+          </div>
+        ))}
       </div>
 
-      <div className="text-on-media absolute inset-x-0 bottom-0 px-5 pb-14 pt-20 sm:px-7 sm:pb-16">
-        {categoryLabel && (
-          <p className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-white/90 uppercase">
-            <span aria-hidden="true" className="inline-block h-3 w-1 rounded-full bg-brand-400" />
-            {categoryLabel}
-          </p>
-        )}
-
-        <p className="text-sm font-medium text-white/80">
-          <a href={cityHref} className="underline-offset-4 hover:text-white hover:underline">
-            {placeLabel}
-          </a>
-        </p>
-
-        {/* Başlık host'un dilinde: ekran okuyucu doğru fonetikle okusun
-            (WCAG 3.1.2). Sayfanın `<html lang>`i değişmiyor — arayüz hâlâ
-            kullanıcının dilinde. */}
-        <h1
-          className="mt-2 max-w-[22ch] text-pretty text-[1.85rem] font-semibold leading-[1.12] tracking-tight text-white sm:text-[2.35rem]"
-          lang={titleLang}
-        >
-          {title}
-        </h1>
-      </div>
+      {rest.length > 0 && (
+        <ul className="mt-2 -mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-2">
+          {rest.map((image) => (
+            <li
+              key={image.url}
+              className="relative aspect-square w-32 shrink-0 snap-start overflow-hidden rounded-[var(--radius-glass-sm)]"
+            >
+              <Image src={image.url} alt="" fill sizes="128px" className="object-cover" />
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
+  )
+}
+
+/** Fotoğraf yoksa baş harf: uydurma bir avatar olmayan bir kişiselleştirmeyi
+    varmış gibi sunardı. `aria-hidden`: ad hemen yanında zaten yazıyor. */
+function HostAvatar({
+  host,
+  size,
+}: {
+  host: GuestExperienceDetail['host']
+  size: number
+}) {
+  if (host.avatarUrl === null) {
+    return (
+      <span
+        aria-hidden="true"
+        style={{ width: size, height: size }}
+        className="flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 font-extrabold text-white"
+      >
+        {initialOf(host.displayName) ?? '·'}
+      </span>
+    )
+  }
+
+  return (
+    <Image
+      src={host.avatarUrl}
+      alt=""
+      width={size}
+      height={size}
+      style={{ width: size, height: size }}
+      className="shrink-0 rounded-full object-cover"
+    />
   )
 }
 
 function KnowRow({ label, value, lang }: { label: string; value: string; lang?: string }) {
   return (
-    <div className="grid gap-1 sm:grid-cols-[9.5rem_1fr] sm:gap-4">
-      <dt className="text-xs font-semibold tracking-wide text-brand-600 uppercase">{label}</dt>
-      <dd className="whitespace-pre-line text-[0.9375rem] leading-relaxed text-fg" lang={lang}>
+    <div>
+      <dt className="text-xs font-bold tracking-[0.1em] text-brand-600 uppercase">{label}</dt>
+      <dd className="mt-2 text-[0.9375rem] leading-relaxed whitespace-pre-line" lang={lang}>
         {value}
       </dd>
     </div>
   )
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <p className="text-[0.6875rem] font-semibold tracking-[0.12em] text-brand-600 uppercase">
-        {label}
-      </p>
-      <p className="text-sm font-semibold text-fg">{value}</p>
-    </div>
-  )
-}
-
+/**
+ * Hikâye bölümü. Bölümler arası ayrım ÇİZGİ (tasarım): beyaz kağıtta kutu
+ * yerine ince bir hat. `first` ilk bölümde o çizgiyi kaldırıyor — sayfanın üst
+ * bloğuyla arasında zaten boşluk var.
+ */
 function Section({
   heading,
   help,
+  first = false,
   children,
 }: {
   heading: string
   help?: string
+  first?: boolean
   children: React.ReactNode
 }) {
   return (
-    <section className="mt-8">
-      <h2 className="text-base font-semibold tracking-tight text-fg">{heading}</h2>
-      {help && <p className="mt-1.5 text-sm leading-relaxed text-fg-muted">{help}</p>}
-      <div className="mt-4">{children}</div>
+    <section className={first ? '' : 'border-t border-[var(--line)] pt-10'}>
+      <h2 className="section-title">{heading}</h2>
+      {help && <p className="mt-2 text-sm leading-relaxed text-fg-muted">{help}</p>}
+      <div className="mt-6">{children}</div>
     </section>
   )
 }
 
-/**
- * Açıklamanın paylaşım önizlemesine giren kısmı. Satır sonları boşluğa iniyor
- * (`meta` içeriği tek satır) ve kırpma KELİMEDEN yapılıyor — cümle ortasında
- * kesilmiş bir önizleme, olmayan bir önizlemeden daha kötü görünür.
- */
 function summarize(description: string | null): string | undefined {
   const text = description?.replace(/\s+/g, ' ').trim()
   if (!text) return undefined
@@ -995,14 +989,10 @@ function BookingPanel({
 
 function BookingShell({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="relative overflow-hidden rounded-[var(--radius-glass-xl)] border border-brand-500/20 bg-gradient-to-br from-brand-500/[0.08] via-[color-mix(in_oklch,white_70%,transparent)] to-brand-500/[0.04] p-5 sm:p-6">
-      {/* Bilet kenarı — noktalı kesik hissi */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-y-5 left-0 w-px border-l border-dashed border-brand-500/35"
-      />
-      <p className="pl-3 text-base font-semibold tracking-tight text-fg">{title}</p>
-      <div className="mt-4 pl-3">{children}</div>
+    /* Sayfanın en yüksek yüzeyi: kararın verildiği yer (tasarım). */
+    <div className="surface-lifted p-6">
+      <p className="text-base font-bold">{title}</p>
+      <div className="mt-4">{children}</div>
     </div>
   )
 }
@@ -1047,7 +1037,7 @@ function PartyField({
  */
 function QuoteSummary({ lang, quote, t }: { lang: string; quote: GuestQuote; t: Translate }) {
   return (
-    <div className="mt-5 border-t border-[rgb(var(--glass-tint)_/_0.18)] pt-4">
+    <div className="mt-5 border-t border-[var(--line)] pt-4">
       <ul className="grid gap-1 text-sm">
         {quote.lines.map((line) => (
           <li key={line.guestType} className="flex justify-between gap-4">
