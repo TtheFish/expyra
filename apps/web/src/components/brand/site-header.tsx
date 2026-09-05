@@ -172,6 +172,7 @@ async function AccountSlot({ lang }: { lang: string }) {
     <AccountMenu
       label={label}
       initial={initialOf(label, lang)}
+      avatarUrl={user?.avatarUrl ?? null}
       accountHref={path(lang, 'account')}
       /* Dil eylem ADRESİNDE, gizli input olarak DEĞİL: form native POST ediyor ve
          gizli bir alan gövdeye girerdi — o zaman route'un formData ayrıştırması

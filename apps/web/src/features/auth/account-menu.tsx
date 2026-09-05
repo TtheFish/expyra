@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useId, useRef, useState } from 'react'
 
 /**
@@ -41,12 +42,21 @@ type AccountMenuProps = {
   label: string
   /** Avatar dairesindeki tek harf. Sunucuda üretiliyor — büyük harfe çevirme dile bağlı. */
   initial: string
+  /** Profil fotoğrafı varsa harfin yerini alır; boyut aynı kalır (h-6). */
+  avatarUrl: string | null
   accountHref: string
   signOutPath: string
   labels: AccountMenuLabels
 }
 
-export function AccountMenu({ label, initial, accountHref, signOutPath, labels }: AccountMenuProps) {
+export function AccountMenu({
+  label,
+  initial,
+  avatarUrl,
+  accountHref,
+  signOutPath,
+  labels,
+}: AccountMenuProps) {
   const [open, setOpen] = useState(false)
 
   const panelId = useId()
@@ -102,12 +112,23 @@ export function AccountMenu({ label, initial, accountHref, signOutPath, labels }
            24×24 eşiğinin üstünde; panelin içindeki satırlar 3rem. */
         className="glass glass-edge glass-interactive inline-flex h-9 max-w-[11rem] items-center gap-2 rounded-[var(--radius-glass-sm)] px-2 text-sm font-medium text-nav-link"
       >
-        <span
-          aria-hidden="true"
-          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--glass-tint)_/_0.55)] text-xs font-semibold"
-        >
-          {initial}
-        </span>
+        {avatarUrl === null ? (
+          <span
+            aria-hidden="true"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[rgb(var(--glass-tint)_/_0.55)] text-xs font-semibold"
+          >
+            {initial}
+          </span>
+        ) : (
+          <Image
+            src={avatarUrl}
+            alt=""
+            width={24}
+            height={24}
+            className="h-6 w-6 shrink-0 rounded-full object-cover"
+            aria-hidden="true"
+          />
+        )}
         {/*
           Dar ekranda yalnız avatar kalıyor: 375 px'lik barda logo + dil seçici +
           tema düğmesinden sonra ada yer yok, zorlarsak logo eziliyor. Ad o
