@@ -634,6 +634,11 @@ function BookingPanel({
                       minute: '2-digit',
                     })}
                   </span>
+                  {/* Kalan yer: "son 2 yer" bir karar bilgisi. Dolu seans listede
+                      yok (sunucu eliyor), o yüzden "Doldu" dalı burada değil. */}
+                  <span className="text-xs text-fg-muted">
+                    {t('experience.detail.booking.spotsLeft', { n: slot.remainingCapacity })}
+                  </span>
                 </a>
               </li>
             )

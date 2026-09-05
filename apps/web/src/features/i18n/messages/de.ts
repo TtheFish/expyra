@@ -154,6 +154,7 @@ export const de = {
   'experience.detail.booking.perPerson': 'pro Person',
   'experience.detail.booking.pickDate': 'Datum wählen',
   'experience.detail.booking.timeZone': 'Zeiten in {bolge}.',
+  'experience.detail.booking.spotsLeft': { one: '{n} Platz frei', other: '{n} Plätze frei' },
   'experience.detail.booking.adults': 'Erwachsene',
   'experience.detail.booking.children': 'Kinder',
   'experience.detail.booking.infants': 'Kleinkinder',

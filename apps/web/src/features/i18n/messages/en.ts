@@ -167,6 +167,7 @@ export const en = {
   'experience.detail.booking.perPerson': 'per person',
   'experience.detail.booking.pickDate': 'Pick a date',
   'experience.detail.booking.timeZone': 'Times are in {bolge}.',
+  'experience.detail.booking.spotsLeft': { one: '{n} spot left', other: '{n} spots left' },
   'experience.detail.booking.adults': 'Adults',
   'experience.detail.booking.children': 'Children',
   'experience.detail.booking.infants': 'Infants',

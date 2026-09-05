@@ -321,6 +321,8 @@ export const tr = {
   'experience.detail.booking.perPerson': 'kişi başı',
   'experience.detail.booking.pickDate': 'Tarih seç',
   'experience.detail.booking.timeZone': 'Saatler {bolge} saatiyle.',
+  /** Seans çipinde kalan yer. Dolu seans listeye hiç gelmiyor (GetAvailabilityQuery). */
+  'experience.detail.booking.spotsLeft': { one: '{n} yer kaldı', other: '{n} yer kaldı' },
   'experience.detail.booking.adults': 'Yetişkin',
   'experience.detail.booking.children': 'Çocuk',
   'experience.detail.booking.infants': 'Bebek',

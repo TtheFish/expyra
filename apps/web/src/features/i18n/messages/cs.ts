@@ -223,6 +223,12 @@ export const cs = {
   'experience.detail.booking.perPerson': 'za osobu',
   'experience.detail.booking.pickDate': 'Vyber datum',
   'experience.detail.booking.timeZone': 'Časy jsou v pásmu {bolge}.',
+  'experience.detail.booking.spotsLeft': {
+    one: 'Zbývá {n} místo',
+    few: 'Zbývají {n} místa',
+    many: 'Zbývá {n} místa',
+    other: 'Zbývá {n} míst',
+  },
   'experience.detail.booking.adults': 'Dospělí',
   'experience.detail.booking.children': 'Děti',
   'experience.detail.booking.infants': 'Batolata',
