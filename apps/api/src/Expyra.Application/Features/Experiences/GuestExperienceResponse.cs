@@ -92,6 +92,10 @@ public sealed record GuestExperienceDetailResponse(
     IReadOnlyList<GuestExperienceImageResponse> Images,
     GuestExperienceHostResponse Host,
     GuestPricingResponse? Pricing,
+    int? MinimumAge,
+    string? ActivityLevel,
+    GuestMeetingPointResponse? MeetingPoint,
+    GuestItineraryResponse? Itinerary,
     DateTimeOffset PublishedAtUtc);
 
 /// <summary>
@@ -104,7 +108,31 @@ public sealed record GuestExperienceDetailResponse(
 /// Host adını hiç yazmadıysa <c>null</c> — arayüz genel bir ada düşüyor. Uydurma
 /// bir ad ("Host") sunucudan gönderilseydi çeviri sunucuya sızardı (docs/I18N.md §1).
 /// </param>
-public sealed record GuestExperienceHostResponse(string? DisplayName, Uri? AvatarUrl);
+/// <summary>
+/// <c>Headline</c>/<c>Bio</c> host'un yazdığı dilde (<c>BioLanguage</c>); arayüz
+/// istenen dille eşleşmiyorsa rozet basıyor. Çeviri zinciri YOK: tek satır var.
+/// </summary>
+public sealed record GuestExperienceHostResponse(
+    string? DisplayName,
+    Uri? AvatarUrl,
+    string? Headline,
+    string? Bio,
+    string? BioLanguage);
+
+/// <summary>Koordinat yoksa ikisi de null; adres tek başına olabilir.</summary>
+public sealed record GuestMeetingPointResponse(string? Address, double? Latitude, double? Longitude);
+
+/// <summary>
+/// Tek dilin listesi. Dil, metinle aynı zincirle seçildi ama AYRI çözüldü: başlık
+/// Çekçe varken program yalnız Türkçe olabilir — o zaman <c>IsFallback</c> burada
+/// true, metinde false.
+/// </summary>
+public sealed record GuestItineraryResponse(
+    string Language,
+    bool IsFallback,
+    IReadOnlyList<GuestItineraryStepResponse> Steps);
+
+public sealed record GuestItineraryStepResponse(string Title, string? Body);
 
 /// <param name="Url">
 /// Okuma adresi, her yanıtta yeniden üretiliyor (<c>IObjectStorage.PublicUrl</c>).
@@ -174,5 +202,9 @@ public sealed record GuestExperienceDetailTextResponse(
     string Language,
     string Title,
     string? Description,
+    string? WhatToBring,
+    string? NotIncluded,
+    string? Accessibility,
+    string? MeetingInstructions,
     bool IsFallback,
     string Source);

@@ -62,6 +62,9 @@ public interface IAppDbContext
     /// </summary>
     DbSet<ExperienceMedia> ExperienceMedia { get; }
 
+    /// <summary>Program adımları; liste dil başına toptan yazılıyor (bkz. entity notu).</summary>
+    DbSet<ExperienceItineraryStep> ExperienceItinerarySteps { get; }
+
     /// <summary>
     /// Misafirin seçebileceği seanslar. <b>Blok 9'un kilitleyeceği satırlar</b> —
     /// bu yüzden materyalize (şablondan okuma anında üretilmiyor).
@@ -88,6 +91,9 @@ public interface IAppDbContext
 
     /// <summary>Kullanıcı hesapları. Tablo adı app_user — "user" Postgres'te ayrılmış kelime.</summary>
     DbSet<User> Users { get; }
+
+    /// <summary>Host tanıtımı; yalnız host'larda satır var.</summary>
+    DbSet<HostProfile> HostProfiles { get; }
 
     /// <summary>Tek kullanımlık giriş kodları. Satırlar kullanıcı OLMADAN da doğabilir.</summary>
     DbSet<LoginCode> LoginCodes { get; }

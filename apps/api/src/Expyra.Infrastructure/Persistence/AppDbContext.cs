@@ -51,6 +51,8 @@ public sealed class AppDbContext(
 
     public DbSet<ExperienceMedia> ExperienceMedia => Set<ExperienceMedia>();
 
+    public DbSet<ExperienceItineraryStep> ExperienceItinerarySteps => Set<ExperienceItineraryStep>();
+
     public DbSet<AvailabilitySlot> AvailabilitySlots => Set<AvailabilitySlot>();
 
     public DbSet<RecurrenceTemplate> RecurrenceTemplates => Set<RecurrenceTemplate>();
@@ -66,6 +68,8 @@ public sealed class AppDbContext(
     public DbSet<ExchangeRate> ExchangeRates => Set<ExchangeRate>();
 
     public DbSet<User> Users => Set<User>();
+
+    public DbSet<HostProfile> HostProfiles => Set<HostProfile>();
 
     public DbSet<LoginCode> LoginCodes => Set<LoginCode>();
 

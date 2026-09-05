@@ -37,6 +37,22 @@ internal sealed class ExperienceTranslationConfiguration : IEntityTypeConfigurat
             .HasColumnName("description")
             .HasMaxLength(ExperienceTranslation.MaxDescriptionLength);
 
+        builder.Property(x => x.WhatToBring)
+            .HasColumnName("what_to_bring")
+            .HasMaxLength(ExperienceTranslation.MaxDetailLength);
+
+        builder.Property(x => x.NotIncluded)
+            .HasColumnName("not_included")
+            .HasMaxLength(ExperienceTranslation.MaxDetailLength);
+
+        builder.Property(x => x.Accessibility)
+            .HasColumnName("accessibility")
+            .HasMaxLength(ExperienceTranslation.MaxDetailLength);
+
+        builder.Property(x => x.MeetingInstructions)
+            .HasColumnName("meeting_instructions")
+            .HasMaxLength(ExperienceTranslation.MaxDetailLength);
+
         builder.Property(x => x.Source)
             .HasColumnName("source")
             .HasConversion<string>()

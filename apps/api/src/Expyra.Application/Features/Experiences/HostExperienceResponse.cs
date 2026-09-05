@@ -60,9 +60,13 @@ public sealed record HostExperienceResponse(
     bool InfantCountsTowardCapacity,
     string? TimeZoneId,
     string OriginalLanguage,
+    int? MinimumAge,
+    string? ActivityLevel,
+    HostMeetingPointResponse? MeetingPoint,
     IReadOnlyList<string> SpokenLanguages,
     IReadOnlyList<string> Tags,
     IReadOnlyList<HostExperienceTranslationResponse> Translations,
+    IReadOnlyList<HostItineraryStepResponse> Itinerary,
     IReadOnlyList<HostExperienceMediaResponse> Media,
     IReadOnlyList<string> MissingPublishRequirements,
     DateTimeOffset CreatedAtUtc,
@@ -94,8 +98,18 @@ public sealed record HostExperienceTranslationResponse(
     string Language,
     string Title,
     string? Description,
+    string? WhatToBring,
+    string? NotIncluded,
+    string? Accessibility,
+    string? MeetingInstructions,
     string Source,
     DateTimeOffset UpdatedAtUtc);
+
+/// <summary>Adres dil bağımsız; yönerge çeviri satırında (<c>MeetingInstructions</c>).</summary>
+public sealed record HostMeetingPointResponse(string? Address, double? Latitude, double? Longitude);
+
+/// <summary>Tüm dillerin adımları tek listede; arayüz aktif dile göre süzüyor.</summary>
+public sealed record HostItineraryStepResponse(string Language, int SortOrder, string Title, string? Body);
 
 /// <summary>
 /// <see cref="Experience"/> satırlarını yanıt şekline çevirir.
@@ -168,6 +182,14 @@ internal static class HostExperienceProjection
         // Fiyatı OLAN ilanların kimlikleri. Kural satırı olmayan bir fiyat sayfası
         // sayılmıyor — o "fiyat girilmedi" demek (GuestPricingStore ile aynı ayrım).
         // Tutarlar çekilmiyor, yalnız varlık: yayın kapısının sorduğu soru bu.
+        var itinerary = await dbContext.ExperienceItinerarySteps
+            .AsNoTracking()
+            .Where(x => ids.Contains(x.ExperienceId))
+            .OrderBy(x => x.Language)
+            .ThenBy(x => x.SortOrder)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
         var priced = (await dbContext.ExperiencePrices
             .AsNoTracking()
             .Where(x => ids.Contains(x.ExperienceId)
@@ -181,6 +203,7 @@ internal static class HostExperienceProjection
         var spokenById = spoken.ToLookup(x => x.ExperienceId);
         var tagsById = tags.ToLookup(x => x.ExperienceId);
         var mediaById = media.ToLookup(x => x.ExperienceId);
+        var itineraryById = itinerary.ToLookup(x => x.ExperienceId);
 
         // Sıra girdideki sıra: sorgunun OrderBy'ı korunuyor, lookup onu bozmuyor.
         return experiences
@@ -189,6 +212,9 @@ internal static class HostExperienceProjection
                 translationsById[experience.Id].ToList(),
                 spokenById[experience.Id].Select(x => x.Language).ToList(),
                 tagsById[experience.Id].Select(x => x.DisplayTag).ToList(),
+                itineraryById[experience.Id]
+                    .Select(x => new HostItineraryStepResponse(x.Language, x.SortOrder, x.Title, x.Body))
+                    .ToList(),
                 mediaById[experience.Id]
                     .Select(x => new HostExperienceMediaResponse(
                         x.Id,
@@ -207,6 +233,7 @@ internal static class HostExperienceProjection
         IReadOnlyList<ExperienceTranslation> translations,
         IReadOnlyList<string> spokenLanguages,
         IReadOnlyList<string> tags,
+        IReadOnlyList<HostItineraryStepResponse> itinerary,
         IReadOnlyList<HostExperienceMediaResponse> media,
         bool hasPrice)
     {
@@ -226,6 +253,14 @@ internal static class HostExperienceProjection
             experience.InfantCountsTowardCapacity,
             experience.TimeZoneId,
             experience.OriginalLanguage,
+            experience.MinimumAge,
+            TranslationText.ActivityLevelName(experience.ActivityLevel),
+            // Üçü de boşsa null: arayüz "buluşma noktası girilmemiş" dalını tek
+            // bir null kontrolüyle seçiyor.
+            experience.MeetingAddress is null && experience.MeetingLatitude is null
+                ? null
+                : new HostMeetingPointResponse(
+                    experience.MeetingAddress, experience.MeetingLatitude, experience.MeetingLongitude),
             spokenLanguages,
             tags,
             translations
@@ -233,9 +268,14 @@ internal static class HostExperienceProjection
                     x.Language,
                     x.Title,
                     x.Description,
+                    x.WhatToBring,
+                    x.NotIncluded,
+                    x.Accessibility,
+                    x.MeetingInstructions,
                     x.Source.ToString(),
                     x.UpdatedAtUtc))
                 .ToList(),
+            itinerary,
             media,
             ExperiencePublishRules.Missing(
                 experience, hasOriginalTranslation, media.Any(x => x.IsCover), hasPrice),

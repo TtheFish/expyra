@@ -1,8 +1,11 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Expyra.Application.Features.Host;
 using Expyra.Application.Features.Host.Commands.ActivateHost;
+using Expyra.Application.Features.Host.Commands.SetHostProfile;
 using Expyra.Application.Features.Host.Queries.GetHostIdentity;
+using Expyra.Application.Features.Host.Queries.GetHostProfile;
 using Expyra.WebApi.Common;
 
 namespace Expyra.WebApi.Features.Host;
@@ -52,4 +55,38 @@ public sealed class HostController(ISender mediator) : ApiControllerBase(mediato
         var result = await Mediator.Send(new GetHostIdentityQuery(), cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>Host tanıtımı (unvan + biyografi). Satır yoksa alanlar null.</summary>
+    [HttpGet("profile")]
+    [Authorize(Policy = AuthorizationPolicies.Host)]
+    [ProducesResponseType<HostProfileResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<HostProfileResponse>> Profile(CancellationToken cancellationToken)
+    {
+        var result = await Mediator.Send(new GetHostProfileQuery(), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>Tanıtımı yazar (upsert, tam değiştirme). İkisi de boşsa satır silinir.</summary>
+    [HttpPut("profile")]
+    [Authorize(Policy = AuthorizationPolicies.Host)]
+    [ProducesResponseType<HostProfileResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<HostProfileResponse>> SetProfile(
+        SetHostProfileRequest body,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+
+        var result = await Mediator.Send(
+            new SetHostProfileCommand(body.Headline, body.Bio, body.Language),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    public sealed record SetHostProfileRequest(string? Headline, string? Bio, string Language);
 }

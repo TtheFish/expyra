@@ -128,6 +128,43 @@ public sealed class Experience : BaseAuditableEntity
 
     public ExperienceStatus Status { get; set; } = ExperienceStatus.Draft;
 
+    /// <summary>Buluşma noktası adres satırı genişliği.</summary>
+    public const int MaxMeetingAddressLength = 240;
+
+    /// <summary>
+    /// Yaş sınırı tavanı. 99 üstü bir "en az yaş" yazım hatasıdır; 0 = sınır yok
+    /// ile null aynı anlama gelmesin diye null kullanılıyor, 0 reddediliyor.
+    /// </summary>
+    public const int MaxMinimumAge = 99;
+
+    /// <summary>
+    /// Misafirin en az kaç yaşında olması gerektiği (Airbnb "Guests ages 10 and up").
+    /// Null = sınır yok. Rezervasyon formundaki çocuk/bebek seçimiyle çelişki uyarısı
+    /// Blok 9'un işi; burada yalnız tanım.
+    /// </summary>
+    public int? MinimumAge { get; set; }
+
+    /// <summary>
+    /// Fiziksel yoğunluk. Null = host söylemedi. Telde camelCase metin
+    /// (CLAUDE.md #8): <c>"light"</c>, <c>"moderate"</c>, <c>"strenuous"</c>.
+    /// </summary>
+    public ActivityLevel? ActivityLevel { get; set; }
+
+    /// <summary>
+    /// Buluşma noktası adresi. DİL BAĞIMSIZ olduğu için çeviri satırında değil:
+    /// "Galata Kulesi önü" her dilde aynı satır. Dile bağlı yönerge
+    /// (<c>ExperienceTranslation.MeetingInstructions</c>) ayrı.
+    /// </summary>
+    public string? MeetingAddress { get; set; }
+
+    /// <summary>
+    /// Koordinat çifti; ikisi birlikte ya null ya dolu
+    /// (<c>ck_experience_meeting_point_pair</c>). Tek başına enlem anlamsız.
+    /// </summary>
+    public double? MeetingLatitude { get; set; }
+
+    public double? MeetingLongitude { get; set; }
+
     /// <summary>
     /// URL'deki kalıcı kimlik. <b>Dile göre DEĞİŞMEZ</b>: tek slug tüm dillerde geçerli —
     /// aksi halde <c>/tr/deneyim/...</c> ile <c>/en/experience/...</c> farklı kaynaklara
@@ -160,6 +197,19 @@ public sealed class Experience : BaseAuditableEntity
 /// INSERT'e koymaz (<c>UserStatus</c> ile aynı gerekçe). Sütunda METİN olarak duruyor —
 /// psql'de okunabilir ve enum yeniden sıralanırsa eski satırlar başka anlama gelmez.
 /// </summary>
+/// <summary>
+/// Deneyimin fiziksel yoğunluğu. Sayı değerleri DB'ye YAZILMIYOR (metin dönüşümü,
+/// <c>ExperienceConfiguration</c>); sıra yalnız okunabilirlik için.
+/// </summary>
+public enum ActivityLevel
+{
+    Light = 1,
+
+    Moderate = 2,
+
+    Strenuous = 3,
+}
+
 public enum ExperienceStatus
 {
     /// <summary>Yalnız sahibi görür. Misafir için 404 (PLAN kabul kriteri 3).</summary>

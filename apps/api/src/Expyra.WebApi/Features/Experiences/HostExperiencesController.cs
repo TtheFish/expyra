@@ -9,7 +9,11 @@ using Expyra.Application.Features.Experiences.Commands.CreateMediaUpload;
 using Expyra.Application.Features.Experiences.Commands.DeleteMedia;
 using Expyra.Application.Features.Experiences.Commands.PublishExperience;
 using Expyra.Application.Features.Experiences.Commands.ReorderMedia;
+using Expyra.Application.Features.Experiences.Commands.SetExperienceDetails;
 using Expyra.Application.Features.Experiences.Commands.SetExperienceTranslation;
+using Expyra.Application.Features.Experiences.Commands.SetItinerary;
+using Expyra.Application.Features.Experiences.Commands.SetMeetingPoint;
+using Expyra.Domain.Experiences;
 using Expyra.Application.Features.Experiences.Commands.SetMediaCover;
 using Expyra.Application.Features.Experiences.Commands.UpdateExperience;
 using Expyra.Application.Features.Experiences.Queries.GetHostExperiences;
@@ -145,6 +149,108 @@ public sealed class HostExperiencesController(ISender mediator) : ApiControllerB
     /// gerçekten gövdede olan alanları taşıyor.</para>
     /// </summary>
     public sealed record SetTranslationRequest(string Title, string? Description);
+
+    /// <summary>
+    /// "Bilmen gerekenler": yaş sınırı, aktivite seviyesi (dil bağımsız) ve üç
+    /// serbest metin (<paramref name="language"/> dilinde). Tam değiştirme; boş alan
+    /// temizler. O dilde başlık yoksa metin yazılamaz: 409 <c>translation-missing</c>.
+    /// </summary>
+    [HttpPut("{id:guid}/details/{language}")]
+    [ProducesResponseType<HostExperienceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<HostExperienceResponse>> SetDetails(
+        Guid id,
+        string language,
+        SetDetailsRequest body,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+
+        var result = await Mediator.Send(
+            new SetExperienceDetailsCommand(
+                id,
+                language,
+                body.MinimumAge,
+                body.ActivityLevel,
+                body.WhatToBring,
+                body.NotIncluded,
+                body.Accessibility),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    public sealed record SetDetailsRequest(
+        int? MinimumAge,
+        ActivityLevel? ActivityLevel,
+        string? WhatToBring,
+        string? NotIncluded,
+        string? Accessibility);
+
+    /// <summary>
+    /// Buluşma noktası: adres ve koordinat dil bağımsız, yönerge
+    /// <paramref name="language"/> dilinde. Tam değiştirme.
+    /// </summary>
+    [HttpPut("{id:guid}/meeting-point/{language}")]
+    [ProducesResponseType<HostExperienceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<HostExperienceResponse>> SetMeetingPoint(
+        Guid id,
+        string language,
+        SetMeetingPointRequest body,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+
+        var result = await Mediator.Send(
+            new SetMeetingPointCommand(
+                id, language, body.Address, body.Latitude, body.Longitude, body.Instructions),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    public sealed record SetMeetingPointRequest(
+        string? Address,
+        double? Latitude,
+        double? Longitude,
+        string? Instructions);
+
+    /// <summary>
+    /// Program ("Neler yapacağız") — <paramref name="language"/> dilinin listesi
+    /// TOPTAN yazılır; boş liste programı kaldırır.
+    /// </summary>
+    [HttpPut("{id:guid}/itinerary/{language}")]
+    [ProducesResponseType<HostExperienceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<HostExperienceResponse>> SetItinerary(
+        Guid id,
+        string language,
+        SetItineraryRequest body,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(body);
+
+        var result = await Mediator.Send(
+            new SetItineraryCommand(id, language, body.Steps ?? []),
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    public sealed record SetItineraryRequest(IReadOnlyList<ItineraryStepInput>? Steps);
 
     /// <summary>
     /// Yayına alır. Eksik ilan <b>409</b> alır ve taslak DEĞİŞMEDEN kalır; hangi alanların

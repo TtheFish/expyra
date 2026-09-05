@@ -486,9 +486,10 @@ public sealed class GuestExperienceTests(ApiFactory factory)
         richCount.ShouldBe(leanCount);
 
         // Tavan Blok 6'da 4'ten 6'ya (galeri ve host), Blok 7'de 6'dan 9'a çıktı
-        // (fiyat + kur anlık görüntüsü + oranlar). Asıl korunan şey bu sayı değil,
-        // üstteki eşitlik: içerik büyüdükçe sorgu sayısı SABİT kalıyor.
-        leanCount.ShouldBeLessThanOrEqualTo(9);
+        // (fiyat + kur anlık görüntüsü + oranlar), detay bölümleriyle 9'dan 11'e
+        // (program + host tanıtımı). Asıl korunan şey bu sayı değil, üstteki
+        // eşitlik: içerik büyüdükçe sorgu sayısı SABİT kalıyor.
+        leanCount.ShouldBeLessThanOrEqualTo(11);
     }
 
     // -----------------------------------------------------------------------

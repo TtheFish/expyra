@@ -95,6 +95,10 @@ internal sealed class GetExperienceBySlugQueryHandler(IAppDbContext dbContext, I
             .LoadHostAsync(dbContext, storage, row.HostId, cancellationToken)
             .ConfigureAwait(false);
 
+        var itinerary = await GuestExperienceQuery
+            .LoadItineraryAsync(dbContext, row, language, cancellationToken)
+            .ConfigureAwait(false);
+
         var pricing = await GuestPricingStore
             .LoadAsync(dbContext, row.Id, cancellationToken)
             .ConfigureAwait(false);
@@ -118,6 +122,7 @@ internal sealed class GetExperienceBySlugQueryHandler(IAppDbContext dbContext, I
             images,
             host,
             pricing is null ? null : GuestPricingStore.ToResponse(pricing, display),
+            itinerary,
             language);
     }
 }

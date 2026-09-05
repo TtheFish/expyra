@@ -92,7 +92,12 @@ internal static class GuestExperienceQuery
                city.Slug,
                city.CountryCode,
                city.Name,
-               city.EnglishName);
+               city.EnglishName,
+               experience.MinimumAge,
+               experience.ActivityLevel,
+               experience.MeetingAddress,
+               experience.MeetingLatitude,
+               experience.MeetingLongitude);
 
     /// <summary>
     /// Sayfanın metinlerini TEK sorguda getirir ve her satır için fallback zincirini
@@ -159,11 +164,29 @@ internal static class GuestExperienceQuery
 
         var rows = withDescription
             ? await source
-                .Select(x => new ExperienceTextRow(x.ExperienceId, x.Language, x.Title, x.Description, x.Source))
+                .Select(x => new ExperienceTextRow(
+                    x.ExperienceId,
+                    x.Language,
+                    x.Title,
+                    x.Description,
+                    x.WhatToBring,
+                    x.NotIncluded,
+                    x.Accessibility,
+                    x.MeetingInstructions,
+                    x.Source))
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false)
             : await source
-                .Select(x => new ExperienceTextRow(x.ExperienceId, x.Language, x.Title, (string?)null, x.Source))
+                .Select(x => new ExperienceTextRow(
+                    x.ExperienceId,
+                    x.Language,
+                    x.Title,
+                    (string?)null,
+                    (string?)null,
+                    (string?)null,
+                    (string?)null,
+                    (string?)null,
+                    x.Source))
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -263,11 +286,26 @@ internal static class GuestExperienceQuery
         // Satır yoksa boş kart: ilan görünür durumdaysa host'u da Active demektir
         // (Visible sorgusu bunu şart koşuyor), yani buraya düşmek beklenmiyor.
         // Yine de patlamıyoruz — misafir sayfası bir tutarsızlık yüzünden 500 vermemeli.
-        return host is null
-            ? new GuestExperienceHostResponse(null, null)
-            : new GuestExperienceHostResponse(
-                host.DisplayName,
-                host.AvatarKey is null ? null : storage.PublicUrl(host.AvatarKey));
+        if (host is null)
+        {
+            return new GuestExperienceHostResponse(null, null, null, null, null);
+        }
+
+        // Ayrı sorgu, join değil: profil satırı çoğu host'ta yok ve sol join'in
+        // null sütunlarını anonim tipe taşımak okunurluğu bozuyordu.
+        var profile = await dbContext.HostProfiles
+            .AsNoTracking()
+            .Where(x => x.UserId == hostId)
+            .Select(x => new { x.Headline, x.Bio, x.Language })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return new GuestExperienceHostResponse(
+            host.DisplayName,
+            host.AvatarKey is null ? null : storage.PublicUrl(host.AvatarKey),
+            profile?.Headline,
+            profile?.Bio,
+            profile?.Language);
     }
 
     /// <summary>
@@ -294,6 +332,45 @@ internal static class GuestExperienceQuery
         return media
             .Select(x => new GuestExperienceImageResponse(storage.PublicUrl(x.StorageKey), x.Width, x.Height))
             .ToList();
+    }
+
+    /// <summary>
+    /// Programı metinle AYNI zincirle ama ayrı çözer: hangi dillerde adım varsa
+    /// onlar arasından seçiyor. Hiçbir dilde adım yoksa null — bölüm çizilmez.
+    /// </summary>
+    internal static async Task<GuestItineraryResponse?> LoadItineraryAsync(
+        IAppDbContext dbContext,
+        GuestExperienceRow row,
+        string? requestedLanguage,
+        CancellationToken cancellationToken)
+    {
+        var steps = await dbContext.ExperienceItinerarySteps
+            .AsNoTracking()
+            .Where(x => x.ExperienceId == row.Id)
+            .OrderBy(x => x.SortOrder)
+            .Select(x => new { x.Language, x.Title, x.Body })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (steps.Count == 0)
+        {
+            return null;
+        }
+
+        var available = steps.Select(x => x.Language).Distinct(StringComparer.Ordinal).ToList();
+
+        // Zincir tükenirse (yalnız üçüncü bir dilde program var) ilk dil: program
+        // yabancı dilde görünmek, hiç görünmemekten iyi — rozet dili söylüyor.
+        var language = ExperienceTextFallback.Resolve(requestedLanguage, row.OriginalLanguage, available)
+            ?? available[0];
+
+        return new GuestItineraryResponse(
+            language,
+            IsFallback(language, requestedLanguage),
+            steps
+                .Where(x => string.Equals(x.Language, language, StringComparison.Ordinal))
+                .Select(x => new GuestItineraryStepResponse(x.Title, x.Body))
+                .ToList());
     }
 
     internal static GuestExperienceSummaryResponse ToSummary(
@@ -325,6 +402,7 @@ internal static class GuestExperienceQuery
         IReadOnlyList<GuestExperienceImageResponse> images,
         GuestExperienceHostResponse host,
         GuestPricingResponse? pricing,
+        GuestItineraryResponse? itinerary,
         string? requestedLanguage)
         => new(
             row.Slug,
@@ -338,11 +416,21 @@ internal static class GuestExperienceQuery
                 text.Language,
                 text.Title,
                 text.Description,
+                text.WhatToBring,
+                text.NotIncluded,
+                text.Accessibility,
+                text.MeetingInstructions,
                 IsFallback(text.Language, requestedLanguage),
                 text.Source.ToString()),
             images,
             host,
             pricing,
+            row.MinimumAge,
+            TranslationText.ActivityLevelName(row.ActivityLevel),
+            row.MeetingAddress is null && row.MeetingLatitude is null
+                ? null
+                : new GuestMeetingPointResponse(row.MeetingAddress, row.MeetingLatitude, row.MeetingLongitude),
+            itinerary,
             row.PublishedAtUtc);
 
     /// <summary>
@@ -372,12 +460,26 @@ internal sealed record GuestExperienceRow(
     string CitySlug,
     string CityCountryCode,
     string CityName,
-    string CityEnglishName);
+    string CityEnglishName,
+    int? MinimumAge,
+    ActivityLevel? ActivityLevel,
+    string? MeetingAddress,
+    double? MeetingLatitude,
+    double? MeetingLongitude);
 
 /// <summary>Bir çeviri satırının misafire lazım olan parçası.</summary>
+/// <summary>
+/// Listede yalnız başlık (dört ek metin null); detayda hepsi. Ayrım
+/// <c>LoadTextsAsync(withDescription)</c>'te — liste sorgusu 24 satır × dört
+/// uzun sütun taşımasın.
+/// </summary>
 internal sealed record ExperienceTextRow(
     Guid ExperienceId,
     string Language,
     string Title,
     string? Description,
+    string? WhatToBring,
+    string? NotIncluded,
+    string? Accessibility,
+    string? MeetingInstructions,
     TranslationSource Source);

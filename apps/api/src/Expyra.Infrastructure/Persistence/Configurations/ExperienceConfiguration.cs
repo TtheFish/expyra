@@ -68,6 +68,24 @@ internal sealed class ExperienceConfiguration : IEntityTypeConfiguration<Experie
         builder.Property(x => x.ScheduleGeneratedThroughLocal)
             .HasColumnName("schedule_generated_through_local");
 
+        builder.Property(x => x.MinimumAge)
+            .HasColumnName("minimum_age");
+
+        builder.Property(x => x.ActivityLevel)
+            .HasColumnName("activity_level")
+            .HasConversion<string>()
+            .HasMaxLength(20);
+
+        builder.Property(x => x.MeetingAddress)
+            .HasColumnName("meeting_address")
+            .HasMaxLength(Experience.MaxMeetingAddressLength);
+
+        builder.Property(x => x.MeetingLatitude)
+            .HasColumnName("meeting_latitude");
+
+        builder.Property(x => x.MeetingLongitude)
+            .HasColumnName("meeting_longitude");
+
         builder.Property(x => x.OriginalLanguage)
             .HasColumnName("original_language")
             .HasMaxLength(LanguageCode.MaxLength)

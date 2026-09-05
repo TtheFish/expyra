@@ -26,6 +26,12 @@ public sealed class ExperienceTranslation
     /// <summary>Açıklama sütun genişliği.</summary>
     public const int MaxDescriptionLength = 4000;
 
+    /// <summary>
+    /// "Bilmen gerekenler" alanlarının ortak tavanı. Açıklama kadar uzun olmaları
+    /// beklenmiyor; 1000, Airbnb'deki en uzun "What to bring" örneklerinin üstünde.
+    /// </summary>
+    public const int MaxDetailLength = 1000;
+
     public Guid ExperienceId { get; set; }
 
     /// <summary>
@@ -45,6 +51,21 @@ public sealed class ExperienceTranslation
     /// listeye ek kural yazmak, PLAN'ın kapattığı kapsamı sessizce genişletmek olurdu.
     /// </summary>
     public string? Description { get; set; }
+
+    /// <summary>Misafirin yanında getirmesi gerekenler (Airbnb "What to bring").</summary>
+    public string? WhatToBring { get; set; }
+
+    /// <summary>Fiyata dahil OLMAYANLAR — müze bileti, yemek vb.</summary>
+    public string? NotIncluded { get; set; }
+
+    /// <summary>Erişilebilirlik notu: merdiven, tekerlekli sandalye, işaret dili.</summary>
+    public string? Accessibility { get; set; }
+
+    /// <summary>
+    /// Buluşma yönergesi ("kulenin kuzey kapısında, sarı şemsiyeli rehber"). Adres
+    /// <c>Experience.MeetingAddress</c>'te — bu satır dile bağlı olan kısım.
+    /// </summary>
+    public string? MeetingInstructions { get; set; }
 
     /// <summary>
     /// Metni kim üretti. Makine çevirisi bu blokta YOK; alan Blok 10 için hazır duruyor.
