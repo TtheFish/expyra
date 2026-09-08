@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useId, useRef, useState, useTransition } from 'react'
+import { useId, useRef, useState, useTransition } from 'react'
 import { GlassButton } from '@/components/ui/glass-button'
 import {
   confirmMediaAction,
@@ -48,13 +48,16 @@ export function MediaUploader({
   const [dragging, setDragging] = useState(false)
   const [busy, startTransition] = useTransition()
   const [gallery, setGallery] = useState(media)
+  const [mediaSig, setMediaSig] = useState(() => gallerySignature(media))
   const [uploading, setUploading] = useState(0)
 
-  // Sunucu tarafı yenilemesi (sil / kapak / sıra) props'u günceller — tur
-  // ortasındaki iyimser galeriyi ezmemek için yalnız dış değişiklikte senkronla.
-  useEffect(() => {
+  // Props yenilenince (refresh) galeriyi senkronla — effect içinde setState
+  // lint'i kırıyor; render sırasında prop değişimine göre ayarlama (React docs).
+  const nextSig = gallerySignature(media)
+  if (nextSig !== mediaSig) {
+    setMediaSig(nextSig)
     setGallery(media)
-  }, [media])
+  }
 
   const atLimit = gallery.length >= MAX_MEDIA
   const disabled = busy || uploading > 0 || atLimit
@@ -366,3 +369,7 @@ export type MediaUploaderLabels = {
 }
 
 const MAX_MEDIA = 12
+
+function gallerySignature(items: HostExperienceMedia[]): string {
+  return items.map((item) => `${item.id}:${item.isCover ? 1 : 0}:${item.url}`).join('|')
+}

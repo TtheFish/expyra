@@ -827,6 +827,7 @@ function BookingPanel({
       </div>
 
       <BookingPartyForm
+        key={selectedSlotId ?? 'no-slot'}
         lang={lang}
         slug={experience.slug}
         checkoutAction={experienceCheckoutPath(lang, experience.slug)}

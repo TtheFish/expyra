@@ -62,6 +62,7 @@ export function BookingPartyForm({
   const [failed, setFailed] = useState(false)
   const [pending, setPending] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+  const skipInitialFetch = useRef(true)
 
   const loadQuote = useEffectEvent(async (next: PartySelection, nextCurrency: string) => {
     abortRef.current?.abort()
@@ -127,31 +128,13 @@ export function BookingPartyForm({
     }
   })
 
-  useEffect(() => {
-    // Tarih (seans) URL'den değişince kişi/teklifi o URL anına çek.
-    setParty(initialParty)
-    setCurrency(initialCurrency ?? '')
-    setQuote(initialQuote)
-    setFailed(false)
-    setPending(false)
-    // Yalnız slotId: initial* her RSC turunda yeni referans olabilir, kullanıcının
-    // yazdığı kişiyi silmemeli.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- seans değişimi
-  }, [slotId])
-
+  // Seans değişince üst bileşen `key={slotId}` ile remount eder; ilk mount'ta
+  // SSR teklifi zaten state'te. Sonraki kişi/para değişiminde canlı çek.
   useEffect(() => {
     if (!slotId) return
 
-    const sameAsInitial =
-      party.adults === initialParty.adults &&
-      party.children === initialParty.children &&
-      party.infants === initialParty.infants &&
-      (currency || null) === (initialCurrency ?? null)
-
-    if (sameAsInitial) {
-      setQuote(initialQuote)
-      setFailed(false)
-      setPending(false)
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false
       return
     }
 
@@ -163,7 +146,7 @@ export function BookingPartyForm({
       window.clearTimeout(timer)
       abortRef.current?.abort()
     }
-  }, [party, currency, slotId, initialParty, initialCurrency, initialQuote, loadQuote])
+  }, [party, currency, slotId])
 
   function setTier(key: keyof PartySelection, raw: string) {
     const parsed = Number(raw)

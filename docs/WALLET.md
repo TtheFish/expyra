@@ -5,7 +5,7 @@ Biletler telefona **gerçek** PassKit / Google Wallet nesnesi olarak iner.
 iki imza yolu doğmasın diye.
 
 Görüntüleme (`/tr/bilet/:code`) kimlik **istemez**. Ekleme uçları
-(` /api/bilet/:code/apple|google`) oturum + aşağıdaki sırları ister.
+(`/api/bilet/:code/apple|google`) oturum + aşağıdaki sırları ister.
 
 ## Apple Wallet (`.pkpass`)
 
@@ -14,14 +14,15 @@ Görüntüleme (`/tr/bilet/:code`) kimlik **istemez**. Ekleme uçları
 3. WWDR ara sertifika repoda gömülü (`AppleWWDRCAG4.pem`); üzerine yazmak istersen
    `EXPYRA_APPLE_WWDR_PEM`
 
-`apps/web/.env.local`:
+`apps/web/.env.local` — anahtar adları `.env.example` ile aynı. Değerler PEM
+metni; **örnek PEM veya private key bu dosyaya yazılmaz** (gitleaks kırar).
 
 ```bash
 EXPYRA_APPLE_PASS_TYPE_ID=pass.com.expyra.ticket
 EXPYRA_APPLE_TEAM_ID=XXXXXXXXXX
 EXPYRA_APPLE_ORG_NAME=Expyra
-EXPYRA_APPLE_PASS_CERT_PEM="-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
-EXPYRA_APPLE_PASS_KEY_PEM="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+EXPYRA_APPLE_PASS_CERT_PEM=<pass-type-certificate-pem>
+EXPYRA_APPLE_PASS_KEY_PEM=<pass-type-private-key-pem>
 # EXPYRA_APPLE_PASS_KEY_PASSPHRASE=
 ```
 
@@ -36,7 +37,7 @@ iPhone’da **Apple Cüzdan’a ekle** → `.pkpass` iner / Cüzdan açılır.
 ```bash
 EXPYRA_GOOGLE_WALLET_ISSUER_ID=3388000000012345678
 EXPYRA_GOOGLE_WALLET_CLIENT_EMAIL=wallet@…iam.gserviceaccount.com
-EXPYRA_GOOGLE_WALLET_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+EXPYRA_GOOGLE_WALLET_PRIVATE_KEY=<service-account-private-key-pem>
 EXPYRA_GOOGLE_WALLET_CLASS_SUFFIX=expyra_ticket
 ```
 
