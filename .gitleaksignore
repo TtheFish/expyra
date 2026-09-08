@@ -1,0 +1,3 @@
+# Eski commit'teki docs örneği — gerçek sır değil, BEGIN PRIVATE KEY şablonu.
+# Mevcut ağaç temiz; gitleaks git geçmişini de taradığı için fingerprint gerekli.
+94611b7bfb0f82d7e747534032b94f7363acc27b:docs/WALLET.md:private-key:24
