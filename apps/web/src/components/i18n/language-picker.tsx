@@ -138,7 +138,7 @@ export function LanguagePicker({
         aria-label={interpolate(selected, labels.trigger, {
           dil: currentLanguage?.nativeName ?? selected,
         })}
-        className="glass glass-edge glass-interactive inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-glass-sm)] px-3 text-sm font-medium text-nav-link"
+        className="glass glass-edge glass-interactive inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-glass-sm)] px-3 text-sm font-medium text-fg"
       >
         <span aria-hidden="true">🌐</span>
         <span className="uppercase">{currentLanguage?.code ?? selected}</span>

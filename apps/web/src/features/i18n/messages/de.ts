@@ -151,6 +151,52 @@ export const de = {
   'experience.detail.itinerary.heading': 'Was wir machen',
   'experience.detail.meeting.heading': 'Treffpunkt',
   'experience.detail.meeting.map': 'Auf der Karte öffnen',
+  'experience.detail.meeting.mapEmbed': 'Karte des Treffpunkts',
+  'experience.detail.meeting.pin': 'Treffpunkt',
+  'experience.detail.highlights.host': 'Gastgeber: {ad}',
+  'experience.detail.highlights.duration': 'Etwa {sure}',
+  'experience.detail.highlights.spoken': 'Wird angeboten auf {diller}',
+  'experience.detail.highlights.capacity': {
+    one: 'Bis zu {n} Person',
+    other: 'Bis zu {n} Personen',
+  },
+  'experience.detail.highlights.bring': 'Mitbringen',
+  'experience.detail.reviews.rating': '{puan}',
+  'experience.detail.reviews.count': { one: '{n} Bewertung', other: '{n} Bewertungen' },
+  'experience.detail.reviews.stars': { one: '{n} Stern', other: '{n} Sterne' },
+  'experience.detail.reviews.demoNote':
+    'Beispielbewertungen — echte Bewertungen erscheinen hier, sobald Buchungen live sind.',
+  'experience.detail.reviews.showAll': 'Alle Bewertungen anzeigen',
+  'experience.detail.reviews.about': 'Erfahre, wie Bewertungen funktionieren.',
+  'experience.detail.reviews.demo.1.name': 'Andreea',
+  'experience.detail.reviews.demo.1.place': 'Târgu Mureș, Rumänien',
+  'experience.detail.reviews.demo.1.when': 'vor 1 Tag',
+  'experience.detail.reviews.demo.1.body':
+    'Unser Guide war kenntnisreich und herzlich. Die Stadt mit ihm zu erkunden fühlte sich ganz anders an.',
+  'experience.detail.reviews.demo.2.name': 'Marco',
+  'experience.detail.reviews.demo.2.place': 'Mailand, Italien',
+  'experience.detail.reviews.demo.2.when': 'vor 3 Tagen',
+  'experience.detail.reviews.demo.2.body':
+    'Kleine Gruppe, viel Gespräch. Fotostopps waren eingeplant — wir waren begeistert.',
+  'experience.detail.reviews.demo.3.name': 'Eliška',
+  'experience.detail.reviews.demo.3.place': 'Brünn, Tschechien',
+  'experience.detail.reviews.demo.3.when': 'vor 1 Woche',
+  'experience.detail.reviews.demo.3.body':
+    'Etwas zügig, aber insgesamt wunderbar. Der letzte Stopp war unser Favorit.',
+  'experience.detail.reviews.demo.4.name': 'Jonas',
+  'experience.detail.reviews.demo.4.place': 'Berlin, Deutschland',
+  'experience.detail.reviews.demo.4.when': 'vor 2 Wochen',
+  'experience.detail.reviews.demo.4.body':
+    'Persönlicher als erwartet. Der Gastgeber zeigte uns auch lokale Spezialitäten.',
+  'experience.detail.reviews.demo.5.name': 'Leyla',
+  'experience.detail.reviews.demo.5.place': 'Istanbul, Türkei',
+  'experience.detail.reviews.demo.5.when': 'vor 3 Wochen',
+  'experience.detail.reviews.demo.5.body':
+    'Organisation einwandfrei. Treffpunkt klar und das Timing passte genau.',
+  'experience.detail.reviews.demo.6.name': 'Sara',
+  'experience.detail.reviews.demo.6.place': 'Madrid, Spanien',
+  'experience.detail.reviews.demo.6.when': 'vor 1 Monat',
+  'experience.detail.reviews.demo.6.body': 'Unser Guide war toll 💕💕',
   'experience.detail.know.heading': 'Gut zu wissen',
   'experience.detail.know.minimumAge': 'Altersgrenze',
   'experience.detail.know.minimumAgeValue': 'Ab {n} Jahren',
@@ -173,6 +219,9 @@ export const de = {
   'experience.detail.booking.currency': 'Währung',
   'experience.detail.booking.currencyNone': 'Währung des Gastgebers',
   'experience.detail.booking.update': 'Preis berechnen',
+  'experience.detail.booking.continue': 'Weiter zur Zahlung',
+  'experience.detail.booking.pickDateFirst': 'Zuerst Datum wählen',
+  'experience.detail.booking.pickDateHint': 'Wähle oben ein Datum, um fortzufahren.',
   'experience.detail.booking.total': 'Gesamt',
   'experience.detail.booking.displayTotal': 'Etwa {tutar}',
   'experience.detail.booking.chargedIn':
@@ -181,6 +230,30 @@ export const de = {
     'Der Preis für diese Auswahl konnte nicht berechnet werden. Vielleicht sind nicht genug Plätze frei oder der Termin wurde geschlossen.',
   'experience.detail.cityLink': 'Alle Erlebnisse in {sehir}',
   'experience.detail.back': 'Zurück zu Entdecken',
+
+  'checkout.title': 'Bestätigen und zahlen',
+  'checkout.back': 'Zurück zum Erlebnis',
+  'checkout.payment.heading': 'Zahlungsart',
+  'checkout.payment.bank': 'Online-Banking',
+  'checkout.payment.bankSelect': 'Bank auswählen',
+  'checkout.payment.card': 'Kredit- oder Debitkarte',
+  'checkout.payment.google': 'Google Pay',
+  'checkout.payment.apple': 'Apple Pay',
+  'checkout.payment.terms':
+    'Mit Bestätigen und Zahlen akzeptierst du Nutzungsbedingungen, Stornierungsrichtlinie und Datenschutzhinweis. Echte Zahlung ist noch nicht angebunden — dieser Schritt zeigt die Oberfläche.',
+  'checkout.payment.submit': 'Bestätigen und zahlen',
+  'checkout.payment.submitting': 'Wird verarbeitet…',
+  'checkout.payment.demoNote': 'Demo: Deine Karte wird nicht belastet und es entsteht keine Buchung.',
+  'checkout.success.title': 'Fertig — Demo-Bestätigung',
+  'checkout.success.body':
+    'Wenn Zahlungsanbieter und Buchungs-API da sind, erscheint hier ein echtes Ticket. Der Ablauf ist vorerst abgeschlossen.',
+  'checkout.success.back': 'Zu meinen Erlebnissen',
+  'checkout.summary.nonRefundable': 'Diese Reservierung ist nicht erstattungsfähig.',
+  'checkout.summary.date': 'Datum',
+  'checkout.summary.guests': 'Gäste',
+  'checkout.summary.change': 'Ändern',
+  'checkout.summary.priceDetails': 'Preisdetails',
+  'checkout.summary.total': 'Gesamt {paraBirimi}',
 
   'howItWorks.lede': 'Drei Schritte, dann bist du fertig.',
   'howItWorks.back': 'Zurück',
@@ -206,6 +279,17 @@ export const de = {
   'ticket.demoBadge': 'Demo-Ticket',
   'ticket.demoNote':
     'Beispielticket: Der QR-Code ist noch nicht signiert und kann am Eingang nicht geprüft werden.',
+  'ticket.view.title': 'Dein Ticket',
+  'ticket.view.lede': 'Zeig den QR an der Tür oder füge ihn deiner Wallet hinzu.',
+  'ticket.view.back': 'Zurück zu meinen Erlebnissen',
+  'ticket.wallet.view': 'Ticket anzeigen',
+  'ticket.wallet.apple': 'Zu Apple Wallet hinzufügen',
+  'ticket.wallet.google': 'Zu Google Wallet hinzufügen',
+  'ticket.wallet.adding': 'Wird vorbereitet…',
+  'ticket.wallet.appleNotConfigured':
+    'Apple Wallet ist in dieser Umgebung noch nicht eingerichtet. Setze EXPYRA_APPLE_PASS_* (docs/WALLET.md); das Ticket kannst du hier trotzdem ansehen.',
+  'ticket.wallet.googleNotConfigured':
+    'Google Wallet ist in dieser Umgebung noch nicht eingerichtet. Setze EXPYRA_GOOGLE_WALLET_* (docs/WALLET.md); das Ticket kannst du hier trotzdem ansehen.',
   'ticket.guests': 'Gäste',
   'ticket.amount': 'Gesamt',
   'ticket.status': 'Status',
@@ -431,9 +515,9 @@ export const de = {
   'host.experience.description.help':
     'Für die Veröffentlichung nicht erforderlich, aber hier entscheiden sich Reisende. Beschreibe den Ablauf der Reihe nach.',
 
-  'host.experience.duration.label': 'Dauer (Minuten)',
+  'host.experience.duration.label': 'Dauer (Stunden)',
   'host.experience.duration.help':
-    'Gesamtdauer eines Termins. Zum Beispiel 90 oder 180 Minuten. Höchstens sieben Tage.',
+    'Gesamtdauer eines Termins. Zum Beispiel 1,5 oder 3 Stunden. Höchstens sieben Tage (168 Stunden).',
   'host.experience.capacity.label': 'Kapazität (Personen)',
   'host.experience.capacity.help':
     'Maximale Teilnehmerzahl pro Termin. Für die Veröffentlichung ist mindestens ein Platz nötig.',
@@ -476,6 +560,9 @@ export const de = {
   'host.experience.republish': 'Erneut veröffentlichen',
   'host.experience.publishing': 'Wird veröffentlicht…',
   'host.experience.published': 'Dein Angebot ist online.',
+  'host.experience.unpublish': 'Zurückziehen',
+  'host.experience.unpublishing': 'Wird zurückgezogen…',
+  'host.experience.unpublished': 'Angebot ist wieder Entwurf — in der Suche unsichtbar.',
   'host.experience.archive': 'Archivieren',
   'host.experience.archiving': 'Wird archiviert…',
   'host.experience.archived': 'Angebot archiviert.',
@@ -501,11 +588,9 @@ export const de = {
   'host.media.error.tooSmall': 'Fotos müssen mindestens 800×600 Pixel groß sein.',
   'host.media.error.tooLarge': 'Dateien dürfen höchstens 10 MB groß sein.',
   'host.media.error.limit': 'Ein Angebot darf höchstens 12 Fotos enthalten.',
-  'host.media.error.lastOfPublished':
-    'Das letzte Foto eines veröffentlichten Angebots kann nicht gelöscht werden. Füge zuerst ein anderes hinzu oder archiviere das Angebot.',
 
   'host.experience.status.publishedNote':
-    'Dein Angebot erscheint in der Suche. Beim Archivieren wird es ausgeblendet, aber nicht gelöscht — du kannst es jederzeit erneut veröffentlichen.',
+    'Dein Angebot erscheint in der Suche. Mit „Zurückziehen“ wird es wieder Entwurf — Fotos ändern, dann erneut veröffentlichen. Archivieren blendet es ebenfalls aus, ohne zu löschen.',
   'host.experience.status.privateNote':
     'Bis zur Veröffentlichung kannst nur du dieses Angebot sehen.',
 
@@ -517,7 +602,7 @@ export const de = {
     'Angebote können nicht in dieser Sprache verfasst werden. Wähle eine andere aus der Liste.',
   'host.experience.error.title': 'Ein Titel ist erforderlich und darf höchstens 120 Zeichen lang sein.',
   'host.experience.error.description': 'Die Beschreibung darf höchstens 4000 Zeichen lang sein.',
-  'host.experience.error.duration': 'Gib die Dauer in Minuten an: mindestens 1, höchstens 10080.',
+  'host.experience.error.duration': 'Gib die Dauer in Stunden an: mindestens 0,5, höchstens 168.',
   'host.experience.error.capacity': 'Gib die Kapazität in Personen an: mindestens 1, höchstens 500.',
   'host.experience.error.city':
     'Wähle die Stadt aus der Liste — nur den Namen einzugeben reicht nicht.',
@@ -646,8 +731,8 @@ export const de = {
   'host.schedule.rule.startHelp': 'Leer lassen, um heute zu beginnen.',
   'host.schedule.rule.submit': 'Regel hinzufügen',
   'host.schedule.rule.pending': 'Wird hinzugefügt…',
-  'host.schedule.rule.stop': 'Beenden',
-  'host.schedule.rule.stopping': 'Wird beendet…',
+  'host.schedule.rule.stop': 'Entfernen',
+  'host.schedule.rule.stopping': 'Wird entfernt…',
   'host.schedule.rule.empty': 'Noch keine wöchentlichen Regeln.',
   'host.schedule.rule.stopped': 'beendet',
 

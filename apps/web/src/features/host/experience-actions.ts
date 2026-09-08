@@ -9,6 +9,7 @@ import type { SimpleMessageKey, Translate } from '@/features/i18n/dictionary'
 import { UI_LANGUAGE_FIELD, uiLocaleOf, type UiLocale } from '@/features/i18n/locale'
 import { getTranslator } from '@/features/i18n/translator'
 import { resolveCity } from '@/features/places/api'
+import { experiencePath } from '@/features/experiences/api'
 import { path } from '@/lib/routes'
 import {
   ADULT_PRICE_FIELD,
@@ -68,6 +69,7 @@ import {
   fetchHostExperience,
   hostExperiencePath,
   publishExperience,
+  unpublishExperience,
   reorderMedia,
   requirementMessageKey,
   setExperienceTranslation,
@@ -83,6 +85,7 @@ import {
   stopRecurrence,
   updateExperience,
   type HostExperiencePatch,
+  type HostExperienceMedia,
   type MediaUpload,
 } from './experiences-api'
 
@@ -360,9 +363,11 @@ export async function publishExperienceAction(
 
   let access: HostExperienceAccessError | null = null
   let blocked = false
+  let slug: string | null = null
 
   try {
-    await publishExperience(accessToken, experienceId)
+    const published = await publishExperience(accessToken, experienceId)
+    slug = published.slug
   } catch (error) {
     if (error instanceof HostExperienceAccessError) {
       access = error
@@ -383,6 +388,12 @@ export async function publishExperienceAction(
   }
 
   revalidatePath('/', 'layout')
+
+  // Yayınlandıktan sonra misafir sayfasına — host son hâli görsün, gerekirse
+  // düzenlemeye geri döner. Slug yoksa (olmamalı) editörde kalır.
+  if (slug) {
+    redirect(experiencePath(lang, slug), RedirectType.push)
+  }
 
   return succeed(t('host.experience.published'))
 }
@@ -432,6 +443,50 @@ export async function archiveExperienceAction(
   return succeed(t('host.experience.archived'))
 }
 
+/**
+ * Yayındaki ilanı taslağa alır. Arşivden hafif — görsel değiştirmek veya kısa
+ * ara vermek için. İdempotent.
+ */
+export async function unpublishExperienceAction(
+  _previous: ExperienceFormState,
+  formData: FormData,
+): Promise<ExperienceFormState> {
+  const lang = uiLocaleOf(formData.get(UI_LANGUAGE_FIELD))
+  const t = await getTranslator(lang)
+
+  const experienceId = readField(formData, EXPERIENCE_ID_FIELD)
+  if (!experienceId) {
+    return fail(t, 'host.experience.error.notFound')
+  }
+
+  const here = hostExperiencePath(lang, experienceId)
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, here), RedirectType.replace)
+  }
+
+  let access: HostExperienceAccessError | null = null
+
+  try {
+    await unpublishExperience(accessToken, experienceId)
+  } catch (error) {
+    if (error instanceof HostExperienceAccessError) {
+      access = error
+    } else {
+      return writeFailure(t, error)
+    }
+  }
+
+  if (access) {
+    redirect(accessHref(lang, access, here), RedirectType.replace)
+  }
+
+  revalidatePath('/', 'layout')
+
+  return succeed(t('host.experience.unpublished'))
+}
+
 // --- Yardımcılar -------------------------------------------------------------
 
 /** Alan bazlı girdi hatası; mesajı eylem gövdesinde kullanıcının diline çevriliyor. */
@@ -463,7 +518,7 @@ async function buildPatch(
 ): Promise<HostExperiencePatch> {
   if (section === 'temel') {
     return {
-      durationMinutes: readCount(formData, DURATION_FIELD, 'host.experience.error.duration'),
+      durationMinutes: readDurationHours(formData, DURATION_FIELD),
       capacity: readCount(formData, CAPACITY_FIELD, 'host.experience.error.capacity'),
     }
   }
@@ -537,6 +592,28 @@ function readCount(
   }
 
   return value
+}
+
+/**
+ * Form SAAT yazar; API DAKİKA ister. Boş = dokunma. Virgül ondalık da kabul
+ * (`1,5`). Yarım saat adımıyla gelen değerler tam dakikaya yuvarlanır.
+ */
+function readDurationHours(formData: FormData, field: string): number | undefined {
+  const raw = readField(formData, field)
+  if (raw === null) return undefined
+
+  const hours = Number(raw.replace(',', '.'))
+  if (!Number.isFinite(hours) || hours <= 0) {
+    throw new SectionInputError('host.experience.error.duration')
+  }
+
+  const minutes = Math.round(hours * 60)
+  // Domain tavanı `Experience.MaxDurationMinutes` (= 7 gün). Alt sınır yarım saat.
+  if (minutes < 30 || minutes > 10_080) {
+    throw new SectionInputError('host.experience.error.duration')
+  }
+
+  return minutes
 }
 
 function readList(formData: FormData, field: string): string[] {
@@ -706,7 +783,11 @@ function readField(formData: FormData, name: string): string | null {
 /** Yükleme izni ya da hata — ikisi birden asla. */
 export type MediaUploadResult = { upload: MediaUpload; error: null } | { upload: null; error: string }
 
-export type MediaActionResult = { error: string | null }
+export type MediaActionResult = {
+  error: string | null
+  /** Güncel galeri — çoklu yüklemede sayfa tazelenmeden çizilsin diye. */
+  media?: HostExperienceMedia[]
+}
 
 /**
  * İmzalı yükleme adresi ister. Bayt HENÜZ YOK: yalnız tip ve boyut beyan ediliyor
@@ -738,14 +819,38 @@ export async function requestMediaUploadAction(
 /**
  * Yüklemeyi doğrular. Asıl kontrol SUNUCUDA ve baytlara bakıyor: "image/png" diye
  * bildirilmiş bir SVG burada 409 alıyor.
+ *
+ * `refresh: false` — çoklu seçimde her dosyadan sonra sayfayı yenileme; sonda
+ * `refreshMediaAction` bir kez çağrılır.
  */
 export async function confirmMediaAction(
   language: string,
   experienceId: string,
   mediaId: string,
+  options: { refresh?: boolean } = {},
 ): Promise<MediaActionResult> {
-  return runMediaAction(language, experienceId, (token) =>
-    confirmMedia(token, experienceId, mediaId))
+  return runMediaAction(
+    language,
+    experienceId,
+    (token) => confirmMedia(token, experienceId, mediaId),
+    options,
+  )
+}
+
+/** Galeriyi sunucudan tazele — çoklu yükleme turunun sonu. */
+export async function refreshMediaAction(
+  language: string,
+  experienceId: string,
+): Promise<MediaActionResult> {
+  const lang = uiLocaleOf(language)
+
+  const accessToken = await requireAccessToken()
+  if (!accessToken) {
+    redirect(signInHref(lang, hostExperiencePath(lang, experienceId)), RedirectType.replace)
+  }
+
+  revalidatePath('/', 'layout')
+  return { error: null }
 }
 
 /** Kapağı bu görsele taşır. Kapağı boşaltan bir eylem YOK — daima tam bir tane var. */
@@ -758,14 +863,19 @@ export async function setMediaCoverAction(
     setMediaCover(token, experienceId, mediaId))
 }
 
-/** Görseli siler; depodaki nesne de gider. Yayındaki ilanın SON görseli 409. */
+/** Görseli siler; depodaki nesne de gider. Yayındaki son görsel silinirse ilan taslağa düşer. */
 export async function deleteMediaAction(
   language: string,
   experienceId: string,
   mediaId: string,
+  options: { refresh?: boolean } = {},
 ): Promise<MediaActionResult> {
-  return runMediaAction(language, experienceId, (token) =>
-    deleteMedia(token, experienceId, mediaId))
+  return runMediaAction(
+    language,
+    experienceId,
+    (token) => deleteMedia(token, experienceId, mediaId),
+    options,
+  )
 }
 
 /** Sırayı TOPTAN yazar. Kısmi liste 409 — sunucu ile istemcinin sırası ayrışmasın. */
@@ -779,40 +889,51 @@ export async function reorderMediaAction(
 }
 
 /**
- * Dört medya eyleminin ortak gövdesi: token al, çağır, sayfayı tazele.
+ * Dört medya eyleminin ortak gövdesi: token al, çağır, isteğe bağlı sayfa tazele.
  *
- * `revalidatePath` ŞART: yükleyici sunucudan gelen galeriyi çiziyor ve eksik
+ * `revalidatePath` varsayılan: yükleyici sunucudan gelen galeriyi çiziyor ve eksik
  * yayın koşulları rozeti de aynı yanıttan besleniyor. Tazelenmezse host, kapak
  * yüklediği hâlde "kapak görseli eksik" yazısını görmeye devam ederdi.
+ *
+ * Çoklu yüklemede her dosyadan sonra tazelemek bileşeni ortada yeniden kuruyor
+ * ve sıradaki PUT'lar yarım kalıyordu — o yüzden `refresh: false` ile biriktirilip
+ * sonda bir kez tazeleniyor; galeri ise yanıt gövdesinden yerel tutuluyor.
  */
 async function runMediaAction(
   language: string,
   experienceId: string,
-  call: (accessToken: string) => Promise<unknown>,
+  call: (accessToken: string) => Promise<{ media: HostExperienceMedia[] }>,
+  options: { refresh?: boolean } = {},
 ): Promise<MediaActionResult> {
   const lang = uiLocaleOf(language)
   const t = await getTranslator(lang)
+  const refresh = options.refresh !== false
 
   const accessToken = await requireAccessToken()
   if (!accessToken) {
     redirect(signInHref(lang, hostExperiencePath(lang, experienceId)), RedirectType.replace)
   }
 
+  let media: HostExperienceMedia[] | undefined
+
   try {
-    await call(accessToken)
+    const result = await call(accessToken)
+    media = result.media
   } catch (error) {
     return { error: await mediaFailure(t, lang, experienceId, error) }
   }
 
-  revalidatePath('/', 'layout')
+  if (refresh) {
+    revalidatePath('/', 'layout')
+  }
 
-  return { error: null }
+  return { error: null, media }
 }
 
 /**
  * Medya uçlarının hata eşlemesi. Yazma uçlarından AYRI çünkü 409'un anlamı burada
- * başka: orada "önce arşivle", burada "dosya kabul edilmedi" ya da "son görseli
- * silemezsin". Aynı cümleyi kullanmak host'a yanlış çözümü söylerdi.
+ * başka: orada "önce arşivle", burada "dosya kabul edilmedi". Aynı cümleyi
+ * kullanmak host'a yanlış çözümü söylerdi.
  *
  * Eşlenmeyen her şey YENİDEN FIRLATILIYOR (CLAUDE.md #1).
  */
@@ -855,7 +976,6 @@ const MEDIA_ERROR_KEYS: Record<string, SimpleMessageKey> = {
   'media-too-small': 'host.media.error.tooSmall',
   'media-too-large': 'host.media.error.tooLarge',
   'media-limit-reached': 'host.media.error.limit',
-  'media-last-of-published': 'host.media.error.lastOfPublished',
 }
 
 // ---------------------------------------------------------------------------

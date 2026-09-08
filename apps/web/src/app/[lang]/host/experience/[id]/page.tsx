@@ -9,6 +9,7 @@ import { RETURN_TO_PARAM } from '@/features/auth/return-to'
 import { getSession } from '@/features/auth/session'
 import {
   archiveExperienceAction,
+  unpublishExperienceAction,
   publishExperienceAction,
   createBlackoutAction,
   createRecurrenceAction,
@@ -352,8 +353,15 @@ export default async function EditExperiencePage({
             help={t('host.experience.section.itineraryHelp')}
           >
             <TextLanguageNote lang={lang} activeLanguage={activeLanguage} t={t} />
+            {/*
+              `key` kayıttan sonra editörü yeniden kuruyor: `ItineraryEditor`
+              `initial`'ı yalnız mount'ta okuyor. Tazelenmeden başarıdan sonra
+              sunucu adımları DOM'a inmiyor ve sonraki ziyarette liste boş
+              görünüyordu (misafir sayfası aynı dildeki adımları göstermeye
+              devam ediyordu).
+            */}
             <ExperienceForm
-              key={`program-${activeLanguage}`}
+              key={`program-${activeLanguage}-${itineraryFingerprint(experience.itinerary, activeLanguage)}`}
               action={setItineraryAction}
               lang={lang}
               experienceId={experience.id}
@@ -452,7 +460,6 @@ export default async function EditExperiencePage({
                  tarayıcıya yalnız bu ilanın ihtiyacı olan dizgeler gidiyor
                  (experience-forms.tsx ile aynı karar). */
               labels={{
-                hint: t('host.media.hint'),
                 add: t('host.media.add'),
                 drop: t('host.media.drop'),
                 uploading: t('host.media.uploading'),
@@ -462,9 +469,14 @@ export default async function EditExperiencePage({
                 delete: t('host.media.delete'),
                 moveEarlier: t('host.media.moveEarlier'),
                 moveLater: t('host.media.moveLater'),
-                positions: experience.media.map((_, index) => t('host.media.position', { n: index + 1 })),
+                // 12'ye kadar önceden çöz: çoklu yüklemede yerel galeri büyüyünce
+                // sıra etiketi boş kalmasın (fonksiyon prop sunucudan inemez).
+                positions: Array.from({ length: 12 }, (_, index) =>
+                  t('host.media.position', { n: index + 1 })),
                 errorRejected: t('host.media.error.rejected'),
                 errorTooLarge: t('host.media.error.tooLarge'),
+                errorUnsupported: t('host.media.error.unsupported'),
+                errorLimit: t('host.media.error.limit'),
               }}
             />
           </Section>
@@ -729,6 +741,13 @@ function TranslationFields({
 }
 
 function BasicsFields({ experience, t }: { experience: HostExperience; t: Translate }) {
+  /*
+    Depoda süre DAKİKA; form SAAT soruyor. 0 = henüz girilmedi → alan boş
+    ("dokunma"). Yarım saat adımı: 1,5 / 2 / 2,5 gibi yaygın süreler yazılır.
+  */
+  const durationHours =
+    experience.durationMinutes > 0 ? experience.durationMinutes / 60 : ''
+
   return (
     <>
       <div>
@@ -740,28 +759,12 @@ function BasicsFields({ experience, t }: { experience: HostExperience; t: Transl
           name={DURATION_FIELD}
           className="auth-input"
           type="number"
-          inputMode="numeric"
-          /*
-            `min` ADIMIN KATI olmak ZORUNDA. HTML5 geçerli değerleri
-            `min + k·step` olarak sayıyor, yani `min=1, step=5` iken küme
-            1, 6, 11 … 116, 121 oluyordu ve 60, 90, 120 — en yaygın üç süre —
-            tarayıcı tarafından reddediliyordu. Hata mesajı da anlaşılmazdı:
-            "en yakın geçerli değerler 116 ve 121".
-
-            Alt sınır 5 dakika: sunucu 1'i kabul ediyor ama 1 dakikalık bir
-            deneyim gerçek bir girdi değil ve tabanı adıma eşitlemek zaten
-            gerekiyordu.
-          */
-          min={5}
-          /* `Experience.MaxDurationMinutes` — 7 gün. 10080 = 5'in katı. */
-          max={10080}
-          step={5}
-          /*
-            0 = "henüz girilmedi" ve alan BOŞ açılıyor. Boş gönderim sunucuya
-            hiçbir şey yazmıyor ("dokunma"); 0 yazmaya çalışsaydı doğrulama
-            reddederdi ve kullanıcı adımı atlayamazdı.
-          */
-          defaultValue={experience.durationMinutes || ''}
+          inputMode="decimal"
+          min={0.5}
+          /* `Experience.MaxDurationMinutes` / 60 — 7 gün. */
+          max={168}
+          step={0.5}
+          defaultValue={durationHours}
           aria-describedby="sure-yardim"
         />
         <p id="sure-yardim" className="auth-help">
@@ -1324,31 +1327,30 @@ function ScheduleSection({
       </p>
 
       <ScheduleBlock heading={t('host.schedule.rule.heading')}>
-        {schedule.recurrences.length === 0 ? (
+        {schedule.recurrences.filter((rule) => rule.status === 'active').length === 0 ? (
           <p className="auth-help">{t('host.schedule.rule.empty')}</p>
         ) : (
           <ul className="grid gap-2">
-            {schedule.recurrences.map((rule) => (
+            {schedule.recurrences
+              .filter((rule) => rule.status === 'active')
+              .map((rule) => (
               <li key={rule.id} className="flex flex-wrap items-center justify-between gap-3">
                 <span className="text-sm">
                   {t(weekdayMessageKey(rule.dayOfWeek))} · {rule.startTimeLocal}
-                  {rule.status === 'stopped' ? ` (${t('host.schedule.rule.stopped')})` : ''}
                 </span>
 
-                {rule.status === 'active' ? (
-                  <ExperienceForm
-                    action={stopRecurrenceAction}
-                    lang={lang}
-                    experienceId={experienceId}
-                    size="sm"
-                    labels={{
-                      submit: t('host.schedule.rule.stop'),
-                      pending: t('host.schedule.rule.stopping'),
-                    }}
-                  >
-                    <input type="hidden" name={RECURRENCE_ID_FIELD} value={rule.id} />
-                  </ExperienceForm>
-                ) : null}
+                <ExperienceForm
+                  action={stopRecurrenceAction}
+                  lang={lang}
+                  experienceId={experienceId}
+                  size="sm"
+                  labels={{
+                    submit: t('host.schedule.rule.stop'),
+                    pending: t('host.schedule.rule.stopping'),
+                  }}
+                >
+                  <input type="hidden" name={RECURRENCE_ID_FIELD} value={rule.id} />
+                </ExperienceForm>
               </li>
             ))}
           </ul>
@@ -1512,7 +1514,7 @@ function ScheduleSection({
 }
 
 /** Kaç seans gösteriliyor. Liste bir ÖNİZLEME; tamamı ay görünümünün işi olacak. */
-const SCHEDULE_SLOT_PREVIEW = 12
+const SCHEDULE_SLOT_PREVIEW = 40
 
 function ScheduleBlock({ heading, children }: { heading: string; children: ReactNode }) {
   return (
@@ -1521,6 +1523,17 @@ function ScheduleBlock({ heading, children }: { heading: string; children: React
       <div className="mt-3 grid gap-3">{children}</div>
     </div>
   )
+}
+
+/** Adım editörünün `key`'i — kayıt sonrası sunucu listesiyle yeniden kurulur. */
+function itineraryFingerprint(
+  steps: readonly { language: string; title: string; body: string | null }[],
+  language: string,
+): string {
+  return steps
+    .filter((step) => step.language === language)
+    .map((step) => `${step.title}\0${step.body ?? ''}`)
+    .join('\n')
 }
 
 function SlotRow({
@@ -1752,6 +1765,7 @@ function PublishSection({
 }) {
   const missing = experience.missingPublishRequirements
   const canPublish = experience.status !== 'Published'
+  const canUnpublish = experience.status === 'Published'
   const canArchive = experience.status !== 'Archived'
 
   return (
@@ -1787,6 +1801,19 @@ function PublishSection({
                   ? t('host.experience.republish')
                   : t('host.experience.publish'),
               pending: t('host.experience.publishing'),
+            }}
+          />
+        ) : null}
+
+        {canUnpublish ? (
+          <ExperienceForm
+            action={unpublishExperienceAction}
+            lang={lang}
+            experienceId={experience.id}
+            size="lg"
+            labels={{
+              submit: t('host.experience.unpublish'),
+              pending: t('host.experience.unpublishing'),
             }}
           />
         ) : null}

@@ -110,7 +110,7 @@ export function AccountMenu({
         /* Yükseklik komşularıyla aynı (h-9): 3.5rem'lik barda tek kontrolü
            büyütmek hizayı bozar. Dokunma hedefi 36×64 px — WCAG 2.5.8'in
            24×24 eşiğinin üstünde; panelin içindeki satırlar 3rem. */
-        className="glass glass-edge glass-interactive inline-flex h-9 max-w-[11rem] items-center gap-2 rounded-[var(--radius-glass-sm)] px-2 text-sm font-medium text-nav-link"
+        className="glass glass-edge glass-interactive inline-flex h-9 max-w-[11rem] items-center gap-2 rounded-[var(--radius-glass-sm)] px-2 text-sm font-medium text-fg"
       >
         {avatarUrl === null ? (
           <span

@@ -4,6 +4,7 @@ using Expyra.Application.Common.Exceptions;
 using Expyra.Application.Common.Interfaces;
 using Expyra.Application.Features.Pricing;
 using Expyra.Domain.Experiences;
+using Expyra.Domain.Scheduling;
 
 namespace Expyra.Application.Features.Experiences.Queries.GetAvailability;
 
@@ -63,7 +64,7 @@ public sealed record GuestSlotResponse(
 internal static class GuestScheduleStore
 {
     /// <summary>Pencere verilmediğinde kaç gün. Ay görünümü için yeterli.</summary>
-    internal const int DefaultWindowDays = 30;
+    internal const int DefaultWindowDays = ScheduleRules.MaxWindowDays;
 
     /// <summary>
     /// Yayındaki deneyim. <b>Yayınlanmamış her şey 404</b> —

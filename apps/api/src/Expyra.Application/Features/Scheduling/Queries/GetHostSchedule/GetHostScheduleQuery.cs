@@ -61,7 +61,7 @@ internal sealed class GetHostScheduleQueryHandler(
             : HostScheduleStore.TodayLocal(experience, zone, clock);
 
         var from = request.From ?? today;
-        var to = request.To ?? from.AddDays(30);
+        var to = request.To ?? from.AddDays(ScheduleRules.MaxWindowDays);
 
         if (to < from)
         {

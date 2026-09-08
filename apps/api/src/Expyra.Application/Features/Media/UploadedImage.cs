@@ -122,7 +122,10 @@ internal static class MediaConflict
     /// <summary>Deneyim başına görsel tavanı aşıldı.</summary>
     internal const string LimitReached = "media-limit-reached";
 
-    /// <summary>Yayındaki ilanın son görseli silinemez.</summary>
+    /// <summary>
+    /// Eski istemciler için tutuluyor; sunucu artık bu kodu üretmiyor —
+    /// yayındaki son görsel silinince ilan taslağa düşüyor.
+    /// </summary>
     internal const string LastOfPublished = "media-last-of-published";
 }
 

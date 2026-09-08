@@ -220,6 +220,64 @@ export const cs = {
   'experience.detail.itinerary.heading': 'Co budeme dělat',
   'experience.detail.meeting.heading': 'Kde se sejdeme',
   'experience.detail.meeting.map': 'Otevřít na mapě',
+  'experience.detail.meeting.mapEmbed': 'Mapa místa setkání',
+  'experience.detail.meeting.pin': 'Místo setkání',
+  'experience.detail.highlights.host': 'Hostitel: {ad}',
+  'experience.detail.highlights.duration': 'Zážitek asi na {sure}',
+  'experience.detail.highlights.spoken': 'Nabídka probíhá v jazyce: {diller}',
+  'experience.detail.highlights.capacity': {
+    one: 'Až {n} osoba',
+    few: 'Až {n} osoby',
+    many: 'Až {n} osoby',
+    other: 'Až {n} osob',
+  },
+  'experience.detail.highlights.bring': 'Co si vzít s sebou',
+  'experience.detail.reviews.rating': '{puan}',
+  'experience.detail.reviews.count': {
+    one: '{n} hodnocení',
+    few: '{n} hodnocení',
+    many: '{n} hodnocení',
+    other: '{n} hodnocení',
+  },
+  'experience.detail.reviews.stars': {
+    one: '{n} hvězda',
+    few: '{n} hvězdy',
+    many: '{n} hvězdy',
+    other: '{n} hvězd',
+  },
+  'experience.detail.reviews.demoNote':
+    'Ukázkové recenze — skutečná hodnocení se tu objeví, až poběží rezervace.',
+  'experience.detail.reviews.showAll': 'Zobrazit všechna hodnocení',
+  'experience.detail.reviews.about': 'Zjistěte, jak fungují hodnocení a recenze.',
+  'experience.detail.reviews.demo.1.name': 'Andreea',
+  'experience.detail.reviews.demo.1.place': 'Târgu Mureș, Rumunsko',
+  'experience.detail.reviews.demo.1.when': 'před 1 dnem',
+  'experience.detail.reviews.demo.1.body':
+    'Náš průvodce byl znalý a milý. Procházka městem s ním byla úplně jiná.',
+  'experience.detail.reviews.demo.2.name': 'Marco',
+  'experience.detail.reviews.demo.2.place': 'Milán, Itálie',
+  'experience.detail.reviews.demo.2.when': 'před 3 dny',
+  'experience.detail.reviews.demo.2.body':
+    'Malá skupina, spousta povídání. Zastávky na fotky byly promyslené — líbilo se nám to.',
+  'experience.detail.reviews.demo.3.name': 'Eliška',
+  'experience.detail.reviews.demo.3.place': 'Brno, Česko',
+  'experience.detail.reviews.demo.3.when': 'před 1 týdnem',
+  'experience.detail.reviews.demo.3.body':
+    'Tempo bylo trochu rychlé, ale celkově skvělé. Poslední zastávka byla naše oblíbená.',
+  'experience.detail.reviews.demo.4.name': 'Jonas',
+  'experience.detail.reviews.demo.4.place': 'Berlín, Německo',
+  'experience.detail.reviews.demo.4.when': 'před 2 týdny',
+  'experience.detail.reviews.demo.4.body':
+    'Osobnější, než jsme čekali. Hostitel nás navedl i na místní chutě.',
+  'experience.detail.reviews.demo.5.name': 'Leyla',
+  'experience.detail.reviews.demo.5.place': 'Istanbul, Turecko',
+  'experience.detail.reviews.demo.5.when': 'před 3 týdny',
+  'experience.detail.reviews.demo.5.body':
+    'Organizace bez chyby. Místo setkání jasné a čas přesně seděl.',
+  'experience.detail.reviews.demo.6.name': 'Sara',
+  'experience.detail.reviews.demo.6.place': 'Madrid, Španělsko',
+  'experience.detail.reviews.demo.6.when': 'před 1 měsícem',
+  'experience.detail.reviews.demo.6.body': 'Náš průvodce byl skvělý 💕💕',
   'experience.detail.know.heading': 'Co je dobré vědět',
   'experience.detail.know.minimumAge': 'Věkový limit',
   'experience.detail.know.minimumAgeValue': 'Od {n} let',
@@ -247,6 +305,9 @@ export const cs = {
   'experience.detail.booking.currency': 'Měna',
   'experience.detail.booking.currencyNone': 'Měna hostitele',
   'experience.detail.booking.update': 'Spočítat cenu',
+  'experience.detail.booking.continue': 'Pokračovat k platbě',
+  'experience.detail.booking.pickDateFirst': 'Nejdřív vyber datum',
+  'experience.detail.booking.pickDateHint': 'Pro pokračování vyber nahoře datum.',
   'experience.detail.booking.total': 'Celkem',
   'experience.detail.booking.displayTotal': 'Přibližně {tutar}',
   'experience.detail.booking.chargedIn':
@@ -255,6 +316,30 @@ export const cs = {
     'Tento výběr se nepodařilo nacenit. Termín možná nemá dost místa, nebo se mezitím uzavřel.',
   'experience.detail.cityLink': 'Všechny zážitky ve městě {sehir}',
   'experience.detail.back': 'Zpět na Objevuj',
+
+  'checkout.title': 'Potvrzení a platba',
+  'checkout.back': 'Zpět na zážitek',
+  'checkout.payment.heading': 'Způsob platby',
+  'checkout.payment.bank': 'Internetové bankovnictví',
+  'checkout.payment.bankSelect': 'Vyberte banku',
+  'checkout.payment.card': 'Kreditní nebo debetní karta',
+  'checkout.payment.google': 'Google Pay',
+  'checkout.payment.apple': 'Apple Pay',
+  'checkout.payment.terms':
+    'Potvrzením a platbou přijímáš podmínky použití, storno podmínky a zásady ochrany soukromí. Skutečná platba ještě není napojená — tento krok ukazuje rozhraní.',
+  'checkout.payment.submit': 'Potvrdit a zaplatit',
+  'checkout.payment.submitting': 'Zpracovává se…',
+  'checkout.payment.demoNote': 'Demo: z karty se nic nestrhne a rezervace se nevytvoří.',
+  'checkout.success.title': 'Hotovo — demo potvrzení',
+  'checkout.success.body':
+    'Až přijdou platební brána a rezervační API, tady vznikne skutečný lístek. Zatím je tok dokončený.',
+  'checkout.success.back': 'Na mé zážitky',
+  'checkout.summary.nonRefundable': 'Tuto rezervaci nelze vrátit.',
+  'checkout.summary.date': 'Datum',
+  'checkout.summary.guests': 'Hosté',
+  'checkout.summary.change': 'Změnit',
+  'checkout.summary.priceDetails': 'Podrobnosti ceny',
+  'checkout.summary.total': 'Celkem {paraBirimi}',
 
   'howItWorks.lede': 'Tři kroky a je hotovo.',
   'howItWorks.back': 'Zpět',
@@ -280,6 +365,17 @@ export const cs = {
   'ticket.demoBadge': 'Ukázková vstupenka',
   'ticket.demoNote':
     'Ukázková vstupenka: QR kód zatím není podepsaný a na místě ho nelze ověřit.',
+  'ticket.view.title': 'Tvoje vstupenka',
+  'ticket.view.lede': 'U vchodu ukaž QR nebo ji přidej do peněženky.',
+  'ticket.view.back': 'Zpět na mé zážitky',
+  'ticket.wallet.view': 'Zobrazit vstupenku',
+  'ticket.wallet.apple': 'Přidat do Apple Wallet',
+  'ticket.wallet.google': 'Přidat do Google Wallet',
+  'ticket.wallet.adding': 'Připravuje se…',
+  'ticket.wallet.appleNotConfigured':
+    'Apple Wallet v tomto prostředí ještě není nastavená. Přidej EXPYRA_APPLE_PASS_* (docs/WALLET.md); vstupenku tu mezitím uvidíš.',
+  'ticket.wallet.googleNotConfigured':
+    'Google Wallet v tomto prostředí ještě není nastavená. Přidej EXPYRA_GOOGLE_WALLET_* (docs/WALLET.md); vstupenku tu mezitím uvidíš.',
   'ticket.guests': 'Hosté',
   'ticket.amount': 'Celkem',
   'ticket.status': 'Stav',
@@ -517,9 +613,9 @@ export const cs = {
   'host.experience.description.help':
     'Ke zveřejnění není povinný, ale právě tady se cestovatelé rozhodují. Projdi ten den popořadě.',
 
-  'host.experience.duration.label': 'Délka (minuty)',
+  'host.experience.duration.label': 'Délka (hodiny)',
   'host.experience.duration.help':
-    'Celková délka jednoho termínu. Například 90 minut nebo 180. Nejvýš sedm dní.',
+    'Celková délka jednoho termínu. Například 1,5 hodiny nebo 3. Nejvýš sedm dní (168 hodin).',
   'host.experience.capacity.label': 'Kapacita (osoby)',
   'host.experience.capacity.help':
     'Kolik lidí nejvýš v jednom termínu. Ke zveřejnění je potřeba aspoň jeden.',
@@ -567,6 +663,9 @@ export const cs = {
   'host.experience.republish': 'Zveřejnit znovu',
   'host.experience.publishing': 'Zveřejňuji…',
   'host.experience.published': 'Tvoje nabídka je online.',
+  'host.experience.unpublish': 'Stáhnout z nabídky',
+  'host.experience.unpublishing': 'Stahuji…',
+  'host.experience.unpublished': 'Nabídka je znovu koncept — ve vyhledávání se neobjeví.',
   'host.experience.archive': 'Archivovat',
   'host.experience.archiving': 'Archivuji…',
   'host.experience.archived': 'Nabídka archivována.',
@@ -593,11 +692,9 @@ export const cs = {
   'host.media.error.tooSmall': 'Fotky musí mít aspoň 800×600 pixelů.',
   'host.media.error.tooLarge': 'Soubory mohou mít nejvýš 10 MB.',
   'host.media.error.limit': 'Nabídka může mít nejvýš 12 fotek.',
-  'host.media.error.lastOfPublished':
-    'Poslední fotku živé nabídky smazat nelze. Přidej nejdřív jinou, nebo nabídku archivuj.',
 
   'host.experience.status.publishedNote':
-    'Tvoje nabídka se objevuje ve vyhledávání. Archivace ji skryje, ale nesmaže — zveřejnit ji můžeš kdykoli znovu.',
+    'Tvoje nabídka se objevuje ve vyhledávání. Stažením se vrátí ke konceptu — uprav fotky a zveřejni znovu. Archivace ji také skryje, ale nesmaže.',
   'host.experience.status.privateNote':
     'Dokud ji nezveřejníš, tuto nabídku nevidí nikdo kromě tebe.',
 
@@ -608,7 +705,7 @@ export const cs = {
     'V tomto jazyce nabídky psát nelze. Vyber ze seznamu jiný.',
   'host.experience.error.title': 'Název je povinný a může mít nejvýš 120 znaků.',
   'host.experience.error.description': 'Popis může mít nejvýš 4000 znaků.',
-  'host.experience.error.duration': 'Délku napiš v minutách: nejméně 1, nejvýš 10080.',
+  'host.experience.error.duration': 'Délku napiš v hodinách: nejméně 0,5, nejvýš 168.',
   'host.experience.error.capacity': 'Kapacitu napiš v osobách: nejméně 1, nejvýš 500.',
   'host.experience.error.city': 'Vyber město ze seznamu — napsat název samo o sobě nestačí.',
   'host.experience.error.category': 'Vyber kategorii ze seznamu.',
@@ -739,8 +836,8 @@ export const cs = {
   'host.schedule.rule.startHelp': 'Nech prázdné, ať se začne dneškem.',
   'host.schedule.rule.submit': 'Přidat pravidlo',
   'host.schedule.rule.pending': 'Přidávám…',
-  'host.schedule.rule.stop': 'Zastavit',
-  'host.schedule.rule.stopping': 'Zastavuji…',
+  'host.schedule.rule.stop': 'Odstranit',
+  'host.schedule.rule.stopping': 'Odstraňuji…',
   'host.schedule.rule.empty': 'Zatím žádná týdenní pravidla.',
   'host.schedule.rule.stopped': 'zastaveno',
 

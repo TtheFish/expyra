@@ -297,7 +297,7 @@ body {
   font-size: 0.875rem;
   font-weight: 600;
   white-space: nowrap;
-  background-color: rgb(16 24 40 / 0.05);
+  background-color: color-mix(in oklch, var(--fg) 6%, transparent);
   color: var(--fg);
 }
 
@@ -1066,15 +1066,10 @@ body {
     0 8px 28px rgb(0 0 0 / 0.28);
 }
 
-/* Sticky header: sayfanın kendisi kayıp altından geçiyor, o yüzden hafif cam. */
+/* Sticky header: sayfa rengiyle aynı opak zemin — %90 mix koyu temada
+   barı sayfadan bir ton açıyordu. */
 @utility glass-nav {
-  /*
-    Arka plan TEMAYA bağlı — sabit beyaz koyu temada barı "patlatıyordu" ve
-    `text-fg` (açık) linkler görünmez oluyordu. `--bg` ile sayfa mürekkebi
-    aynı kalır; blur sticky hissini korur.
-  */
-  background-color: color-mix(in oklch, var(--bg) 90%, transparent);
-  backdrop-filter: blur(20px) saturate(150%);
+  background-color: var(--bg);
   border-color: var(--line);
   box-shadow: none;
 }

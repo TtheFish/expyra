@@ -43,9 +43,31 @@ public static class MediaRules
     /// İstemcinin beyan edebileceği içerik tipleri. Beyan yalnız imzaya giriyor;
     /// KABUL kararı <see cref="ImageProbe"/>'un okuduğu gerçek bayta bakıyor.
     /// Bu liste onu gereksiz kılmıyor, yükleme daha başlamadan bariz olanı eliyor.
+    ///
+    /// <para><c>image/jpg</c> bazı tarayıcı/OS çiftlerinde geliyor; imzada tek
+    /// kanonik değer (<c>image/jpeg</c>) kullanılsın diye normalize ediliyor.</para>
     /// </summary>
     public static bool IsAllowedContentType(string? contentType)
-        => contentType is "image/jpeg" or "image/png" or "image/webp";
+        => NormalizeContentType(contentType) is not null;
+
+    /// <summary>
+    /// Beyanı kanonik MIME'a çevirir. Bilinmeyen / boş → <c>null</c>.
+    /// </summary>
+    public static string? NormalizeContentType(string? contentType)
+    {
+        if (string.IsNullOrWhiteSpace(contentType))
+        {
+            return null;
+        }
+
+        return contentType.Trim().ToLowerInvariant() switch
+        {
+            "image/jpg" or "image/jpeg" => "image/jpeg",
+            "image/png" => "image/png",
+            "image/webp" => "image/webp",
+            _ => null,
+        };
+    }
 
     /// <summary>
     /// Ölçü kabul edilebilir mi. <see cref="ImageProbe"/> tavanı zaten uyguluyor;

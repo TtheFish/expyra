@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Expyra.Application.Common.Exceptions;
 using Expyra.Application.Common.Interfaces;
-using Expyra.Application.Features.Media;
 using Expyra.Domain.Experiences;
 
 namespace Expyra.Application.Features.Experiences.Commands.DeleteMedia;
@@ -62,16 +61,21 @@ internal sealed class DeleteMediaCommandHandler(
             .OrderBy(x => x.SortOrder)
             .ToList();
 
-        // Yayındaki ilan görselsiz kalamaz: kapak yayın koşulu. Arşivlemeden son
-        // görseli silmeye izin verilseydi, ilan yayında olduğu hâlde yayın kurallarını
-        // ihlal eder duruma düşerdi — UpdateExperience'ın koruduğu değişmezin aynısı.
-        if (experience.Status == ExperienceStatus.Published
+        // Yayındaki ilanın son aktif görseli silinirse ilan otomatik taslağa düşer:
+        // kapak yayın koşulu korunur (artık yayında değil) ve host arşivlemeden
+        // görseli değiştirebilir. Eski 409 (media-last-of-published) host'u
+        // arşive zorluyordu — gereksiz uzun yol.
+        var unpublish =
+            experience.Status == ExperienceStatus.Published
             && target.Status == MediaStatus.Active
-            && remaining.Count == 0)
+            && remaining.Count == 0;
+
+        if (unpublish)
         {
-            throw new ConflictException(
-                "Yayındaki bir deneyimin son görseli silinemez. Önce başka bir görsel ekleyin ya da ilanı arşivleyin.",
-                MediaConflict.LastOfPublished);
+            experience.Status = ExperienceStatus.Draft;
+            logger.LogInformation(
+                "experience.unpublished.viaMediaDelete experienceId={ExperienceId}",
+                experience.Id);
         }
 
         dbContext.ExperienceMedia.Remove(target);

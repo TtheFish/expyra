@@ -311,6 +311,52 @@ export const tr = {
   'experience.detail.itinerary.heading': 'Neler yapacağız',
   'experience.detail.meeting.heading': 'Buluşma noktası',
   'experience.detail.meeting.map': 'Haritada aç',
+  'experience.detail.meeting.mapEmbed': 'Buluşma noktası haritası',
+  'experience.detail.meeting.pin': 'Buluşma noktası',
+  'experience.detail.highlights.host': 'İlan sahibi: {ad}',
+  'experience.detail.highlights.duration': 'Yaklaşık {sure} süreli deneyim',
+  'experience.detail.highlights.spoken': 'Bu ilan {diller} sunuluyor',
+  'experience.detail.highlights.capacity': {
+    one: 'En fazla {n} kişi',
+    other: 'En fazla {n} kişi',
+  },
+  'experience.detail.highlights.bring': 'Yanında getir',
+  'experience.detail.reviews.rating': '{puan}',
+  'experience.detail.reviews.count': { one: '{n} puan', other: '{n} puan' },
+  'experience.detail.reviews.stars': { one: '{n} yıldız', other: '{n} yıldız' },
+  'experience.detail.reviews.demoNote':
+    'Örnek yorumlar — gerçek puanlar rezervasyonlar açılınca burada görünecek.',
+  'experience.detail.reviews.showAll': 'Tüm puanları göster',
+  'experience.detail.reviews.about': 'Puanlama ve değerlendirmelerin işleyişi hakkında bilgi edinin.',
+  'experience.detail.reviews.demo.1.name': 'Andreea',
+  'experience.detail.reviews.demo.1.place': 'Târgu Mureș, Romanya',
+  'experience.detail.reviews.demo.1.when': '1 gün önce',
+  'experience.detail.reviews.demo.1.body':
+    'Rehberimiz çok bilgili ve samimiydi. Şehri onunla gezmek bambaşka hissettirdi.',
+  'experience.detail.reviews.demo.2.name': 'Marco',
+  'experience.detail.reviews.demo.2.place': 'Milano, İtalya',
+  'experience.detail.reviews.demo.2.when': '3 gün önce',
+  'experience.detail.reviews.demo.2.body':
+    'Küçük grup, bol sohbet. Fotoğraf için duraklar da düşünülmüştü — çok memnun kaldık.',
+  'experience.detail.reviews.demo.3.name': 'Eliška',
+  'experience.detail.reviews.demo.3.place': 'Brno, Çekya',
+  'experience.detail.reviews.demo.3.when': '1 hafta önce',
+  'experience.detail.reviews.demo.3.body':
+    'Tempo biraz hızlıydı ama genel olarak harikaydı. Özellikle son durak favorimiz oldu.',
+  'experience.detail.reviews.demo.4.name': 'Jonas',
+  'experience.detail.reviews.demo.4.place': 'Berlin, Almanya',
+  'experience.detail.reviews.demo.4.when': '2 hafta önce',
+  'experience.detail.reviews.demo.4.body':
+    'Beklediğimizden daha kişisel bir deneyimdi. Host yerel lezzetleri de gösterdi.',
+  'experience.detail.reviews.demo.5.name': 'Leyla',
+  'experience.detail.reviews.demo.5.place': 'İstanbul, Türkiye',
+  'experience.detail.reviews.demo.5.when': '3 hafta önce',
+  'experience.detail.reviews.demo.5.body':
+    'Organizasyon kusursuzdu. Buluşma noktası net, süre de tam uydu.',
+  'experience.detail.reviews.demo.6.name': 'Sara',
+  'experience.detail.reviews.demo.6.place': 'Madrid, İspanya',
+  'experience.detail.reviews.demo.6.when': '1 ay önce',
+  'experience.detail.reviews.demo.6.body': 'Rehberimiz çok güzel 💕💕',
   'experience.detail.know.heading': 'Bilmen gerekenler',
   'experience.detail.know.minimumAge': 'Yaş sınırı',
   'experience.detail.know.minimumAgeValue': '{n} yaş ve üzeri',
@@ -342,6 +388,9 @@ export const tr = {
   'experience.detail.booking.currency': 'Para birimi',
   'experience.detail.booking.currencyNone': 'Host’un para birimi',
   'experience.detail.booking.update': 'Fiyatı hesapla',
+  'experience.detail.booking.continue': 'Ödemeye geç',
+  'experience.detail.booking.pickDateFirst': 'Önce tarih seç',
+  'experience.detail.booking.pickDateHint': 'Devam etmek için yukarıdan bir tarih seç.',
   'experience.detail.booking.total': 'Toplam',
   /** Gösterim para birimindeki karşılık — tahsilat DEĞİL (PLAN Blok 7, kriter 3). */
   'experience.detail.booking.displayTotal': 'Yaklaşık {tutar}',
@@ -351,6 +400,31 @@ export const tr = {
     'Bu seçim için fiyat hesaplanamadı. Seansta yeterli yer olmayabilir ya da seans kapanmış olabilir.',
   'experience.detail.cityLink': '{sehir} şehrindeki tüm deneyimler',
   'experience.detail.back': 'Keşfet’e dön',
+
+  // --- Onay ve ödeme (Blok 9/11 öncesi UI; gerçek tahsilat yok) --------------
+  'checkout.title': 'Onay ve ödeme',
+  'checkout.back': 'Deneyime dön',
+  'checkout.payment.heading': 'Ödeme yöntemi',
+  'checkout.payment.bank': 'İnternet bankacılığı',
+  'checkout.payment.bankSelect': 'Bankanızı seçin',
+  'checkout.payment.card': 'Kredi veya banka kartı',
+  'checkout.payment.google': 'Google Pay',
+  'checkout.payment.apple': 'Apple Pay',
+  'checkout.payment.terms':
+    'Onaylayıp ödeyerek kullanım koşullarını, iptal politikasını ve gizlilik bildirimini kabul etmiş olursun. Gerçek ödeme henüz bağlı değil — bu adım arayüzü gösterir.',
+  'checkout.payment.submit': 'Onaylayın ve ödeyin',
+  'checkout.payment.submitting': 'İşleniyor…',
+  'checkout.payment.demoNote': 'Demo: kartından para çekilmez; rezervasyon kaydı da oluşmaz.',
+  'checkout.success.title': 'Hazır — demo onay',
+  'checkout.success.body':
+    'Ödeme sağlayıcısı ve rezervasyon API’si gelince burada gerçek bilet oluşacak. Şimdilik akış tamamlandı.',
+  'checkout.success.back': 'Deneyimlerime git',
+  'checkout.summary.nonRefundable': 'Bu rezervasyon için para iadesi yapılamaz.',
+  'checkout.summary.date': 'Tarih',
+  'checkout.summary.guests': 'Misafirler',
+  'checkout.summary.change': 'Değiştir',
+  'checkout.summary.priceDetails': 'Fiyat ayrıntıları',
+  'checkout.summary.total': 'Toplam {paraBirimi}',
 
   // --- Nasıl çalışır ---------------------------------------------------------
   /** Sayfanın adı `nav.howItWorks`'ten geliyor — aynı sayfa, aynı ad. */
@@ -388,6 +462,17 @@ export const tr = {
   /** Bilet bugün kapıda çalışmıyor; ibare Blok 12'de kalkar (bkz. glass-ticket.tsx). */
   'ticket.demoBadge': 'Demo bilet',
   'ticket.demoNote': 'Örnek bilet: QR henüz imzalanmıyor ve girişte doğrulanamıyor.',
+  'ticket.view.title': 'Biletin',
+  'ticket.view.lede': 'Kapıda QR’ı göster veya cüzdanına ekle.',
+  'ticket.view.back': 'Deneyimlerime dön',
+  'ticket.wallet.view': 'Bileti görüntüle',
+  'ticket.wallet.apple': 'Apple Cüzdan’a ekle',
+  'ticket.wallet.google': 'Google Cüzdan’a ekle',
+  'ticket.wallet.adding': 'Hazırlanıyor…',
+  'ticket.wallet.appleNotConfigured':
+    'Apple Cüzdan henüz bu ortamda yapılandırılmadı. EXPYRA_APPLE_PASS_* değişkenlerini ekle (docs/WALLET.md); şimdilik bileti buradan gösterebilirsin.',
+  'ticket.wallet.googleNotConfigured':
+    'Google Cüzdan henüz bu ortamda yapılandırılmadı. EXPYRA_GOOGLE_WALLET_* değişkenlerini ekle (docs/WALLET.md); şimdilik bileti buradan gösterebilirsin.',
   'ticket.guests': 'Kişi',
   'ticket.amount': 'Tutar',
   'ticket.status': 'Durum',
@@ -656,9 +741,9 @@ export const tr = {
   'host.experience.description.help':
     'Yayınlamak için şart değil ama gezgin kararını burada veriyor. Programı sırayla anlat.',
 
-  'host.experience.duration.label': 'Süre (dakika)',
+  'host.experience.duration.label': 'Süre (saat)',
   'host.experience.duration.help':
-    'Bir seansın toplam süresi. Örnek: 90 dakika, 180 dakika. En fazla yedi gün.',
+    'Bir seansın toplam süresi. Örnek: 1,5 saat, 3 saat. En fazla yedi gün (168 saat).',
   'host.experience.capacity.label': 'Kapasite (kişi)',
   'host.experience.capacity.help':
     'Aynı seansta en fazla kaç kişi. Yayınlamak için en az bir kişi olmalı.',
@@ -719,6 +804,9 @@ export const tr = {
   'host.experience.republish': 'Yeniden yayınla',
   'host.experience.publishing': 'Yayınlanıyor…',
   'host.experience.published': 'İlanın yayında.',
+  'host.experience.unpublish': 'Yayından kaldır',
+  'host.experience.unpublishing': 'Kaldırılıyor…',
+  'host.experience.unpublished': 'İlan taslağa alındı — aramada görünmez.',
   'host.experience.archive': 'Arşivle',
   'host.experience.archiving': 'Arşivleniyor…',
   'host.experience.archived': 'İlan arşivlendi.',
@@ -747,11 +835,9 @@ export const tr = {
   'host.media.error.tooSmall': 'Görsel en az 800×600 piksel olmalı.',
   'host.media.error.tooLarge': 'Dosya en fazla 10 MB olabilir.',
   'host.media.error.limit': 'Bir ilanda en fazla 12 görsel olabilir.',
-  'host.media.error.lastOfPublished':
-    'Yayındaki bir ilanın son görseli silinemez. Önce başka bir görsel ekle ya da ilanı arşivle.',
 
   'host.experience.status.publishedNote':
-    'İlanın aramada çıkıyor. Arşivlersen görünmez olur, silinmez — istediğin zaman geri yayınlarsın.',
+    'İlanın aramada çıkıyor. Yayından kaldırırsan taslağa döner — görselleri değiştirip yeniden yayınlayabilirsin. Arşivlemek de mümkün; ilan silinmez.',
   'host.experience.status.privateNote': 'Yayınlanana kadar bu ilanı senden başkası görmüyor.',
 
   // Hatalar. Hiçbiri API'nin metnini göstermiyor: o metnin dili kullanıcının
@@ -762,7 +848,7 @@ export const tr = {
     'Bu dilde ilan yazılamıyor. Listeden başka bir dil seç.',
   'host.experience.error.title': 'Başlık zorunlu ve en fazla 120 karakter olabilir.',
   'host.experience.error.description': 'Açıklama en fazla 4000 karakter olabilir.',
-  'host.experience.error.duration': 'Süreyi dakika olarak yaz: en az 1, en fazla 10080.',
+  'host.experience.error.duration': 'Süreyi saat olarak yaz: en az 0,5, en fazla 168.',
   'host.experience.error.capacity': 'Kapasiteyi kişi olarak yaz: en az 1, en fazla 500.',
   'host.experience.error.city': 'Şehri listeden seç — yazdığın metin tek başına yeterli değil.',
   'host.experience.error.category': 'Listeden bir kategori seç.',
@@ -910,8 +996,8 @@ export const tr = {
   'host.schedule.rule.startHelp': 'Boş bırakırsan bugünden başlar.',
   'host.schedule.rule.submit': 'Kuralı ekle',
   'host.schedule.rule.pending': 'Ekleniyor…',
-  'host.schedule.rule.stop': 'Durdur',
-  'host.schedule.rule.stopping': 'Durduruluyor…',
+  'host.schedule.rule.stop': 'Sil',
+  'host.schedule.rule.stopping': 'Siliniyor…',
   'host.schedule.rule.empty': 'Henüz haftalık kural yok.',
   'host.schedule.rule.stopped': 'durduruldu',
 

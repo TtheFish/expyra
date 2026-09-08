@@ -3,12 +3,18 @@ import { BrandLogo } from '@/components/brand/brand-logo'
 import { HeaderShell } from '@/components/brand/site-header'
 import { GlassButton } from '@/components/ui/glass-button'
 import { GlassTicket } from '@/components/ticket/glass-ticket'
+import { TicketWalletActions } from '@/components/ticket/ticket-wallet-actions'
 import type { Translate } from '@/features/i18n/dictionary'
 import { formatNumber, formatMoney } from '@/features/i18n/format'
-import { UI_LANGUAGE_FIELD } from '@/features/i18n/locale'
 import { getTranslator } from '@/features/i18n/translator'
 import { DEMO_TICKETS, formatLocalDateTime, qrSvg, type Ticket } from '@/lib/ticket'
 import { alternateLinks, path } from '@/lib/routes'
+import {
+  applePassHref,
+  googlePassHref,
+  ticketPath,
+  ticketPdfHref,
+} from '@/lib/wallet/paths'
 import '../../ticket.css'
 
 /**
@@ -83,19 +89,24 @@ export default async function MyExperiencesPage({
 
           <div className="grid gap-6 sm:grid-cols-2">
             {upcoming.map(({ ticket, qrMarkup }) => (
-              <div key={ticket.code}>
+              <div key={ticket.code} className="grid gap-3">
                 <TicketCard ticket={ticket} qrMarkup={qrMarkup} lang={lang} t={t} />
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <GlassButton variant="primary" size="sm" href={pdfHref(lang, ticket.code)}>
-                    {t('myExperiences.downloadPdf')}
-                  </GlassButton>
-                  {/* disabled: hiçbir şey yapmayan ama basma geri bildirimi veren
-                      buton, yanındaki gerçek butondan ayırt edilemiyordu. Bilet
-                      ekranı ödeme yapmış kullanıcının güven sınadığı yer. */}
-                  <GlassButton size="sm" disabled title={t('myExperiences.wallet.soon')}>
-                    {t('myExperiences.wallet')}
-                  </GlassButton>
-                </div>
+                <TicketWalletActions
+                  viewHref={ticketPath(lang, ticket.code)}
+                  appleHref={applePassHref(lang, ticket.code)}
+                  googleHref={googlePassHref(lang, ticket.code)}
+                  pdfHref={ticketPdfHref(lang, ticket.code)}
+                  labels={{
+                    view: t('ticket.wallet.view'),
+                    apple: t('ticket.wallet.apple'),
+                    google: t('ticket.wallet.google'),
+                    pdf: t('myExperiences.downloadPdf'),
+                    appleMissing: t('ticket.wallet.appleNotConfigured'),
+                    googleMissing: t('ticket.wallet.googleNotConfigured'),
+                    signedOut: t('ticket.error.signedOut'),
+                    adding: t('ticket.wallet.adding'),
+                  }}
+                />
               </div>
             ))}
           </div>
@@ -111,10 +122,12 @@ export default async function MyExperiencesPage({
               <div key={ticket.code}>
                 <TicketCard ticket={ticket} qrMarkup={qrMarkup} lang={lang} t={t} />
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <GlassButton size="sm" href={pdfHref(lang, ticket.code)}>
+                  <GlassButton size="sm" href={ticketPath(lang, ticket.code)}>
+                    {t('ticket.wallet.view')}
+                  </GlassButton>
+                  <GlassButton size="sm" href={ticketPdfHref(lang, ticket.code)}>
                     {t('myExperiences.downloadPdf')}
                   </GlassButton>
-                  {/* "Değerlendir" sistemin fiili; kullanıcı puan verir. */}
                   <GlassButton size="sm" disabled title={t('myExperiences.rate.soon')}>
                     {t('myExperiences.rate')}
                   </GlassButton>
@@ -133,15 +146,6 @@ export default async function MyExperiencesPage({
  * yazılacağını sorgudan öğreniyor. Alan adı forma yazılanla aynı sabit
  * (`arayuz-dili`): ikisi de "bu cevabı hangi dilde yaz" sorusuna cevap veriyor,
  * ikisi de kullanıcının içerik dili tercihinden (`expyra_lang`) ayrı.
- */
-function pdfHref(lang: string, code: string): string {
-  return `/api/bilet/${code}/pdf?${UI_LANGUAGE_FIELD}=${encodeURIComponent(lang)}`
-}
-
-/**
- * Bilet istemci bileşeni (eğim efekti için); metin ve biçimlenmiş değerler
- * SUNUCUDA hazırlanıp prop olarak iniyor. Değerlerin hiçbiri istemcide
- * değişmiyor, dolayısıyla şablon taşımaya gerek yok.
  */
 function TicketCard({
   ticket,

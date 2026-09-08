@@ -218,6 +218,15 @@ export function experiencePath(lang: string, slug: string): string {
 }
 
 /**
+ * Onay ve ödeme sayfası. Query (seans, kişi, para) çağıran ekler —
+ * `bookingQuery` ile aynı sözleşme.
+ */
+export function experienceCheckoutPath(lang: string, slug: string, query?: string): string {
+  const base = fillSlug(path(lang, 'experienceCheckout'), slug)
+  return query && query.length > 0 ? `${base}?${query}` : base
+}
+
+/**
  * `hreflang` halkası (PLAN Blok 5, kabul kriteri 4).
  *
  * Slug DİLE GÖRE DEĞİŞMİYOR (API kararı: slug orijinal dildeki başlıktan bir kez
@@ -239,7 +248,7 @@ function fillSlug(template: string, slug: string): string {
   if (!template.includes(SLUG_PARAM)) {
     // Tabloda yer tutucu kalmamış: rewrite'lar da bozulmuş demektir. Sessizce
     // slug'sız bir yol döndürmek, her karta aynı bağlantıyı verirdi.
-    throw new Error(`route-map: 'experienceDetail' yolunda ${SLUG_PARAM} yer tutucusu yok.`)
+    throw new Error(`route-map: yolunda ${SLUG_PARAM} yer tutucusu yok: ${template}`)
   }
 
   return template.replace(SLUG_PARAM, encodeURIComponent(slug))
@@ -446,38 +455,7 @@ export async function fetchAvailability(input: {
   return (await response.json()) as GuestAvailability
 }
 
-export type GuestQuoteLine = {
-  guestType: string
-  count: number
-  unitAmountMinor: number
-  lineTotalMinor: number
-}
-
-export type GuestQuote = {
-  slotId: string
-  startsAtUtc: string
-  startsAtLocal: string
-  timeZoneId: string
-  /** Toplam kişi. */
-  headcount: number
-  /** Kontenjandan DÜŞEN kişi — bebek deneyime göre koltuk tüketmeyebilir. */
-  seats: number
-  /** Tahsil edilecek tutar, daima host'un para biriminde. */
-  charge: { currency: string; minorUnits: number; amountMinor: number }
-  /** Misafirin para birimindeki karşılık; istenmemişse `null`. Tahsilata GİRMİYOR. */
-  display: {
-    currency: string
-    minorUnits: number
-    amountMinor: number
-    rateSnapshotId: string
-    capturedAtUtc: string
-  } | null
-  /**
-   * Kalemler YALNIZ tahsilat para biriminde. Kalem kalem çevrilseydi yuvarlama
-   * farkı yüzünden toplamı tutmayabilirdi ve ekranda "2+1 ≠ 3" görünürdü.
-   */
-  lines: GuestQuoteLine[]
-}
+export type { GuestQuote, GuestQuoteLine } from './guest-quote'
 
 /**
  * "Bu seansa şu kadar kişi kaç eder?" **Hiçbir şey rezerve etmiyor** — kapasite
@@ -493,7 +471,7 @@ export async function fetchQuote(input: {
   children: number
   infants: number
   currency?: string | null
-}): Promise<GuestQuote> {
+}): Promise<import('./guest-quote').GuestQuote> {
   const params = new URLSearchParams({
     slotId: input.slotId,
     adults: String(input.adults),
@@ -512,5 +490,5 @@ export async function fetchQuote(input: {
     throw problemOf(response)
   }
 
-  return (await response.json()) as GuestQuote
+  return (await response.json()) as import('./guest-quote').GuestQuote
 }

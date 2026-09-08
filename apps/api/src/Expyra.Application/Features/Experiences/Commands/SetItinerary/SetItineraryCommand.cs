@@ -72,6 +72,7 @@ internal sealed class SetItineraryCommandHandler(
             {
                 existing[index].Title = title;
                 existing[index].Body = body;
+                existing[index].SortOrder = index;
                 continue;
             }
 

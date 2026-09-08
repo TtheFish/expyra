@@ -21,7 +21,7 @@ namespace Expyra.Application.Features.Experiences.Queries.GetAvailability;
 /// fiyatı gör" akışı zaten tek ekran.</para>
 /// </summary>
 /// <param name="From">Deneyimin saat dilimindeki yerel tarih. Verilmezse bugün.</param>
-/// <param name="To">Verilmezse <c>from + 30 gün</c>. Pencere en fazla 62 gün.</param>
+/// <param name="To">Verilmezse <c>from + MaxWindowDays</c> (62). Pencere en fazla 62 gün.</param>
 /// <param name="Currency">
 /// Misafirin görmek istediği para birimi. Verilmezse çevrim yapılmıyor — 1.0 oranlı
 /// sahte bir çevrim üretmek, "çevrildi mi" sorusunu cevaplanamaz yapardı.

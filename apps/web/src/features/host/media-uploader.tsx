@@ -1,11 +1,12 @@
 'use client'
 
 import Image from 'next/image'
-import { useId, useRef, useState, useTransition } from 'react'
+import { useEffect, useId, useRef, useState, useTransition } from 'react'
 import { GlassButton } from '@/components/ui/glass-button'
 import {
   confirmMediaAction,
   deleteMediaAction,
+  refreshMediaAction,
   reorderMediaAction,
   requestMediaUploadAction,
   setMediaCoverAction,
@@ -23,21 +24,11 @@ import type { HostExperienceMedia } from './experiences-api'
  * sunucu eylemine verilseydi PLAN Blok 6 kabul kriteri 1 ("API bayt taşımaz")
  * BFF katmanında delinirdi: dosya yine bir sunucudan geçmiş olurdu.
  *
- * Bu yüzden bu bileşen bir `<form action={...}>` DEĞİL. Form eylemi ortadaki
- * tarayıcı adımını ifade edemiyor.
+ * ## Yerel galeri
  *
- * ## Metinler prop olarak geliyor
- *
- * Sözlük `server-only`; sayfa metinleri çözüp buraya veriyor (`experience-forms.tsx`
- * ile aynı karar). Tarayıcıya inen tek şey bu ilanın ihtiyacı olan bir avuç dizge.
- *
- * ## Sürükle-bırak yalnız EKLEMEDE
- *
- * Dosya bırakma alanı var ama sıralama sürüklemeyle DEĞİL, düğmelerle yapılıyor.
- * Sürükleyerek sıralama klavyeyle çalışmıyor ve ekran okuyucuya durumu
- * anlatmıyor; erişilebilir bir sürükleme (WAI-ARIA sürükle-bırak kalıbı) bu
- * bloğun işi değil. Düğmeler her girdi yöntemiyle çalışıyor ve sıra sunucuya
- * TOPTAN yazıldığı için ara durum hiç doğmuyor.
+ * Çoklu seçimde her onaydan sonra sayfayı tazelemek bileşeni ortada yeniden
+ * kuruyor ve sıradaki PUT'lar yarım kalıyordu. Onay yanıtındaki galeri burada
+ * tutuluyor; tur bitince tek `refreshMediaAction` yayın rozetini de güncelliyor.
  */
 export function MediaUploader({
   experienceId,
@@ -56,108 +47,129 @@ export function MediaUploader({
   const [error, setError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const [busy, startTransition] = useTransition()
-
-  // Yüklenen dosya sayısı: "1/3 yükleniyor" demek için değil, düğmeyi kilitlemek
-  // ve ekran okuyucuya bir şeyin sürdüğünü söylemek için.
+  const [gallery, setGallery] = useState(media)
   const [uploading, setUploading] = useState(0)
 
-  const atLimit = media.length >= MAX_MEDIA
+  // Sunucu tarafı yenilemesi (sil / kapak / sıra) props'u günceller — tur
+  // ortasındaki iyimser galeriyi ezmemek için yalnız dış değişiklikte senkronla.
+  useEffect(() => {
+    setGallery(media)
+  }, [media])
+
+  const atLimit = gallery.length >= MAX_MEDIA
   const disabled = busy || uploading > 0 || atLimit
 
   async function upload(files: FileList | File[]) {
     setError(null)
 
-    // Sıralı yükleniyor, paralel değil: on iki dosya aynı anda PUT edilseydi
-    // yavaş bağlantıda hepsi birden tıkanır ve hangisinin bittiği belirsizleşirdi.
-    // Ayrıca sunucudaki tavan sayacı da sıralı akışta doğru davranıyor.
-    for (const file of Array.from(files)) {
+    const remaining = MAX_MEDIA - gallery.length
+    if (remaining <= 0) {
+      setError(labels.errorLimit)
+      return
+    }
+
+    const selected = Array.from(files).slice(0, remaining)
+    let confirmedAny = false
+
+    // Sıralı yükleme: paralel PUT yavaş bağlantıda tıkanır; kota sayacı da
+    // sıralı akışta doğru davranır.
+    for (const file of selected) {
       setUploading((count) => count + 1)
 
       // İzin ALINDIKTAN sonra her başarısızlıkta satır geri veriliyor: sunucu
-      // taze Pending satırları kotaya sayıyor, dolayısıyla bırakılan her yarım
-      // yükleme imzanın ömrü boyunca (15 dk) bir hak tutuyor. Silmek onu anında
-      // iade ediyor; silinemezse zaten kendi kendine düşüyor.
+      // taze Pending satırları kotaya sayıyor. Silmek onu anında iade ediyor.
       let mediaId: string | null = null
 
       try {
+        const contentType = resolveContentType(file)
+        if (contentType === null) {
+          setError(labels.errorUnsupported)
+          continue
+        }
+
         const permit = await requestMediaUploadAction(
           language,
           experienceId,
-          file.type,
+          contentType,
           file.size,
         )
 
         if (permit.error !== null) {
           setError(permit.error)
-          break
+          continue
         }
 
         mediaId = permit.upload.mediaId
 
+        const headers = uploadHeaders(permit.upload.headers, contentType)
+
         const response = await fetch(permit.upload.uploadUrl, {
           method: permit.upload.method,
-          // İmza bu başlıkların üzerine kurulu; eksik gönderilirse depo reddediyor.
-          headers: permit.upload.headers,
+          headers,
           body: file,
-          // Kimlik doğrulaması YOK ve olmamalı: yetki imzada. Çerez gönderilseydi
-          // depo adresi bir gün başka bir alan adına taşındığında oturum çerezi de
-          // oraya sızardı.
+          // Kimlik doğrulaması YOK: yetki imzada. Çerez gönderilseydi depo
+          // başka alana taşındığında oturum çerezi de oraya sızardı.
           credentials: 'omit',
         })
 
         if (!response.ok) {
           setError(response.status === 413 ? labels.errorTooLarge : labels.errorRejected)
-          break
+          continue
         }
 
-        const confirmed = await confirmMediaAction(language, experienceId, permit.upload.mediaId)
+        const confirmed = await confirmMediaAction(language, experienceId, permit.upload.mediaId, {
+          refresh: false,
+        })
 
         if (confirmed.error !== null) {
           setError(confirmed.error)
-          break
+          continue
         }
 
-        // Buraya gelindiyse satır Active; iade edilecek bir şey yok.
         mediaId = null
+        confirmedAny = true
+
+        if (confirmed.media) {
+          setGallery(confirmed.media)
+        }
       } catch {
-        // `catch` ŞART: `fetch` ağ hatasında FIRLATIYOR ve yalnız `finally`
-        // varken bu yakalanmamış bir reddedilme oluyordu — ekranda hiçbir şey
-        // değişmiyor, host yüklemenin neden olmadığını göremiyordu.
         setError(labels.errorRejected)
-        break
       } finally {
         setUploading((count) => count - 1)
 
         if (mediaId !== null) {
-          // Sonucu beklenmiyor ve hatası yutuluyor: bu bir TEMİZLİK, kullanıcının
-          // gördüğü hata mesajını ikinci bir hatayla değiştirmenin anlamı yok.
-          void deleteMediaAction(language, experienceId, mediaId)
+          // Temizlik — sayfayı yenileme: tur ortasında remount sıradaki
+          // dosyaları kesiyordu.
+          void deleteMediaAction(language, experienceId, mediaId, { refresh: false })
         }
       }
     }
 
-    // Aynı dosyayı ikinci kez seçebilmek için: değer temizlenmezse tarayıcı
-    // "değişmedi" deyip `change` olayını hiç ateşlemiyor.
+    if (confirmedAny) {
+      await refreshMediaAction(language, experienceId)
+    }
+
     if (inputRef.current) inputRef.current.value = ''
   }
 
-  function run(action: () => Promise<{ error: string | null }>) {
+  function run(action: () => Promise<{ error: string | null; media?: HostExperienceMedia[] }>) {
     setError(null)
     startTransition(async () => {
       const result = await action()
-      if (result.error !== null) setError(result.error)
+      if (result.error !== null) {
+        setError(result.error)
+        return
+      }
+      if (result.media) setGallery(result.media)
     })
   }
 
   function move(index: number, delta: number) {
-    const next = [...media]
+    const next = [...gallery]
     const target = index + delta
 
     if (target < 0 || target >= next.length) return
 
-    // Yer değiştirme İSTEMCİDE hesaplanıp sunucuya TAM LİSTE olarak gidiyor:
-    // "şunu bir yukarı al" gönderilseydi sunucu, istemcinin gördüğü sıranın
-    // hâlâ geçerli olduğunu varsaymak zorunda kalırdı.
     ;[next[index], next[target]] = [next[target], next[index]]
 
     run(() => reorderMediaAction(language, experienceId, next.map((item) => item.id)))
@@ -165,13 +177,6 @@ export function MediaUploader({
 
   return (
     <div aria-busy={busy || uploading > 0}>
-      <p className="text-xs text-fg-muted">{labels.hint}</p>
-
-      {/*
-        Bırakma alanı bir `<label>`: klavye ve ekran okuyucu için dosya seçici
-        zaten burada ve `<div onClick>` ile taklit edilmiş bir düğmeye gerek yok.
-        Sürükleme sadece fare kullanıcısına ek bir yol.
-      */}
       <label
         htmlFor={inputId}
         onDragOver={(event) => {
@@ -202,9 +207,7 @@ export function MediaUploader({
         id={inputId}
         type="file"
         multiple
-        // Tarayıcının seçiciyi daraltması için. Gerçek kapı SUNUCUDA ve baytlara
-        // bakıyor: `accept` yalnız bir kolaylık, doğrulama değil.
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/jpg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
         disabled={disabled}
         className="sr-only"
         onChange={(event) => {
@@ -213,17 +216,16 @@ export function MediaUploader({
       />
 
       {error !== null && (
-        // `role="alert"`: metin SONRADAN belirdiği için ekran okuyucu onu duyuruyor.
         <p role="alert" className="mt-3 text-sm text-danger">
           {error}
         </p>
       )}
 
-      {media.length === 0 ? (
+      {gallery.length === 0 ? (
         <p className="mt-4 text-sm text-fg-muted">{labels.empty}</p>
       ) : (
         <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-          {media.map((item, index) => (
+          {gallery.map((item, index) => (
             <li
               key={item.id}
               className="glass glass-edge overflow-hidden rounded-[var(--radius-glass-sm)]"
@@ -231,9 +233,6 @@ export function MediaUploader({
               <div className="relative aspect-[4/3]">
                 <Image
                   src={item.url}
-                  /* Sıra bilgisi taşıyor: "3. görsel". Boş bırakılsaydı ekran
-                     okuyucu kullanıcısı hangi görselin düğmelerini kullandığını
-                     bilemezdi — burada görsel dekoratif DEĞİL, bir kontrolün konusu. */
                   alt={labels.positions[index] ?? ''}
                   fill
                   sizes="(min-width: 640px) 200px, 45vw"
@@ -258,7 +257,7 @@ export function MediaUploader({
 
                 <IconButton
                   label={labels.moveLater}
-                  disabled={busy || index === media.length - 1}
+                  disabled={busy || index === gallery.length - 1}
                   onClick={() => move(index, 1)}
                 >
                   →
@@ -295,10 +294,6 @@ export function MediaUploader({
   )
 }
 
-/**
- * Ok düğmesi. Görünen içerik bir OK KARAKTERİ, dolayısıyla erişilebilir adı
- * ayrıca veriliyor: ekran okuyucu "→" duyduğunda ne yapacağını bilmez.
- */
 function IconButton({
   label,
   disabled,
@@ -324,8 +319,35 @@ function IconButton({
   )
 }
 
+/**
+ * Tarayıcının boş / `image/jpg` beyanını kanonik MIME'a çevirir. Uzantı yedek:
+ * Windows'ta bazı dosyaların `type`'ı boş geliyor ve sunucu 400 dönüyordu.
+ */
+function resolveContentType(file: File): string | null {
+  const raw = file.type.trim().toLowerCase()
+  if (raw === 'image/jpg' || raw === 'image/jpeg') return 'image/jpeg'
+  if (raw === 'image/png' || raw === 'image/webp') return raw
+
+  const name = file.name.toLowerCase()
+  if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg'
+  if (name.endsWith('.png')) return 'image/png'
+  if (name.endsWith('.webp')) return 'image/webp'
+
+  return null
+}
+
+/** İmza bu başlıkların üzerine kurulu; Content-Type anahtarı büyük/küçük harf kaybederse tamamla. */
+function uploadHeaders(
+  required: Record<string, string>,
+  contentType: string,
+): Record<string, string> {
+  const headers = { ...required }
+  const hasContentType = Object.keys(headers).some((key) => key.toLowerCase() === 'content-type')
+  if (!hasContentType) headers['Content-Type'] = contentType
+  return headers
+}
+
 export type MediaUploaderLabels = {
-  hint: string
   add: string
   drop: string
   uploading: string
@@ -335,21 +357,12 @@ export type MediaUploaderLabels = {
   delete: string
   moveEarlier: string
   moveLater: string
-  /**
-   * Görsel başına sıra etiketi ("3. görsel"), SUNUCUDA çözülmüş.
-   *
-   * Neden dizi ve neden şablon değil: çeviri sunucuda `{n}` yer tutucusunu
-   * hemen dolduruyor, yani istemciye şablon inemiyor. Alternatif, biçimlendirme
-   * fonksiyonunu prop olarak geçirmekti — düz fonksiyonlar istemci bileşenine
-   * serileştirilemiyor.
-   */
+  /** Sunucuda çözülmüş sıra etiketleri (en fazla 12 — yeni yüklenenler için yer). */
   positions: string[]
   errorRejected: string
   errorTooLarge: string
+  errorUnsupported: string
+  errorLimit: string
 }
 
-/**
- * Sunucunun reddettiği yükleme sayısı burada DEĞİL sunucuda sayılıyor; bu sabit
- * yalnız düğmeyi erken kapatmak için. Gerçek kapı `MediaRules.MaxPerExperience`.
- */
 const MAX_MEDIA = 12

@@ -567,6 +567,20 @@ export async function archiveExperience(
   return (await response.json()) as HostExperience
 }
 
+/** Yayındaki ilanı taslağa alır. Arşivden hafif; idempotent. */
+export async function unpublishExperience(
+  accessToken: string,
+  id: string,
+): Promise<HostExperience> {
+  const response = await send({
+    accessToken,
+    method: 'POST',
+    path: `/api/host/experiences/${encodeURIComponent(id)}/unpublish`,
+  })
+
+  return (await response.json()) as HostExperience
+}
+
 /** API'nin `PublicCacheAttribute` süresiyle aynı: kategori kayıt defteri 1 saat. */
 const CATEGORY_REVALIDATE_SECONDS = 60 * 60
 
@@ -728,7 +742,7 @@ export async function setMediaCover(
   return (await response.json()) as HostExperience
 }
 
-/** Görseli siler; depodaki nesne de gider. Yayındaki ilanın SON görseli 409. */
+/** Görseli siler; depodaki nesne de gider. Yayındaki son görsel silinirse ilan taslağa düşer. */
 export async function deleteMedia(
   accessToken: string,
   id: string,

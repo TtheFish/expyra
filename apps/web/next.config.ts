@@ -73,7 +73,9 @@ const nextConfig: NextConfig = {
   },
 
   async rewrites() {
-    return pages.flatMap((page) =>
+    // Daha uzun kalıplar önce: `deneyim/:slug/odeme` ile `deneyim/:slug` aynı
+    // önekte; kısa olanı önce yazmak bazı Next sürümlerinde uzun yolu yutabiliyor.
+    const rules = pages.flatMap((page) =>
       languages
         .map((lang) => ({
           localized: routeMap.localized[lang as keyof typeof routeMap.localized][page],
@@ -86,6 +88,10 @@ const nextConfig: NextConfig = {
           source: `/${lang}/${localized}`,
           destination: `/${lang}/${canonical}`,
         })),
+    )
+
+    return rules.sort(
+      (a, b) => b.source.split('/').length - a.source.split('/').length,
     )
   },
 
@@ -127,7 +133,10 @@ const nextConfig: NextConfig = {
             source: `/${lang}/${canonical}`,
             destination: `/${lang}/${localized}`,
             permanent: true,
-          })),
+          }))
+          // Uzun kanonik kalıplar önce (`experience/:slug/checkout` →
+          // `experience/:slug`'dan önce), yoksa kısa kalıp yanlış yönlendirir.
+          .sort((a, b) => b.source.split('/').length - a.source.split('/').length),
       ),
     ]
   },

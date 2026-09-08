@@ -164,6 +164,52 @@ export const en = {
   'experience.detail.itinerary.heading': 'What you’ll do',
   'experience.detail.meeting.heading': 'Where we’ll meet',
   'experience.detail.meeting.map': 'Open in map',
+  'experience.detail.meeting.mapEmbed': 'Meeting point map',
+  'experience.detail.meeting.pin': 'Meeting point',
+  'experience.detail.highlights.host': 'Hosted by {ad}',
+  'experience.detail.highlights.duration': 'About {sure}',
+  'experience.detail.highlights.spoken': 'Offered in {diller}',
+  'experience.detail.highlights.capacity': {
+    one: 'Up to {n} person',
+    other: 'Up to {n} people',
+  },
+  'experience.detail.highlights.bring': 'What to bring',
+  'experience.detail.reviews.rating': '{puan}',
+  'experience.detail.reviews.count': { one: '{n} review', other: '{n} reviews' },
+  'experience.detail.reviews.stars': { one: '{n} star', other: '{n} stars' },
+  'experience.detail.reviews.demoNote':
+    'Sample reviews — real ratings will appear here once bookings are live.',
+  'experience.detail.reviews.showAll': 'Show all reviews',
+  'experience.detail.reviews.about': 'Learn how ratings and reviews work.',
+  'experience.detail.reviews.demo.1.name': 'Andreea',
+  'experience.detail.reviews.demo.1.place': 'Târgu Mureș, Romania',
+  'experience.detail.reviews.demo.1.when': '1 day ago',
+  'experience.detail.reviews.demo.1.body':
+    'Our guide was knowledgeable and warm. Exploring the city with them felt completely different.',
+  'experience.detail.reviews.demo.2.name': 'Marco',
+  'experience.detail.reviews.demo.2.place': 'Milan, Italy',
+  'experience.detail.reviews.demo.2.when': '3 days ago',
+  'experience.detail.reviews.demo.2.body':
+    'Small group, lots of conversation. Photo stops were planned too — we loved it.',
+  'experience.detail.reviews.demo.3.name': 'Eliška',
+  'experience.detail.reviews.demo.3.place': 'Brno, Czechia',
+  'experience.detail.reviews.demo.3.when': '1 week ago',
+  'experience.detail.reviews.demo.3.body':
+    'A bit fast-paced, but overall wonderful. The last stop was our favourite.',
+  'experience.detail.reviews.demo.4.name': 'Jonas',
+  'experience.detail.reviews.demo.4.place': 'Berlin, Germany',
+  'experience.detail.reviews.demo.4.when': '2 weeks ago',
+  'experience.detail.reviews.demo.4.body':
+    'More personal than we expected. The host also pointed us to local flavours.',
+  'experience.detail.reviews.demo.5.name': 'Leyla',
+  'experience.detail.reviews.demo.5.place': 'Istanbul, Türkiye',
+  'experience.detail.reviews.demo.5.when': '3 weeks ago',
+  'experience.detail.reviews.demo.5.body':
+    'Flawless organisation. Clear meeting point and the timing was spot on.',
+  'experience.detail.reviews.demo.6.name': 'Sara',
+  'experience.detail.reviews.demo.6.place': 'Madrid, Spain',
+  'experience.detail.reviews.demo.6.when': '1 month ago',
+  'experience.detail.reviews.demo.6.body': 'Our guide was lovely 💕💕',
   'experience.detail.know.heading': 'Things to know',
   'experience.detail.know.minimumAge': 'Age limit',
   'experience.detail.know.minimumAgeValue': 'Ages {n} and up',
@@ -186,6 +232,9 @@ export const en = {
   'experience.detail.booking.currency': 'Currency',
   'experience.detail.booking.currencyNone': 'Host’s currency',
   'experience.detail.booking.update': 'Calculate price',
+  'experience.detail.booking.continue': 'Continue to payment',
+  'experience.detail.booking.pickDateFirst': 'Pick a date first',
+  'experience.detail.booking.pickDateHint': 'Choose a date above to continue.',
   'experience.detail.booking.total': 'Total',
   'experience.detail.booking.displayTotal': 'About {tutar}',
   'experience.detail.booking.chargedIn':
@@ -194,6 +243,30 @@ export const en = {
     'We could not price that selection. The session may not have enough space, or it may have closed.',
   'experience.detail.cityLink': 'All experiences in {sehir}',
   'experience.detail.back': 'Back to Explore',
+
+  'checkout.title': 'Confirm and pay',
+  'checkout.back': 'Back to experience',
+  'checkout.payment.heading': 'Payment method',
+  'checkout.payment.bank': 'Online banking',
+  'checkout.payment.bankSelect': 'Choose your bank',
+  'checkout.payment.card': 'Credit or debit card',
+  'checkout.payment.google': 'Google Pay',
+  'checkout.payment.apple': 'Apple Pay',
+  'checkout.payment.terms':
+    'By confirming and paying you accept the terms of use, cancellation policy, and privacy notice. Real payment is not connected yet — this step shows the UI.',
+  'checkout.payment.submit': 'Confirm and pay',
+  'checkout.payment.submitting': 'Processing…',
+  'checkout.payment.demoNote': 'Demo: your card is not charged and no booking is created.',
+  'checkout.success.title': 'Done — demo confirmation',
+  'checkout.success.body':
+    'When the payment provider and booking API ship, a real ticket will appear here. For now the flow is complete.',
+  'checkout.success.back': 'Go to my experiences',
+  'checkout.summary.nonRefundable': 'This reservation is non-refundable.',
+  'checkout.summary.date': 'Date',
+  'checkout.summary.guests': 'Guests',
+  'checkout.summary.change': 'Change',
+  'checkout.summary.priceDetails': 'Price details',
+  'checkout.summary.total': 'Total {paraBirimi}',
 
   'howItWorks.lede': 'Three steps and you’re done.',
   'howItWorks.back': 'Back',
@@ -218,6 +291,17 @@ export const en = {
 
   'ticket.demoBadge': 'Demo ticket',
   'ticket.demoNote': 'Sample ticket: the QR isn’t signed yet and can’t be checked at the door.',
+  'ticket.view.title': 'Your ticket',
+  'ticket.view.lede': 'Show the QR at the door or add it to your wallet.',
+  'ticket.view.back': 'Back to my experiences',
+  'ticket.wallet.view': 'View ticket',
+  'ticket.wallet.apple': 'Add to Apple Wallet',
+  'ticket.wallet.google': 'Add to Google Wallet',
+  'ticket.wallet.adding': 'Preparing…',
+  'ticket.wallet.appleNotConfigured':
+    'Apple Wallet isn’t configured in this environment. Add EXPYRA_APPLE_PASS_* (see docs/WALLET.md); you can still view the ticket here.',
+  'ticket.wallet.googleNotConfigured':
+    'Google Wallet isn’t configured in this environment. Add EXPYRA_GOOGLE_WALLET_* (see docs/WALLET.md); you can still view the ticket here.',
   'ticket.guests': 'Guests',
   'ticket.amount': 'Total',
   'ticket.status': 'Status',
@@ -445,9 +529,9 @@ export const en = {
   'host.experience.description.help':
     'Not required to publish, but this is where travellers decide. Walk through the day in order.',
 
-  'host.experience.duration.label': 'Duration (minutes)',
+  'host.experience.duration.label': 'Duration (hours)',
   'host.experience.duration.help':
-    'Total length of one session. For example 90 minutes, or 180. Seven days at most.',
+    'Total length of one session. For example 1.5 hours, or 3. Seven days (168 hours) at most.',
   'host.experience.capacity.label': 'Capacity (people)',
   'host.experience.capacity.help':
     'How many people at most in one session. Publishing needs at least one.',
@@ -490,6 +574,9 @@ export const en = {
   'host.experience.republish': 'Publish again',
   'host.experience.publishing': 'Publishing…',
   'host.experience.published': 'Your listing is live.',
+  'host.experience.unpublish': 'Unpublish',
+  'host.experience.unpublishing': 'Unpublishing…',
+  'host.experience.unpublished': 'Listing moved back to draft — hidden from search.',
   'host.experience.archive': 'Archive',
   'host.experience.archiving': 'Archiving…',
   'host.experience.archived': 'Listing archived.',
@@ -515,11 +602,9 @@ export const en = {
   'host.media.error.tooSmall': 'Photos must be at least 800×600 pixels.',
   'host.media.error.tooLarge': 'Files can be at most 10 MB.',
   'host.media.error.limit': 'A listing can have at most 12 photos.',
-  'host.media.error.lastOfPublished':
-    "You can't delete the last photo of a live listing. Add another photo first, or archive the listing.",
 
   'host.experience.status.publishedNote':
-    'Your listing shows up in search. Archiving hides it without deleting it — you can publish it again whenever you want.',
+    'Your listing shows up in search. Unpublish to move it back to draft — edit photos, then publish again. Archiving also hides it without deleting it.',
   'host.experience.status.privateNote': 'Until you publish it, nobody but you can see this listing.',
 
   'host.experience.error.notFound': 'We couldn’t find this listing. Open it again from the panel.',
@@ -528,7 +613,7 @@ export const en = {
     'Listings can’t be written in that language. Pick another one from the list.',
   'host.experience.error.title': 'A title is required, and it can be 120 characters at most.',
   'host.experience.error.description': 'The description can be 4000 characters at most.',
-  'host.experience.error.duration': 'Write the duration in minutes: at least 1, at most 10080.',
+  'host.experience.error.duration': 'Write the duration in hours: at least 0.5, at most 168.',
   'host.experience.error.capacity': 'Write the capacity in people: at least 1, at most 500.',
   'host.experience.error.city': 'Pick the city from the list — typing the name isn’t enough on its own.',
   'host.experience.error.category': 'Pick a category from the list.',
@@ -658,8 +743,8 @@ export const en = {
   'host.schedule.rule.startHelp': 'Leave empty to start today.',
   'host.schedule.rule.submit': 'Add rule',
   'host.schedule.rule.pending': 'Adding…',
-  'host.schedule.rule.stop': 'Stop',
-  'host.schedule.rule.stopping': 'Stopping…',
+  'host.schedule.rule.stop': 'Remove',
+  'host.schedule.rule.stopping': 'Removing…',
   'host.schedule.rule.empty': 'No weekly rules yet.',
   'host.schedule.rule.stopped': 'stopped',
 

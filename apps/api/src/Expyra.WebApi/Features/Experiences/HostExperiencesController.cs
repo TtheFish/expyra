@@ -8,6 +8,7 @@ using Expyra.Application.Features.Experiences.Commands.CreateExperience;
 using Expyra.Application.Features.Experiences.Commands.CreateMediaUpload;
 using Expyra.Application.Features.Experiences.Commands.DeleteMedia;
 using Expyra.Application.Features.Experiences.Commands.PublishExperience;
+using Expyra.Application.Features.Experiences.Commands.UnpublishExperience;
 using Expyra.Application.Features.Experiences.Commands.ReorderMedia;
 using Expyra.Application.Features.Experiences.Commands.SetExperienceDetails;
 using Expyra.Application.Features.Experiences.Commands.SetExperienceTranslation;
@@ -269,6 +270,23 @@ public sealed class HostExperiencesController(ISender mediator) : ApiControllerB
     {
         // Gövde YOK: uç hiçbir alan almıyor, kaynak yoldan, kimlik token'dan.
         var result = await Mediator.Send(new PublishExperienceCommand(id), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Yayındaki ilanı taslağa alır. Arşivden hafif alternatif — görsel düzenlemek
+    /// veya kısa ara vermek için. İdempotent: taslak/arsiv için 200, durum değişmez.
+    /// </summary>
+    [HttpPost("{id:guid}/unpublish")]
+    [ProducesResponseType<HostExperienceResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<HostExperienceResponse>> Unpublish(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await Mediator.Send(new UnpublishExperienceCommand(id), cancellationToken);
         return Ok(result);
     }
 

@@ -514,6 +514,28 @@ public sealed class HostExperienceTests(ApiFactory factory)
         republished.PublishedAtUtc.ShouldBe(published.PublishedAtUtc);
     }
 
+    [Fact]
+    public async Task Unpublish_YayiniTaslagaAlir_VeYenidenYayinlanabilir()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+
+        var experience = await CreatePublishableAsync(client, token, "Prag Gezisi");
+        var published = await PublishAsync(client, token, experience.Id);
+
+        var unpublished = await UnpublishAsync(client, token, experience.Id);
+        unpublished.Status.ShouldBe(nameof(ExperienceStatus.Draft));
+        unpublished.PublishedAtUtc.ShouldBe(published.PublishedAtUtc);
+
+        // İdempotent: taslağa ikinci kez demek 200, durum aynı.
+        var again = await UnpublishAsync(client, token, experience.Id);
+        again.Status.ShouldBe(nameof(ExperienceStatus.Draft));
+
+        var republished = await PublishAsync(client, token, experience.Id);
+        republished.Status.ShouldBe(nameof(ExperienceStatus.Published));
+        republished.PublishedAtUtc.ShouldBe(published.PublishedAtUtc);
+    }
+
     // -----------------------------------------------------------------------
     // Liste ucu
     // -----------------------------------------------------------------------
@@ -672,6 +694,14 @@ public sealed class HostExperienceTests(ApiFactory factory)
     private static async Task<HostExperienceResponse> ArchiveAsync(HttpClient client, string token, Guid id)
     {
         var response = await PostAsync(client, token, $"{BasePath}/{id}/archive");
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        return await ReadAsync(response);
+    }
+
+    private static async Task<HostExperienceResponse> UnpublishAsync(HttpClient client, string token, Guid id)
+    {
+        var response = await PostAsync(client, token, $"{BasePath}/{id}/unpublish");
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
 
         return await ReadAsync(response);

@@ -9,9 +9,13 @@ import {
   formatExperienceDuration,
 } from '@/components/experience/experience-card'
 import { ExperienceCard } from '@/components/experience/experience-card'
-import { GlassButton } from '@/components/ui/glass-button'
+import { DemoReviews } from '@/components/experience/demo-reviews'
+import { ExperienceHighlights } from '@/components/experience/experience-highlights'
+import { MeetingMap } from '@/components/experience/meeting-map'
+import { BookingPartyForm } from '@/components/experience/booking-party-form'
 import {
   experienceAlternates,
+  experienceCheckoutPath,
   experiencePath,
   fetchAvailability,
   fetchExperience,
@@ -22,11 +26,18 @@ import {
   fetchExperiences,
 } from '@/features/experiences/api'
 import {
+  bookingQuery,
+  currencyFrom,
+  partyFrom,
+  slotFrom,
+  type PartySelection,
+} from '@/features/experiences/booking-params'
+import {
   categoryMessageKey,
   fetchCurrencies,
   type CurrencyOption,
 } from '@/features/host/experiences-api'
-import type { SimpleMessageKey, Translate } from '@/features/i18n/dictionary'
+import type { Translate } from '@/features/i18n/dictionary'
 import { formatMinorMoney, formatWallClock } from '@/features/i18n/format'
 import { getTranslator } from '@/features/i18n/translator'
 import { cityDisplayName, cityKeyOf } from '@/features/places/api'
@@ -261,12 +272,17 @@ export default async function ExperienceDetail({
             )}
 
             <div className="mt-5 flex flex-wrap gap-2">
-              <span className="pill">{formatExperienceDuration(t, experience.durationMinutes)}</span>
               <span className="pill">
+                <span aria-hidden="true">⏱️</span>
+                {formatExperienceDuration(t, experience.durationMinutes)}
+              </span>
+              <span className="pill">
+                <span aria-hidden="true">👥</span>
                 {t('experience.detail.capacity.value', { n: experience.capacity })}
               </span>
               {experience.spokenLanguages.length > 0 && (
                 <span className="pill">
+                  <span aria-hidden="true">🗣️</span>
                   {experience.spokenLanguages
                     .map((code) => localNameOf(code, lang) ?? code)
                     .join(' · ')}
@@ -274,27 +290,13 @@ export default async function ExperienceDetail({
               )}
             </div>
 
-            {/*
-              Host satırı: misafirin "kime güveniyorum" sorusunun ilk cevabı.
-              Profil sayfası henüz yok, o yüzden LİNK DEĞİL — tıklanabilir görünüp
-              hiçbir yere gitmemek, hiç tıklanabilir olmamaktan kötü.
-            */}
-            <div className="mt-8 flex items-center gap-4 border-t border-[var(--line)] pt-6">
-              <HostAvatar host={experience.host} size={48} />
-              <div className="min-w-0">
-                <p className="text-[0.9375rem] font-bold">
-                  {experience.host.displayName ?? t('experience.detail.host.anonymous')}
-                </p>
-                {experience.host.headline && (
-                  <p
-                    className="mt-0.5 text-sm text-fg-muted"
-                    lang={experience.host.bioLanguage ?? undefined}
-                  >
-                    {experience.host.headline}
-                  </p>
-                )}
-              </div>
-            </div>
+            <ExperienceHighlights
+              experience={experience}
+              cityName={cityName}
+              lang={lang}
+              t={t}
+              hostAvatar={<HostAvatar host={experience.host} size={44} />}
+            />
           </div>
         </section>
 
@@ -374,33 +376,29 @@ export default async function ExperienceDetail({
                     {experience.meetingPoint.address}
                   </p>
                 )}
+                <p className="mt-1 text-[0.9375rem] text-fg-muted">{cityName}</p>
                 {experience.text.meetingInstructions && (
                   <p
-                    className="mt-1 text-[0.9375rem] leading-relaxed whitespace-pre-line text-fg-muted"
+                    className="mt-2 text-[0.9375rem] leading-relaxed whitespace-pre-line text-fg-muted"
                     lang={experience.text.language}
                   >
                     {experience.text.meetingInstructions}
                   </p>
                 )}
-                {/*
-                  Harita BAĞLANTI, gömülü değil: üçüncü taraf iframe/script CSP ve
-                  KVKK sorusu açıyor (#34'te karar). OSM bağlantısı herkeste
-                  çalışıyor ve telefon onu harita uygulamasına devrediyor.
-                */}
                 {experience.meetingPoint?.latitude != null &&
                   experience.meetingPoint.longitude != null && (
-                    <a
-                      href={`https://www.openstreetmap.org/?mlat=${experience.meetingPoint.latitude}&mlon=${experience.meetingPoint.longitude}#map=17/${experience.meetingPoint.latitude}/${experience.meetingPoint.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-brand-600 underline-offset-4 hover:underline"
-                    >
-                      {t('experience.detail.meeting.map')}
-                      <span aria-hidden="true">→</span>
-                    </a>
+                    <MeetingMap
+                      latitude={experience.meetingPoint.latitude}
+                      longitude={experience.meetingPoint.longitude}
+                      openLabel={t('experience.detail.meeting.map')}
+                      embedLabel={t('experience.detail.meeting.mapEmbed')}
+                      pinLabel={t('experience.detail.meeting.pin')}
+                    />
                   )}
               </Section>
             )}
+
+            <DemoReviews t={t} />
 
             {knowRows.length > 0 && (
               <Section heading={t('experience.detail.know.heading')}>
@@ -676,85 +674,6 @@ function initialOf(name: string | null): string | null {
 
 
 /**
- * Rezervasyon paneli URL parametreleri — TÜRKÇE, kanonik yol İngilizce olsa da.
- *
- * Gerekçe `route-map.json`'daki karar değil: bu parametreler kullanıcının
- * gördüğü ve paylaştığı adresin parçası ve sayfanın dili Türkçe. İngilizce
- * yol segmentiyle Türkçe parametre yan yana tuhaf durmuyor — segment kanonik
- * kimlik, parametre ise bir form alanı (host formlarındaki `sure`, `kapasite`
- * ile aynı aile).
- */
-const SLOT_PARAM = 'seans'
-const ADULTS_PARAM = 'yetiskin'
-const CHILDREN_PARAM = 'cocuk'
-const INFANTS_PARAM = 'bebek'
-
-/**
- * Misafirin GÖRÜNTÜLEME para birimi. Tahsilat para birimi DEĞİL — o host'un ve
- * değişmiyor (PLAN Blok 7 kabul kriteri 3).
- *
- * Arayüz diline BAĞLANMIYOR: Türkçe okuyan biri euro ile düşünüyor olabilir,
- * İngilizce okuyan biri Türk lirasıyla. Dilden para birimi türetmek, iki farklı
- * soruyu tek cevaba bağlamak olurdu (docs/I18N.md §3'ün "konuşulan dil ≠ metin
- * dili" ayrımıyla aynı aile).
- */
-const CURRENCY_PARAM = 'para'
-
-function currencyFrom(query: Record<string, string | string[] | undefined>): string | null {
-  const value = query[CURRENCY_PARAM]
-  const single = Array.isArray(value) ? value[0] : value
-
-  // Üç harfli olmayan değer SESSİZCE yok sayılıyor: bozuk bir query için sayfayı
-  // düşürmek kullanıcıyı çıkmaza sokardı ve sunucu zaten kendi doğrulamasını
-  // yapıyor (tanınmayan kod → 400).
-  return single && /^[A-Za-z]{3}$/.test(single) ? single.toUpperCase() : null
-}
-
-/** Kademe başına tavan. Sunucunun `MaxPartySize`'ı 500; alan başına o kadar anlamsız. */
-const MAX_PARTY_PER_TIER = 20
-
-type PartySelection = { adults: number; children: number; infants: number }
-
-/**
- * Kişi sayısı varsayılanı. **İki yetişkin** çünkü en sık seçim o ve boş bir
- * form misafiri "kaç yazmalıyım" diye düşündürürdü.
- */
-const DEFAULT_PARTY: PartySelection = { adults: 2, children: 0, infants: 0 }
-
-function partyFrom(query: Record<string, string | string[] | undefined>): PartySelection {
-  return {
-    adults: countFrom(query[ADULTS_PARAM], DEFAULT_PARTY.adults),
-    children: countFrom(query[CHILDREN_PARAM], DEFAULT_PARTY.children),
-    infants: countFrom(query[INFANTS_PARAM], DEFAULT_PARTY.infants),
-  }
-}
-
-/**
- * Adres çubuğundaki sayı. **Bozuk değer sessizce varsayılana düşüyor** ve bu,
- * "hata yutma yok" kuralının ihlali DEĞİL: burada bir işlem yapılmıyor, bir
- * görünüm çiziliyor ve kullanıcının elle bozduğu bir query için hata sayfası
- * göstermek onu bir çıkmaza sokardı. Yazma yolunda (teklif ucu) sunucu zaten
- * kendi doğrulamasını yapıyor.
- */
-function countFrom(raw: string | string[] | undefined, fallback: number): number {
-  const value = Array.isArray(raw) ? raw[0] : raw
-  if (value === undefined) return fallback
-
-  const parsed = Number(value)
-
-  return Number.isInteger(parsed) && parsed >= 0 && parsed <= MAX_PARTY_PER_TIER
-    ? parsed
-    : fallback
-}
-
-function slotFrom(query: Record<string, string | string[] | undefined>): string | null {
-  const value = query[SLOT_PARAM]
-  const single = Array.isArray(value) ? value[0] : value
-
-  return single && single.length > 0 ? single : null
-}
-
-/**
  * Duvar saati dizgesine dakika ekler (`2026-10-13T14:00` → `…T16:30`).
  * Saat dilimi YOK — zaten local duvar saati; DST kayması seans üretirken
  * çözülmüş durumda (API `startsAtLocal`/`durationMinutes` çifti).
@@ -767,21 +686,6 @@ function wallClockPlusMinutes(startsAtLocal: string, durationMinutes: number): s
   const minutes = ((total % 60) + 60) % 60
 
   return `${datePart}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
-}
-
-function bookingQuery(
-  input: PartySelection & { slotId: string; currency: string | null },
-): string {
-  const query = new URLSearchParams({
-    [SLOT_PARAM]: input.slotId,
-    [ADULTS_PARAM]: String(input.adults),
-    [CHILDREN_PARAM]: String(input.children),
-    [INFANTS_PARAM]: String(input.infants),
-  })
-
-  if (input.currency) query.set(CURRENCY_PARAM, input.currency)
-
-  return query.toString()
 }
 
 /**
@@ -869,7 +773,9 @@ function BookingPanel({
                     'flex min-w-[9.5rem] flex-col rounded-[1.15rem] border px-3.5 py-3 transition-[border-color,background-color,box-shadow,transform] duration-200',
                     selected
                       ? 'border-brand-500 bg-brand-500 text-white shadow-[0_12px_28px_-12px_oklch(0.55_0.24_25_/_0.65)]'
-                      : 'border-[color-mix(in_oklch,var(--fg)_12%,transparent)] bg-[color-mix(in_oklch,white_55%,transparent)] hover:border-brand-500/40',
+                      // white_% mix koyu temada açık gri zemin + açık muted metin
+                      // üretiyordu — AA altı. surface-sunken her temada okunur.
+                      : 'border-[var(--line-strong)] bg-[var(--surface-sunken)] hover:border-brand-500/50',
                   ].join(' ')}
                 >
                   <span className={['text-sm font-semibold', selected ? 'text-white' : 'text-fg'].join(' ')}>
@@ -879,7 +785,7 @@ function BookingPanel({
                       month: 'short',
                     })}
                   </span>
-                  <span className={['mt-1 text-xs', selected ? 'text-white/85' : 'text-fg-muted'].join(' ')}>
+                  <span className={['mt-1 text-xs', selected ? 'text-white/90' : 'text-fg-muted'].join(' ')}>
                     {formatWallClock(lang, slot.startsAtLocal, {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -898,7 +804,7 @@ function BookingPanel({
                       selected
                         ? 'text-white'
                         : scarce
-                          ? 'text-brand-600'
+                          ? 'text-[var(--brand-ink)]'
                           : 'text-fg-muted',
                     ].join(' ')}
                   >
@@ -920,69 +826,30 @@ function BookingPanel({
         </p>
       </div>
 
-      {/*
-        Kişi sayısı GET formu: gönderim URL'yi güncelliyor, sunucu yeni teklifi
-        hesaplıyor. `method` verilmiyor çünkü varsayılan zaten GET.
-      */}
-      <form action={here} className="mt-5 grid gap-3 sm:grid-cols-4">
-        {selectedSlotId ? <input type="hidden" name={SLOT_PARAM} value={selectedSlotId} /> : null}
-
-        <PartyField
-          id="yetiskin"
-          name={ADULTS_PARAM}
-          label={t('experience.detail.booking.adults')}
-          value={party.adults}
-        />
-        <PartyField
-          id="cocuk"
-          name={CHILDREN_PARAM}
-          label={t('experience.detail.booking.children')}
-          value={party.children}
-        />
-        <PartyField
-          id="bebek"
-          name={INFANTS_PARAM}
-          label={t('experience.detail.booking.infants')}
-          value={party.infants}
-        />
-
-        <div>
-          <label className="auth-label" htmlFor="para">
-            {t('experience.detail.booking.currency')}
-          </label>
-          {/*
-            Boş seçenek = "çevirme". 1.0 oranlı sahte bir çevrim üretmek yerine
-            hiç çevirmemek, "çevrildi mi" sorusunu cevaplanabilir tutuyor.
-          */}
-          <select
-            id="para"
-            name={CURRENCY_PARAM}
-            className="auth-input"
-            defaultValue={displayCurrency ?? ''}
-          >
-            <option value="">{t('experience.detail.booking.currencyNone')}</option>
-            {currencies.map((item) => (
-              <option key={item.code} value={item.code}>
-                {item.symbol ? `${item.code} (${item.symbol})` : item.code}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="sm:col-span-3">
-          <GlassButton type="submit" size="sm" variant="primary" className="w-full sm:w-auto">
-            {t('experience.detail.booking.update')}
-          </GlassButton>
-        </div>
-      </form>
-
-      {quote ? <QuoteSummary lang={lang} quote={quote} t={t} /> : null}
-
-      {selectedSlotId && !quote ? (
-        <p className="mt-4 text-sm text-fg-muted" role="status">
-          {t('experience.detail.booking.quoteFailed')}
-        </p>
-      ) : null}
+      <BookingPartyForm
+        lang={lang}
+        slug={experience.slug}
+        checkoutAction={experienceCheckoutPath(lang, experience.slug)}
+        slotId={selectedSlotId}
+        initialParty={party}
+        initialCurrency={displayCurrency}
+        initialQuote={quote}
+        currencies={currencies}
+        labels={{
+          adults: t('experience.detail.booking.adults'),
+          children: t('experience.detail.booking.children'),
+          infants: t('experience.detail.booking.infants'),
+          currency: t('experience.detail.booking.currency'),
+          currencyNone: t('experience.detail.booking.currencyNone'),
+          continue: t('experience.detail.booking.continue'),
+          pickDateFirst: t('experience.detail.booking.pickDateFirst'),
+          pickDateHint: t('experience.detail.booking.pickDateHint'),
+          total: t('experience.detail.booking.total'),
+          displayTotal: t('experience.detail.booking.displayTotal', { tutar: '{tutar}' }),
+          chargedIn: t('experience.detail.booking.chargedIn', { paraBirimi: '{paraBirimi}' }),
+          quoteFailed: t('experience.detail.booking.quoteFailed'),
+        }}
+      />
     </BookingShell>
   )
 }
@@ -995,98 +862,5 @@ function BookingShell({ title, children }: { title: string; children: ReactNode 
       <div className="mt-4">{children}</div>
     </div>
   )
-}
-
-function PartyField({
-  id,
-  name,
-  label,
-  value,
-}: {
-  id: string
-  name: string
-  label: string
-  value: number
-}) {
-  return (
-    <div>
-      <label className="auth-label" htmlFor={id}>
-        {label}
-      </label>
-      <input
-        id={id}
-        name={name}
-        type="number"
-        inputMode="numeric"
-        min={0}
-        max={MAX_PARTY_PER_TIER}
-        className="auth-input"
-        defaultValue={value}
-      />
-    </div>
-  )
-}
-
-/**
- * Teklif özeti.
- *
- * **Tahsilat ve gösterim AYRI satırlar** (PLAN Blok 7 kabul kriteri 3): misafir
- * kendi para biriminde bir sayı görse bile paranın host'un para biriminde
- * çekileceğini okumak zorunda. Tek bir tutar göstermek, ödeme ekranında sürpriz
- * demek olurdu.
- */
-function QuoteSummary({ lang, quote, t }: { lang: string; quote: GuestQuote; t: Translate }) {
-  return (
-    <div className="mt-5 border-t border-[var(--line)] pt-4">
-      <ul className="grid gap-1 text-sm">
-        {quote.lines.map((line) => (
-          <li key={line.guestType} className="flex justify-between gap-4">
-            <span className="text-fg-muted">
-              {t(guestTypeMessageKey(line.guestType))} × {line.count}
-            </span>
-            <span>
-              {formatMinorMoney(lang, line.lineTotalMinor, quote.charge.currency, quote.charge.minorUnits)}
-            </span>
-          </li>
-        ))}
-      </ul>
-
-      <p className="mt-3 flex justify-between gap-4 text-base font-semibold">
-        <span>{t('experience.detail.booking.total')}</span>
-        <span>
-          {formatMinorMoney(lang, quote.charge.amountMinor, quote.charge.currency, quote.charge.minorUnits)}
-        </span>
-      </p>
-
-      {quote.display ? (
-        <p className="mt-1 text-sm text-fg-muted">
-          {t('experience.detail.booking.displayTotal', {
-            tutar: formatMinorMoney(
-              lang,
-              quote.display.amountMinor,
-              quote.display.currency,
-              quote.display.minorUnits,
-            ),
-          })}
-        </p>
-      ) : null}
-
-      {/* Kabul kriteri 3: tahsilat para birimi EKRANDA yazmak zorunda. */}
-      <p className="mt-2 text-xs text-fg-muted">
-        {t('experience.detail.booking.chargedIn', { paraBirimi: quote.charge.currency })}
-      </p>
-    </div>
-  )
-}
-
-function guestTypeMessageKey(guestType: string): SimpleMessageKey {
-  switch (guestType) {
-    case 'adult':
-      return 'experience.detail.booking.adults'
-    case 'child':
-      return 'experience.detail.booking.children'
-    default:
-      return 'experience.detail.booking.infants'
-  }
 }
 

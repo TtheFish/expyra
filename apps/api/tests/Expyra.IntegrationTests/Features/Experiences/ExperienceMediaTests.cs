@@ -385,7 +385,7 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Silme_YayindakiIlaninSonGorseli_409()
+    public async Task Silme_YayindakiIlaninSonGorseli_TaslagaAlir()
     {
         var client = factory.CreateClient();
         var token = await NewHostTokenAsync(client);
@@ -398,10 +398,14 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
         var response = await MediaApi.SendAsync(
             client, HttpMethod.Delete, $"{BasePath}/{draft.Id}/media/{media.Id}", token);
 
-        // Yayındaki ilan görselsiz kalamaz: kapak bir yayın koşulu ve UpdateExperience'ın
-        // koruduğu değişmezin aynısı burada da geçerli.
-        response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await MediaRowOrNullAsync(media.Id)).ShouldNotBeNull();
+        // Kapak yayın koşulu: görselsiz ilan yayında kalamaz, ama host'u arşive
+        // zorlamak yerine taslağa düşürmek yeterli — görseli değiştirip yeniden
+        // yayınlayabilir.
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        var body = await ReadAsync(response);
+        body.Media.ShouldBeEmpty();
+        body.Status.ShouldBe(nameof(ExperienceStatus.Draft));
+        (await MediaRowOrNullAsync(media.Id)).ShouldBeNull();
     }
 
     // -----------------------------------------------------------------------

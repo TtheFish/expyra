@@ -100,16 +100,20 @@ internal sealed class CreateMediaUploadCommandHandler(
                 MediaConflict.LimitReached);
         }
 
+        var contentType = MediaRules.NormalizeContentType(request.ContentType)
+            ?? throw new InvalidOperationException(
+                "İçerik tipi doğrulayıcıdan geçtikten sonra normalize edilemedi.");
+
         var mediaId = Guid.CreateVersion7();
         var key = MediaRules.ExperienceKey(
-            experience.Id, mediaId, MediaRules.ExtensionOfContentType(request.ContentType));
+            experience.Id, mediaId, MediaRules.ExtensionOfContentType(contentType));
 
         var media = new ExperienceMedia
         {
             Id = mediaId,
             ExperienceId = experience.Id,
             StorageKey = key,
-            ContentType = request.ContentType,
+            ContentType = contentType,
             ByteSize = request.ByteSize,
             Status = MediaStatus.Pending,
         };
@@ -123,7 +127,7 @@ internal sealed class CreateMediaUploadCommandHandler(
         var upload = await storage
             .CreateUploadAsync(
                 new PresignedUploadRequest(
-                    key, request.ContentType, request.ByteSize, MediaRules.UploadLifetime),
+                    key, contentType, request.ByteSize, MediaRules.UploadLifetime),
                 cancellationToken)
             .ConfigureAwait(false);
 

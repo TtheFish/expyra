@@ -66,8 +66,8 @@ public sealed class GuestAvailabilityTests(ApiFactory factory)
         availability.Slots.ShouldNotBeEmpty();
         availability.Slots.ShouldAllBe(x => x.StartsAtLocal.EndsWith("T14:00", StringComparison.Ordinal));
 
-        // Pencere varsayılan 30 gün: dört-beş salı.
-        availability.Slots.Count.ShouldBeInRange(4, 5);
+        // Pencere varsayılan MaxWindowDays (62): sekiz-dokuz salı.
+        availability.Slots.Count.ShouldBeInRange(8, 9);
 
         // Süre yanıtta hesaplanmış: istemcinin aynı toplamayı üç ekranda tekrarlaması,
         // birinde unutulması demekti.
