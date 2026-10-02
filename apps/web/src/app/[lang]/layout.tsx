@@ -55,14 +55,14 @@ export function generateStaticParams() {
 }
 
 /**
- * Tema, React hidrasyonundan ÖNCE uygulanmalı — yoksa koyu tema kullanıcısı
- * ilk karede beyaz ekran görür. Bu yüzden senkron inline script.
+ * Tema: hidrasyondan ÖNCE localStorage uygula. Click YOK — düğmenin kendi
+ * `onclick` özniteliği var (theme-toggle.tsx). Document listener birikmesin.
  */
 const themeScript = `
 (function () {
   try {
     var t = localStorage.getItem('theme');
-    if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+    if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
   } catch (e) {}
 })();
 `

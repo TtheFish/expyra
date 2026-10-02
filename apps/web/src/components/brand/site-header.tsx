@@ -1,12 +1,16 @@
 import { Suspense } from 'react'
+import { cookies, headers } from 'next/headers'
 import { BrandLogo } from '@/components/brand/brand-logo'
 import { HeaderSearch } from '@/components/brand/header-search'
+import { CurrencyPicker } from '@/components/currency/currency-picker'
 import { LanguagePicker } from '@/components/i18n/language-picker'
 import { GlassButton } from '@/components/ui/glass-button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { AccountMenu } from '@/features/auth/account-menu'
 import { ApiError, fetchCurrentUser, type CurrentUser } from '@/features/auth/api'
 import { SIGN_OUT_PATH } from '@/features/auth/return-to'
+import { readCurrencyCookie } from '@/features/currency/preference'
+import { fetchCurrencies } from '@/features/host/experiences-api'
 import { UI_LANGUAGE_FIELD } from '@/features/i18n/locale'
 import { getSession } from '@/features/auth/session'
 import { getTemplate, getTranslator } from '@/features/i18n/translator'
@@ -17,9 +21,9 @@ import { path } from '@/lib/routes'
  * linklerin tek yerde durması şart oldu — yoksa yeni bir dil eklendiğinde
  * her sayfayı tek tek gezmek gerekir.
  *
- * **Metin sunucuda çözülüyor, istemciye PROP olarak iniyor.** Üç istemci
- * bileşeni var (dil seçici, tema düğmesi, hesap menüsü) ve hiçbiri sözlüğe
- * dokunmuyor: sözlük `server-only` ve tarayıcıya inen tek şey o bileşenin
+ * **Metin sunucuda çözülüyor, istemciye PROP olarak iniyor.** Dört istemci
+ * bileşeni var (dil seçici, para birimi, tema düğmesi, hesap menüsü) ve hiçbiri
+ * sözlüğe dokunmuyor: sözlük `server-only` ve tarayıcıya inen tek şey o bileşenin
  * gerçekten kullandığı birkaç dizge. Alternatif — istemcide bir çeviri
  * context'i — aktif dilin TÜM anahtarlarını, kullanıcının hiç açmayacağı
  * sayfalarınkiler dahil, her sayfada indirtirdi (docs/I18N.md §5).
@@ -56,18 +60,36 @@ export function HeaderShell({ children }: { children: React.ReactNode }) {
 }
 
 export async function SiteHeader({ lang }: { lang: string }) {
-  const [t, triggerTemplate] = await Promise.all([
+  const [t, triggerTemplate, currencyTrigger, headerList, cookieStore] = await Promise.all([
     getTranslator(lang),
     getTemplate(lang, 'language.trigger'),
+    getTemplate(lang, 'currency.trigger'),
+    headers(),
+    cookies(),
   ])
+
+  // proxy `x-pathname` basıyor (sorgu dahil). Yoksa dil segmentiyle idare.
+  const pathname = headerList.get('x-pathname') ?? `/${lang}`
+  const displayCurrency = readCurrencyCookie(cookieStore)
 
   return (
     <HeaderShell>
-        <BrandLogo href={path(lang, 'home')} />
+          <BrandLogo href={path(lang, 'home')} />
 
-        <HeaderSearch lang={lang} />
+        {/*
+          Arama ağır: şehir/tarih/misafir istemci chunk'ları + çeviri I/O.
+          Suspense olmadan dil/tema düğmeleri de onu beklerdi — yenilemeden
+          hemen sonra tıklanınca "kasıyor" hissi buradan geliyordu.
+        */}
+        <Suspense fallback={<HeaderSearchFallback />}>
+          <HeaderSearch lang={lang} />
+        </Suspense>
 
-        <div className="flex items-center justify-self-end gap-1 whitespace-nowrap">
+        {/*
+          `relative z-50`: orta sütundaki arama hapı (z-20) sağdaki kontrollere
+          taşarsa tıklamayı yutmasın — "bir çalışıyor bir çalışmıyor"un bir nedeni.
+        */}
+        <div className="relative z-50 flex items-center justify-self-end gap-1 whitespace-nowrap">
           <nav className="hidden items-center lg:flex" aria-label={t('nav.primaryLabel')}>
             <GlassButton variant="ghost" size="sm" href={path(lang, 'explore')}>
               {t('nav.explore')}
@@ -81,10 +103,8 @@ export async function SiteHeader({ lang }: { lang: string }) {
           </nav>
           <LanguagePicker
             current={lang}
+            pathname={pathname}
             labels={{
-              // Şablon olarak gidiyor, hazır metin olarak değil: içerik dili
-              // seçildiğinde sayfa yenilenmiyor, etiket o anki dili yazmalı.
-              // Tarayıcıya inen tek şablon bu (bkz. `getTemplate`).
               trigger: triggerTemplate,
               dialog: t('language.dialogLabel'),
               searchLabel: t('language.search.label'),
@@ -95,29 +115,62 @@ export async function SiteHeader({ lang }: { lang: string }) {
               empty: t('language.empty'),
             }}
           />
+          <Suspense fallback={<CurrencyPickerFallback code={displayCurrency} />}>
+            <CurrencyPickerSlot
+              lang={lang}
+              current={displayCurrency}
+              labels={{
+                trigger: currencyTrigger,
+                dialog: t('currency.dialogLabel'),
+                searchLabel: t('currency.search.label'),
+                searchPlaceholder: t('currency.search.placeholder'),
+                none: t('currency.none'),
+                empty: t('currency.empty'),
+              }}
+            />
+          </Suspense>
           <ThemeToggle labels={{ toLight: t('theme.toLight'), toDark: t('theme.toDark') }} />
 
-          {/*
-            Oturum okuma AYRI bir dinamik sınırda.
-
-            `AccountSlot` çerezlere ve `/api/auth/me`'ye dokunuyor. Aynı okuma
-            header'ın gövdesinde yapılsaydı sayfanın TAMAMI o API turunu beklerdi
-            — ana sayfa ve "nasıl çalışır" gibi içeriği oturumdan tamamen bağımsız
-            sayfalar dahil. Suspense sınırı kabuğun hemen akmasını sağlıyor: logo,
-            menü ve arama kutusu görünürken yalnız bu köşe bekliyor.
-
-            DÜRÜSTLÜK NOTU: bu sınır bugün sayfayı STATİK YAPMIYOR. Next 16'da
-            PPR (`cacheComponents`) açık olmadan `cookies()` route'un tamamını
-            dinamik render'a düşürüyor ve o anahtar `next.config.ts`'te kapalı
-            (açmak bu görevin dosya listesinde yok). Sınır yine de doğru yerde:
-            anahtar açıldığı gün statik kabuk + dinamik delik ayrımı kendiliğinden
-            oluşur, sayfaları tek tek gezmek gerekmez.
-          */}
           <Suspense fallback={<AccountSlotFallback label={t('account.loading')} />}>
             <AccountSlot lang={lang} />
           </Suspense>
         </div>
     </HeaderShell>
+  )
+}
+
+async function CurrencyPickerSlot({
+  lang,
+  current,
+  labels,
+}: {
+  lang: string
+  current: string | null
+  labels: {
+    trigger: string
+    dialog: string
+    searchLabel: string
+    searchPlaceholder: string
+    none: string
+    empty: string
+  }
+}) {
+  const currencies = await fetchCurrencies()
+
+  return (
+    <CurrencyPicker lang={lang} current={current} currencies={currencies} labels={labels} />
+  )
+}
+
+function CurrencyPickerFallback({ code }: { code: string | null }) {
+  return (
+    <span
+      className="glass glass-edge inline-flex h-9 items-center gap-1.5 rounded-[var(--radius-glass-sm)] px-3 text-sm font-medium text-fg-muted"
+      aria-hidden="true"
+    >
+      <span>¤</span>
+      <span className="uppercase">{code ?? '—'}</span>
+    </span>
   )
 }
 
@@ -135,6 +188,18 @@ function AccountSlotFallback({ label }: { label: string }) {
     <span className="glass glass-edge inline-flex h-9 w-24 items-center rounded-[var(--radius-glass-sm)] opacity-60">
       <span className="sr-only">{label}</span>
     </span>
+  )
+}
+
+/** Arama hapı yüklenirken orta sütunu çökertme — dil/tema hemen kullanılabilir. */
+function HeaderSearchFallback() {
+  return (
+    <div
+      className="header-search relative z-20 hidden min-w-0 max-w-full items-center justify-self-center opacity-50 md:flex"
+      aria-hidden="true"
+    >
+      <div className="header-search-fields min-h-11 min-w-0 flex-1 rounded-full" />
+    </div>
   )
 }
 

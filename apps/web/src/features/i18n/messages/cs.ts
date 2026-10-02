@@ -55,6 +55,13 @@ export const cs = {
   'theme.toLight': 'Přepnout na světlý vzhled',
   'theme.toDark': 'Přepnout na tmavý vzhled',
 
+  'currency.trigger': 'Měna: {para}. Změnit.',
+  'currency.dialogLabel': 'Výběr měny',
+  'currency.search.label': 'Hledat měny',
+  'currency.search.placeholder': 'EUR, dolar, lira…',
+  'currency.none': 'Měna hostitele',
+  'currency.empty': 'Tomuto hledání neodpovídá žádná měna.',
+
   // Důraz je v češtině na tom, co místní znají — jako v angličtině na názvu
   // produktu. Řádky nejsou doslovné: rozvržení je stejné, věta je česká.
   'home.hero.title': 'Nová cesta k zážitkům,',

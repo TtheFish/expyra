@@ -33,9 +33,10 @@ Giriş: `/tr/giris` → e-postayı yaz → kod ekranda çıkar → yapıştır.
 | `demo-kemeralti-kahvalti-turu` | Tuna | İzmir | minimal alanlar (boş bölümler gizli) |
 | `demo-goreme-gun-dogumu-yuruyusu` | Tuna | Göreme | yorucu, 05:00, EUR |
 
-Her ilanda tr + en metin, 2 gerçek fotoğraf (Wikimedia Commons, kapak + galeri),
-yetişkin + çocuk fiyatı, 14 günlük seans. Detay: `/tr/deneyim/<slug>`, düzenleme:
-host paneli.
+Her ilanda **tr + en + cs + de** metin (UI dilleri), 2 gerçek fotoğraf (Wikimedia
+Commons, kapak + galeri), yetişkin + çocuk fiyatı, 14 günlük seans. Dil
+değiştirince başlık/açıklama da o dile düşer. Detay: `/tr/deneyim/<slug>`,
+düzenleme: host paneli.
 
 Görseller `apps/api/src/Expyra.WebApi/.object-store/` altına yazılır (gitignore).
 Kaynak fotoğraflar gömülü: `…/Seed/DemoPhotos/` (+ `SOURCES.md`). Eski PNG

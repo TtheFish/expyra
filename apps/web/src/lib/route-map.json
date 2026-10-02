@@ -73,6 +73,20 @@
       "signIn": "anmelden",
       "account": "konto",
       "hostExperienceEdit": "host/experience/:id"
+    },
+    "bg": {
+      "home": "",
+      "explore": "otkrii",
+      "howItWorks": "kak-raboti",
+      "myExperiences": "moite-prezhivyavaniya",
+      "ticketDetail": "bilet/:code",
+      "becomeHost": "stani-domakin",
+      "experienceDetail": "prezhivyavane/:slug",
+      "experienceCheckout": "prezhivyavane/:slug/plashtane",
+      "hostExperienceNew": "domakin/prezhivyavane/novo",
+      "signIn": "vhod",
+      "account": "akaunt",
+      "hostExperienceEdit": "host/experience/:id"
     }
   }
 }

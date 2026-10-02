@@ -290,11 +290,14 @@ export async function fetchExperiences(input: {
   lang: string
   city?: string | null
   cursor?: string | null
+  /** Misafir görüntüleme para birimi; boşsa host tahsilatı. */
+  currency?: string | null
 }): Promise<GuestExperiencePage> {
   const params = new URLSearchParams({ lang: input.lang })
 
   if (input.city) params.set('city', input.city)
   if (input.cursor) params.set('cursor', input.cursor)
+  if (input.currency) params.set('currency', input.currency)
 
   const response = await fetch(`${apiBaseUrl()}/api/experiences?${params.toString()}`, {
     headers: { Accept: 'application/json' },
@@ -320,11 +323,16 @@ export async function fetchExperiences(input: {
  *
  * `cache`: `generateMetadata` ve render aynı ilanı soruyor; sarmalanmasaydı tek
  * görüntüleme iki API turu ederdi (`resolveCity` ve `fetchCurrentUser` kalıbı).
- * Anahtara `lang` de giriyor — metnin dili ona bağlı.
+ * Anahtara `lang` ve `currency` de giriyor — metin ve gösterim fiyatı onlara bağlı.
  */
 export const fetchExperience = cache(
-  async (slug: string, lang: string): Promise<GuestExperienceDetail | null> => {
+  async (
+    slug: string,
+    lang: string,
+    currency?: string | null,
+  ): Promise<GuestExperienceDetail | null> => {
     const params = new URLSearchParams({ lang })
+    if (currency) params.set('currency', currency)
 
     const response = await fetch(
       `${apiBaseUrl()}/api/experiences/${encodeURIComponent(slug)}?${params.toString()}`,

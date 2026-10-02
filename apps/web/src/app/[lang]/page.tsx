@@ -1,10 +1,12 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import { HeroWallpaper } from '@/components/brand/hero-wallpaper'
 import { SiteFooter } from '@/components/brand/site-footer'
 import { SiteHeader } from '@/components/brand/site-header'
 import { ExperienceCard } from '@/components/experience/experience-card'
 import { ExperienceSearch } from '@/components/search/experience-search'
 import { GlassButton } from '@/components/ui/glass-button'
+import { readCurrencyCookie } from '@/features/currency/preference'
 import { fetchExperiences, type GuestExperienceSummary } from '@/features/experiences/api'
 import { getTranslator } from '@/features/i18n/translator'
 import { WALLPAPER_CLIPS } from '@/lib/wallpaper-clips'
@@ -180,7 +182,8 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
 
 async function loadShowcase(lang: string): Promise<GuestExperienceSummary[] | null> {
   try {
-    const page = await fetchExperiences({ lang })
+    const currency = readCurrencyCookie(await cookies())
+    const page = await fetchExperiences({ lang, currency })
     return page.items.slice(0, SHOWCASE_SIZE)
   } catch (error) {
     console.error('experiences.showcase.failed', error)

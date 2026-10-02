@@ -105,9 +105,9 @@ export function ExperienceCard({
             <span className="font-bold text-fg">
               {formatMinorMoney(
                 lang,
-                item.pricing.fromAmountMinor,
-                item.pricing.chargeCurrency,
-                item.pricing.chargeMinorUnits,
+                item.pricing.display?.fromAmountMinor ?? item.pricing.fromAmountMinor,
+                item.pricing.display?.currency ?? item.pricing.chargeCurrency,
+                item.pricing.display?.minorUnits ?? item.pricing.chargeMinorUnits,
               )}
             </span>{' '}
             {t('experience.card.perPerson')}

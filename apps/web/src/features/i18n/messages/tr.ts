@@ -71,6 +71,14 @@ export const tr = {
   'theme.toLight': 'Açık temaya geç',
   'theme.toDark': 'Koyu temaya geç',
 
+  // --- Para birimi -----------------------------------------------------------
+  'currency.trigger': 'Para birimi: {para}. Değiştir.',
+  'currency.dialogLabel': 'Para birimi seçimi',
+  'currency.search.label': 'Para birimi ara',
+  'currency.search.placeholder': 'EUR, dolar, lira…',
+  'currency.none': 'Host’un para birimi',
+  'currency.empty': 'Bu aramaya uyan para birimi yok.',
+
   // --- Ana sayfa -------------------------------------------------------------
   /**
    * Başlık iki satır; ikincisi marka gradyanıyla vurgulanıyor. İki anahtar
