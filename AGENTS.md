@@ -91,9 +91,9 @@ Kaynak tasarım: **"Expyra Yeni"** (Claude Design, 05.09.2026). Tanım ve gerek�
 
 ## Çeviri — yarım dil push edilmez
 
-Arayüz dilleri: **tr, en, cs**. Kaynak sözlük `messages/tr.ts`; çeviriler
-`en.ts` ve `cs.ts`. Yeni bir panel, ekran ya da tek bir düğme metni eklendiğinde
-**üçüne birden** eklenir. Bir dilde eksik anahtar bırakıp "sonra bakarız"
+Arayüz dilleri: **tr, en, cs, de, bg**. Kaynak sözlük `messages/tr.ts`; çeviriler
+`en.ts`, `cs.ts`, `de.ts` ve `bg.ts`. Yeni bir panel, ekran ya da tek bir düğme metni eklendiğinde
+**hepsine birden** eklenir. Bir dilde eksik anahtar bırakıp "sonra bakarız"
 denmez — kullanıcı o ekranda boşluk ya da yabancı dilde cümle görür.
 
 Neden bu kadar sert: `/en` altında Türkçe cümle WCAG 3.1.1 (Seviye A) ihlali —
@@ -125,7 +125,10 @@ JSX'e doğrudan gömülmüş dizge; onu yazmamak yazarın sorumluluğu.
 
 Yeni bir arayüz dili açmak: `docs/I18N.md` §5 + Çekçe'yi ekleyen PR örnek.
 Dil kaydı (`docs/languages.json`) `HasData` ile migration'a gömülü, yani
-`uiAvailable` değişikliği **migration ister**.
+`uiAvailable` değişikliği **migration ister**. Demo ilan başlık/açıklamaları da
+o dilde görünmeli: `DemoDataSeeder` içindeki her `UiTexts` sözlüğüne (ve Prag
+backfill'ine) aynı dil kodunu ekle — yoksa kartlar UI dilinde, başlıklar Türkçe
+kalır.
 
 ## Branch — her iş main'den başlar
 

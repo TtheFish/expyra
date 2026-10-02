@@ -663,7 +663,7 @@ namespace Expyra.Infrastructure.Migrations
                             EnglishName = "Bulgarian",
                             IsRightToLeft = false,
                             NativeName = "Български",
-                            UiAvailable = false
+                            UiAvailable = true
                         },
                         new
                         {

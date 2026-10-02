@@ -36,7 +36,16 @@ namespace Expyra.Application.Features.Experiences.Queries.GetExperiences;
 /// URL'de kalıyor: bir gün önbelleğe alınırsa <c>Vary: Accept-Language</c> tuzağı hiç
 /// doğmuyor. Arayüz zaten dili URL'den biliyor (<c>/tr/...</c>, <c>/en/...</c>).</para>
 /// </param>
-public sealed record GetExperiencesQuery(string? City = null, string? Cursor = null, string? Language = null)
+/// <param name="Currency">
+/// Misafirin görüntüleme para birimi (ISO 4217). Boşsa kartlar host'un tahsilat
+/// para biriminde kalır; doluysa kur ekiyle çevrilir — tahsilat alanı DEĞİŞMEZ
+/// (PLAN Blok 7 kabul kriteri 3).
+/// </param>
+public sealed record GetExperiencesQuery(
+    string? City = null,
+    string? Cursor = null,
+    string? Language = null,
+    string? Currency = null)
     : IRequest<GuestExperiencePageResponse>
 {
     /// <summary>
@@ -128,10 +137,24 @@ internal sealed class GetExperiencesQueryHandler(IAppDbContext dbContext, IObjec
             .LoadManyAsync(dbContext, [.. page.Select(x => x.Id)], cancellationToken)
             .ConfigureAwait(false);
 
-        // Listede kur ÇEVRİMİ YOK ve bu bilinçli: bir sayfada yirmi dört farklı
-        // tahsilat para birimi olabilir ve hepsini çevirmek yirmi dört çapraz oran
-        // demek. Kartta yazan tutar host'un para biriminde, yanında kodu ile; çevrim
-        // detay ve teklif uçlarında, misafir tek bir ilana odaklandığında yapılıyor.
+        // Aynı tahsilat para birimi için kur bir kez çözülüyor: sayfada yirmiden fazla
+        // ilan olsa da benzersiz para birimi sayısı tek haneli kalıyor (demo'da üç).
+        var displaysByCharge = new Dictionary<string, CurrencyDisplay?>(StringComparer.Ordinal);
+
+        foreach (var charge in pricing.Values
+                     .Select(x => (x.ChargeCurrency, x.ChargeMinorUnits))
+                     .Distinct())
+        {
+            displaysByCharge[charge.ChargeCurrency] = await ExchangeRateStore
+                .ResolveAsync(
+                    dbContext,
+                    charge.ChargeCurrency,
+                    charge.ChargeMinorUnits,
+                    request.Currency,
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         var items = page
             .Select(row => GuestExperienceQuery.ToSummary(
                 row,
@@ -139,7 +162,9 @@ internal sealed class GetExperiencesQueryHandler(IAppDbContext dbContext, IObjec
                 // Blok 6 öncesinde yayınlanmış kapaksız satırlar burada null'a düşüyor.
                 covers.TryGetValue(row.Id, out var cover) ? cover : null,
                 pricing.TryGetValue(row.Id, out var price)
-                    ? GuestPricingStore.ToResponse(price, null)
+                    ? GuestPricingStore.ToResponse(
+                        price,
+                        displaysByCharge.GetValueOrDefault(price.ChargeCurrency))
                     : null,
                 language))
             .ToList();

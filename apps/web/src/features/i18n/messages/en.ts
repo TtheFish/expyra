@@ -42,6 +42,13 @@ export const en = {
   'theme.toLight': 'Switch to the light theme',
   'theme.toDark': 'Switch to the dark theme',
 
+  'currency.trigger': 'Currency: {para}. Change.',
+  'currency.dialogLabel': 'Currency selection',
+  'currency.search.label': 'Search currencies',
+  'currency.search.placeholder': 'EUR, dollar, lira…',
+  'currency.none': 'Host’s currency',
+  'currency.empty': 'No currency matches this search.',
+
   // Vurgu Türkçe'de "keşfetmenin yeni yolu"nda, burada ürünün adında. Satırlar
   // birebir karşılık değil — düzen aynı, cümle her dilin kendi cümlesi.
   'home.hero.title': 'A new way to find',

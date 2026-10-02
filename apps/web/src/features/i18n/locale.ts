@@ -65,6 +65,8 @@ export const pluralCategories = {
   // Çekçe dört biçim: one (1), few (2-4), many (ondalık), other (5+).
   cs: ['one', 'few', 'many', 'other'],
   de: ['one', 'other'],
+  // Bulgarca: one + other (CLDR; `Intl.PluralRules('bg')`).
+  bg: ['one', 'other'],
 } as const satisfies Record<UiLocale, readonly Intl.LDMLPluralRule[]>
 
 export type PluralCategoryOf<L extends UiLocale> = (typeof pluralCategories)[L][number]

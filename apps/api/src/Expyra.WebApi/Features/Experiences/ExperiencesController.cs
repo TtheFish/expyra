@@ -48,19 +48,25 @@ public sealed class ExperiencesController(ISender mediator) : ApiControllerBase(
     /// Metnin istendiği dil (BCP-47). Fallback zinciri SUNUCUDA çözülüyor, istemciye tek
     /// çeviri gidiyor; yanıt hangi dilin döndüğünü ve yedeğe düşülüp düşülmediğini söylüyor.
     /// </param>
+    /// <param name="currency">
+    /// Misafirin görüntüleme para birimi. Boşsa kartlar host tahsilatında kalır.
+    /// </param>
     [HttpGet]
     [ProducesResponseType<GuestExperiencePageResponse>(StatusCodes.Status200OK)]
     // 400 iki yoldan gelebiliyor: biçim hatası (ValidationProblemDetails, alan bazlı) ve
     // kayıt defterinde olmayan şehir (düz ProblemDetails). Şema, ikisinin de tabanı olan
     // ValidationProblemDetails ile ilan ediliyor — HostExperiencesController ile aynı kalıp.
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<GuestExperiencePageResponse>> List(
         CancellationToken cancellationToken,
         [FromQuery] string? city = null,
         [FromQuery] string? cursor = null,
-        [FromQuery] string? lang = null)
+        [FromQuery] string? lang = null,
+        [FromQuery] string? currency = null)
     {
-        var result = await Mediator.Send(new GetExperiencesQuery(city, cursor, lang), cancellationToken);
+        var result = await Mediator.Send(
+            new GetExperiencesQuery(city, cursor, lang, currency), cancellationToken);
         return Ok(result);
     }
 

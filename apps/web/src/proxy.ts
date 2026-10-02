@@ -7,30 +7,17 @@ import {
   sessionCookieOptions,
 } from '@/features/auth/cookies'
 import { RETURN_TO_PARAM } from '@/features/auth/return-to'
-import { path, resolvePage, type PageId } from '@/lib/routes'
+import { isRoutableLanguage, path, resolvePage, type PageId } from '@/lib/routes'
 
 /**
  * Next 16'da bu dosyanın adı `proxy` — `middleware` kullanımdan kaldırıldı.
  *
- * İki iş yapıyor:
- *
- * 1. **İyimser route guard.** Yalnız "çerez var mı" bakıyor; token'ı DOĞRULAMIYOR.
- *    Yetki kararının yeri sayfanın/eylemin kendisi (Faz 1.8) — proxy bir güvenlik
- *    sınırı değil, gereksiz bir sayfa yüklemesini önleyen kestirme.
- *
- * 2. **Token yenileme.** `cookies().set` Server Component render'ında çalışmaz;
- *    proxy render'dan ÖNCE çalışıyor ve yanıta çerez yazabiliyor. Access çerezi
- *    süresi dolunca tarayıcı tarafından düşürüldüğü için "access yok + refresh var"
- *    temiz bir yenileme sinyali.
- *
- * **Prefetch'te yenileme YOK.** Aksi halde paralel prefetch'ler aynı refresh
- * token'ı iki kez sunar ve API bunu yeniden kullanım sayabilir. Next, RSC
- * isteklerinde `next-router-prefetch` gibi iç başlıkları `request.headers`'tan
- * SİLDİĞİ için tespit `matcher` seviyesinde yapılıyor (aşağıdaki `missing`);
- * fonksiyon içindeki kontrol yalnız ikinci savunma hattı (`_next/data` yolları
- * negatif eşleşmeye rağmen yine de buraya uğruyor). API'deki 30 sn'lik grace
- * penceresi üçüncü hat.
+ * 1. İyimser route guard (çerez var mı). 2. Token yenileme. 3. `x-pathname` +
+ * UI dil çerezi — dil seçici JS'siz `<a>` ile çalıştığı için tercih URL'den.
  */
+
+const LANG_COOKIE = 'expyra_lang'
+const LANG_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
 /** Oturum ister görünen yollar. Kısa tutuluyor: liste büyüdükçe yanlış negatif riski artar. */
 /**
@@ -62,13 +49,38 @@ type Rotation =
   /** Ağ hatası / 5xx — çerezlere DOKUNULMAZ, token bir sonraki isteğe kalsın. */
   | { kind: 'unavailable' }
 
+/**
+ * Her yanıta ortak: dil seçiciye `x-pathname` (sorgu dahil) + UI dil çerezi.
+ * Dil linkleri JS'siz çalıştığı için tercih URL'den türetilir.
+ */
+function continueRequest(request: NextRequest): NextResponse {
+  const requestHeaders = new Headers(request.headers)
+  const pathAndQuery = `${request.nextUrl.pathname}${request.nextUrl.search}`
+  requestHeaders.set('x-pathname', pathAndQuery)
+
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  })
+
+  const segment = request.nextUrl.pathname.split('/').filter(Boolean)[0]
+  if (segment && isRoutableLanguage(segment)) {
+    response.cookies.set(LANG_COOKIE, segment, {
+      path: '/',
+      maxAge: LANG_COOKIE_MAX_AGE,
+      sameSite: 'lax',
+    })
+  }
+
+  return response
+}
+
 export async function proxy(request: NextRequest): Promise<NextResponse> {
   const accessName = accessCookieName()
   const refreshName = refreshCookieName()
 
   const accessToken = request.cookies.get(accessName)?.value
   if (accessToken) {
-    return NextResponse.next()
+    return continueRequest(request)
   }
 
   const refreshToken = request.cookies.get(refreshName)?.value
@@ -77,7 +89,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   }
 
   if (isPrefetch(request)) {
-    return NextResponse.next()
+    return continueRequest(request)
   }
 
   const rotation = await rotate(request, refreshToken)
@@ -90,7 +102,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     request.cookies.set(accessName, tokens.accessToken)
     request.cookies.set(refreshName, tokens.refreshToken)
 
-    const response = NextResponse.next({ request: { headers: request.headers } })
+    const response = continueRequest(request)
 
     response.cookies.set(
       accessName,
@@ -109,7 +121,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   if (rotation.kind === 'unavailable') {
     // API geçici olarak ulaşılamıyor. Çerezi silmek, her API kesintisinde tüm
     // kullanıcıları çıkış yaptırmak demek olurdu.
-    return NextResponse.next()
+    return continueRequest(request)
   }
 
   const response = guard(request)
@@ -126,7 +138,7 @@ function guard(request: NextRequest): NextResponse {
   const resolved = resolvePage(pathname)
 
   if (!resolved || !PROTECTED_PAGES.includes(resolved.page)) {
-    return NextResponse.next()
+    return continueRequest(request)
   }
 
   // Giriş ekranı kullanıcının bulunduğu dilde açılıyor: korumalı sayfaya

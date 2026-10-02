@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import { notFound } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { SiteFooter } from '@/components/brand/site-footer'
@@ -13,6 +14,7 @@ import { DemoReviews } from '@/components/experience/demo-reviews'
 import { ExperienceHighlights } from '@/components/experience/experience-highlights'
 import { MeetingMap } from '@/components/experience/meeting-map'
 import { BookingPartyForm } from '@/components/experience/booking-party-form'
+import { readCurrencyCookie } from '@/features/currency/preference'
 import {
   experienceAlternates,
   experienceCheckoutPath,
@@ -108,7 +110,11 @@ export default async function ExperienceDetail({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const [{ lang, slug }, query] = await Promise.all([params, searchParams])
-  const [t, experience] = await Promise.all([getTranslator(lang), fetchExperience(slug, lang)])
+  const preferredCurrency = currencyFrom(query) ?? readCurrencyCookie(await cookies())
+  const [t, experience] = await Promise.all([
+    getTranslator(lang),
+    fetchExperience(slug, lang, preferredCurrency),
+  ])
 
   if (!experience) {
     notFound()
@@ -116,7 +122,7 @@ export default async function ExperienceDetail({
 
   const party = partyFrom(query)
   const selectedSlotId = slotFrom(query)
-  const displayCurrency = currencyFrom(query)
+  const displayCurrency = preferredCurrency
 
   /*
     Müsaitlik ve teklif AYRI çağrılar ve teklif SEANS SEÇİLİNCE geliyor: seçim
@@ -152,7 +158,11 @@ export default async function ExperienceDetail({
     yeni uç yok (#37). Kendisi listeden çıkarılıyor; başka ilan yoksa bölüm
     çizilmiyor. Liste başarısız olursa sayfa DÜŞMÜYOR — ikincil içerik.
   */
-  const nearby = await fetchExperiences({ lang, city: cityKeyOf(experience.city) })
+  const nearby = await fetchExperiences({
+    lang,
+    city: cityKeyOf(experience.city),
+    currency: displayCurrency,
+  })
     .then((page) => page.items.filter((item) => item.slug !== experience.slug).slice(0, 6))
     .catch((error: unknown) => {
       console.error('experience.nearby.failed', error)
@@ -743,7 +753,12 @@ function BookingPanel({
       {pricing ? (
         <p className="text-base">
           <span className="text-xl font-semibold tracking-tight text-fg">
-            {formatMinorMoney(lang, pricing.fromAmountMinor, pricing.chargeCurrency, pricing.chargeMinorUnits)}
+            {formatMinorMoney(
+              lang,
+              pricing.display?.fromAmountMinor ?? pricing.fromAmountMinor,
+              pricing.display?.currency ?? pricing.chargeCurrency,
+              pricing.display?.minorUnits ?? pricing.chargeMinorUnits,
+            )}
           </span>{' '}
           <span className="text-sm text-fg-muted">{t('experience.detail.booking.perPerson')}</span>
         </p>

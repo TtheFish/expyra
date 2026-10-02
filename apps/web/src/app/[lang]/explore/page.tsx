@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import { SiteFooter } from '@/components/brand/site-footer'
 import { SiteHeader } from '@/components/brand/site-header'
 import { ExperienceCard } from '@/components/experience/experience-card'
 import { ExperienceSearch } from '@/components/search/experience-search'
 import { GlassButton } from '@/components/ui/glass-button'
+import { readCurrencyCookie } from '@/features/currency/preference'
 import { fetchExperiences, isExperienceCursor } from '@/features/experiences/api'
 import { getTranslator } from '@/features/i18n/translator'
 import { cityDisplayName, cityKeyOf, resolveCity } from '@/features/places/api'
@@ -100,10 +102,11 @@ export default async function Explore({
 
   const cityKey = city ? cityKeyOf(city) : null
   const blocked = cityMissing || cursorBroken
+  const displayCurrency = readCurrencyCookie(await cookies())
 
   const page = blocked
     ? { items: [], nextCursor: null }
-    : await fetchExperiences({ lang, city: cityKey, cursor })
+    : await fetchExperiences({ lang, city: cityKey, cursor, currency: displayCurrency })
 
   /*
     Sayfa sınırı: sonraki/ilk sayfa bağlantıları DOĞRULANMIŞ değerlerden kuruluyor,

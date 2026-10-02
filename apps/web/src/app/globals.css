@@ -258,6 +258,20 @@ body {
   overflow-x: hidden;
 }
 
+/* Tema düğmesi ikonları — React'sız, data-theme ile anında. */
+.theme-toggle-icon--moon {
+  display: block;
+}
+.theme-toggle-icon--sun {
+  display: none;
+}
+:root[data-theme='dark'] .theme-toggle-icon--moon {
+  display: none;
+}
+:root[data-theme='dark'] .theme-toggle-icon--sun {
+  display: block;
+}
+
 /* ===========================================================================
    Kart yüzeyi — içeriğin yaşadığı yer
    ---------------------------------------------------------------------------

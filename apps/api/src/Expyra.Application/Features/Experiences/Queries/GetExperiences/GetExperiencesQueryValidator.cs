@@ -1,4 +1,5 @@
 using FluentValidation;
+using Expyra.Domain.Common;
 using Expyra.Domain.Languages;
 using Expyra.Domain.Places;
 
@@ -33,5 +34,10 @@ public sealed class GetExperiencesQueryValidator : AbstractValidator<GetExperien
             .Must(LanguageCode.IsValid)
             .WithMessage("lang geçerli bir BCP-47 dil kodu olmalı (örnek: tr, en, de-AT).")
             .When(x => !string.IsNullOrWhiteSpace(x.Language));
+
+        RuleFor(x => x.Currency)
+            .Must(CurrencyCode.IsValid)
+            .WithMessage("currency geçerli bir ISO 4217 para birimi kodu olmalı (örnek: EUR, TRY).")
+            .When(x => !string.IsNullOrWhiteSpace(x.Currency));
     }
 }

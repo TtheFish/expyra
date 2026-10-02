@@ -31,6 +31,13 @@ export const de = {
   'theme.toLight': 'Zum hellen Design wechseln',
   'theme.toDark': 'Zum dunklen Design wechseln',
 
+  'currency.trigger': 'Währung: {para}. Ändern.',
+  'currency.dialogLabel': 'Währungsauswahl',
+  'currency.search.label': 'Währungen suchen',
+  'currency.search.placeholder': 'EUR, Dollar, Lira…',
+  'currency.none': 'Währung des Gastgebers',
+  'currency.empty': 'Keine Währung entspricht dieser Suche.',
+
   'home.hero.title': 'Eine neue Art,',
   'home.hero.titleAccent': 'Erlebnisse von Einheimischen zu finden',
   'home.hero.lede':
