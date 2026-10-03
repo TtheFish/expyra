@@ -15,6 +15,20 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <!--
+    Sürüm damgası (issue #46). Canlıdaki ikilinin hangi commit olduğu /api/health'te.
+
+    - Commit: SDK, SourceRevisionId verilince InformationalVersion'a "+<sha>" ekliyor.
+      CI açıkça veriyor (-p:SourceRevisionId=$GITHUB_SHA). Yerel derlemede verilmiyor,
+      ek gelmiyor ve API "dev" döndürüyor — canlıda "dev" görmek "SHA'sız derlenmiş" demek.
+    - Derleme zamanı: YALNIZ dışarıdan verilirse gömülür (-p:ExpyraBuildTimeUtc=...).
+      Her derlemede DateTime.Now gömmek deterministik derlemeyi ve artımlı derlemeyi
+      bozardı — kod değişmeden her build yeni bir ikili üretirdi.
+  -->
+  <ItemGroup Condition="'$(ExpyraBuildTimeUtc)' != ''">
+    <AssemblyMetadata Include="ExpyraBuildTimeUtc" Value="$(ExpyraBuildTimeUtc)" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(MSBuildProjectName)' != '' AND $(MSBuildProjectName.EndsWith('Tests'))">
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>

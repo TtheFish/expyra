@@ -10,14 +10,37 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# GITHUB_TOKEN yalnız okuyabilir (issue #52, vibe-check OPS-012). Repo varsayılanı
+# zaten "read" ama bu dosya o ayara güvenmiyor: ayar bir gün "write"a çevrilirse
+# ele geçirilmiş bir adım (ör. zehirlenmiş bir action) repoya yazamasın. Yazma
+# isteyen bir job kendi `permissions:` bloğunu açar — tüm workflow'a değil.
+permissions:
+  contents: read
+
+# Action'lar etiketle değil TAM COMMIT SHA'sıyla sabit (OPS-013): etiket taşınabilir,
+# SHA taşınamaz. Yanındaki `# vX.Y.Z` yorumu insan için; güncellerken ikisi birlikte
+# değişir. SHA'yı bulmak: `gh api repos/<sahip>/<repo>/git/ref/tags/<etiket>` —
+# dönen `object.type` "tag" ise (açıklamalı etiket) bir kez daha
+# `gh api repos/<sahip>/<repo>/git/tags/<sha>` ile commit'e inilir.
+#
+# Her job'da `timeout-minutes` var (OPS-014): takılan bir adım varsayılan 6 saati
+# yakmasın. Değerler bugünkü sürenin birkaç katı.
+
 jobs:
   api:
     name: API (.NET)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       postgres:
-        image: postgres:18
+        # docker-compose.yml ile AYNI etiket (CLOUD-009). Varyant bilinçli olarak
+        # Debian/glibc ve adıyla yazılı: alpine (musl) yerel ayar sıralamasını
+        # uygulamıyor, `en_US.utf8` orada fiilen "C" gibi davranıyor; yönetilen
+        # Postgres sağlayıcıları ise glibc. Çıplak `postgres:18` de yetmez —
+        # varsayılan Debian sürümü değişince glibc ve onunla collation sürümü
+        # sessizce değişir.
+        image: postgres:18-trixie
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -31,9 +54,9 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           dotnet-version: '10.0.x'
 
@@ -41,26 +64,37 @@ jobs:
         run: dotnet restore apps/api
 
       # TreatWarningsAsErrors açık: uyarı = kırmızı build.
+      #
+      # Sürüm damgası (issue #46): SourceRevisionId, InformationalVersion'a "+<sha>"
+      # ekliyor ve /api/health bunu `commit` olarak dönüyor. Derleme zamanı yalnız
+      # burada veriliyor (gerekçe: apps/api/Directory.Build.props).
       - name: Build
-        run: dotnet build apps/api --no-restore --configuration Release
+        run: |
+          dotnet build apps/api --no-restore --configuration Release \
+            -p:SourceRevisionId="$GITHUB_SHA" \
+            -p:ExpyraBuildTimeUtc="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
+      # EXPYRA_EXPECTED_COMMIT: HealthTests, derlemeye verilen SHA'nın yanıta kadar
+      # kaybolmadan geldiğini bununla doğruluyor.
       - name: Test
         run: dotnet test apps/api --no-build --configuration Release --logger "console;verbosity=normal"
         env:
           ConnectionStrings__Default: "Host=localhost;Port=5432;Database=expyra_test;Username=postgres;Password=postgres"
+          EXPYRA_EXPECTED_COMMIT: ${{ github.sha }}
 
   frontend:
     name: Web (Next.js)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       # Sürüm burada verilmez — kök package.json'daki "packageManager"
       # alanından okunur. İkisini birden vermek ERR_PNPM_BAD_PM_VERSION verir.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -90,15 +124,19 @@ jobs:
       - name: Test
         run: pnpm -r --if-present test
 
+      # EXPYRA_COMMIT derlemede gömülüyor ve /api/surum'dan dönüyor (next.config.ts).
       - name: Build
         run: pnpm -r build
+        env:
+          EXPYRA_COMMIT: ${{ github.sha }}
 
   secrets-scan:
     name: Sır taraması
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
@@ -108,10 +146,20 @@ jobs:
       # gitleaks-action yerine ikiliyi doğrudan çalıştırıyoruz: action, push
       # olayında "önceki commit..şimdiki commit" aralığı kuruyor ve ilk commit'te
       # parent bulunmadığı için çöküyor. Biz her seferinde tüm geçmişi tarıyoruz.
+      #
+      # İndirilen arşiv SABİT bir sha256 ile doğrulanıyor (issue #52): doğrulamasız
+      # `curl | tar`, sürüm sayfasına ya da yola müdahale eden birine CI'da kod
+      # çalıştırma verirdi. Özet, gitleaks'in o sürümdeki resmi
+      # `gitleaks_<sürüm>_checksums.txt` dosyasından. Sürüm değişirse İKİSİ birlikte
+      # değişir — eşleşmeyen özet job'u düşürür, sessizce geçmez.
       - name: gitleaks
         env:
           GITLEAKS_VERSION: 8.24.3
+          GITLEAKS_SHA256: 9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c
         run: |
-          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
-            | tar -xz -C /tmp gitleaks
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfL -o "/tmp/${archive}" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  /tmp/${archive}" | sha256sum -c -
+          tar -xzf "/tmp/${archive}" -C /tmp gitleaks
           /tmp/gitleaks git --redact --verbose --no-banner .

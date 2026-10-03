@@ -11,7 +11,9 @@
 
 services:
   postgres:
-    image: postgres:18-alpine
+    # CI ile AYNI etiket. Neden alpine değil (musl collation) ve neden varyant adıyla:
+    # docs/DATABASE.md "Sürüm".
+    image: postgres:18-trixie
     container_name: expyra-postgres
     restart: unless-stopped
     environment:

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Expyra.Application.Common.Auth;
 using Expyra.Application.Common.Interfaces;
 using Expyra.Infrastructure.Auth;
+using Expyra.Infrastructure.Build;
 using Expyra.Infrastructure.Email;
 using Expyra.Infrastructure.Persistence;
 using Expyra.Infrastructure.Pricing;
@@ -33,6 +34,7 @@ public static class DependencyInjection
                 "ConnectionStrings:Default tanımlı değil. `dotnet user-secrets set` ile ver.");
 
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
+        services.AddSingleton<IBuildInfo, AssemblyBuildInfo>();
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql =>

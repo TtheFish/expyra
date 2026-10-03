@@ -54,6 +54,22 @@ function mediaPattern() {
 }
 
 const nextConfig: NextConfig = {
+  /*
+    Sürüm damgası (issue #46) — `/api/surum` bunu döndürüyor.
+
+    `env` değerleri DERLEME ANINDA koda gömülüyor: canlıdaki paket, hangi commit'ten
+    derlendiğini çalışma anı ortamından bağımsız biliyor. Ortam değişkeni çalışma
+    anında okunsaydı eski paket + yeni değişken "yeni sürüm" yalanını söylerdi.
+
+    CI `EXPYRA_COMMIT=$GITHUB_SHA` veriyor; yerelde yok ve değer "dev" (API ile aynı
+    sözcük — docs/DEPLOY.md). `NEXT_PUBLIC_` öneki yok ve gerekmiyor: değeri yalnız
+    sunucu tarafındaki route okuyor, istemci paketine girmiyor.
+  */
+  env: {
+    EXPYRA_COMMIT: process.env.EXPYRA_COMMIT?.trim() || 'dev',
+    EXPYRA_BUILT_AT: new Date().toISOString(),
+  },
+
   images: {
     remotePatterns: [mediaPattern()],
 

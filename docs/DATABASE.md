@@ -223,6 +223,18 @@ elle düzeltmek anlamsız, bir sonraki üretim aynı çıktıyı yeniden yazar.
 Yerel, `docker-compose.yml` ve CI **aynı ana sürümde** olmalı. Farklı sürümler farklı
 davranır ve "bende çalışıyordu" oraya taşınır. Şu an üçü de **PostgreSQL 18**.
 
+`docker-compose.yml` ve CI aynı **imaj etiketini** de kullanıyor: `postgres:18-trixie`
+(Debian, glibc). Alpine (musl) seçilmedi çünkü musl yerel ayar sıralamasını
+uygulamıyor — `en_US.utf8` orada fiilen `C` gibi sıralıyor, yönetilen Postgres
+sağlayıcıları ise glibc. Compose alpine, CI Debian iken aynı `ORDER BY` iki ortamda
+farklı sonuç verebiliyordu. Varyant adıyla yazılı (`-trixie`): çıplak `postgres:18`'in
+Debian tabanı değişince glibc, onunla da collation sürümü sessizce değişir.
+
+**Eski alpine volume'ü olan:** veri dizini aynı ana sürümde uyumlu ama alpine'da
+kurulmuş metin index'leri glibc sıralamasıyla tutarsız kalabilir. Yerel veri tek
+kullanımlık — `docker compose down -v && docker compose up -d postgres`, ardından
+`pnpm api:migrate && pnpm api:seed` (ve gerekiyorsa `pnpm api:seed:demo`).
+
 ---
 
 ## Bilinen tuzaklar
