@@ -5,7 +5,7 @@ import { GlassButton } from '@/components/ui/glass-button'
 import { GlassTicket } from '@/components/ticket/glass-ticket'
 import { TicketWalletActions } from '@/components/ticket/ticket-wallet-actions'
 import type { Translate } from '@/features/i18n/dictionary'
-import { formatNumber, formatMoney } from '@/features/i18n/format'
+import { formatMinorMoney, formatNumber } from '@/features/i18n/format'
 import { getTranslator } from '@/features/i18n/translator'
 import { DEMO_TICKETS, formatLocalDateTime, qrSvg, type Ticket } from '@/lib/ticket'
 import { alternateLinks, path } from '@/lib/routes'
@@ -175,7 +175,7 @@ function TicketCard({
       }}
       values={{
         guests: formatNumber(lang, ticket.guests),
-        amount: formatMoney(lang, ticket.totalAmount, ticket.currency),
+        amount: formatMinorMoney(lang, ticket.amountMinor, ticket.currencyCode, ticket.minorUnits),
         startsAt: formatLocalDateTime(lang, ticket),
       }}
     />

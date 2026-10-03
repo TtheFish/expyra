@@ -5,7 +5,7 @@ import { HeaderShell } from '@/components/brand/site-header'
 import { GlassButton } from '@/components/ui/glass-button'
 import { GlassTicket } from '@/components/ticket/glass-ticket'
 import { TicketWalletActions } from '@/components/ticket/ticket-wallet-actions'
-import { formatMoney, formatNumber } from '@/features/i18n/format'
+import { formatMinorMoney, formatNumber } from '@/features/i18n/format'
 import { getTranslator } from '@/features/i18n/translator'
 import {
   findTicket,
@@ -90,7 +90,7 @@ export default async function TicketDetailPage({ params }: { params: PageParams 
             }}
             values={{
               guests: formatNumber(lang, ticket.guests),
-              amount: formatMoney(lang, ticket.totalAmount, ticket.currency),
+              amount: formatMinorMoney(lang, ticket.amountMinor, ticket.currencyCode, ticket.minorUnits),
               startsAt: formatLocalDateTime(lang, ticket),
             }}
           />

@@ -70,6 +70,19 @@ const nextConfig: NextConfig = {
     EXPYRA_BUILT_AT: new Date().toISOString(),
   },
 
+  /*
+    Bilet uçları sabit dosyaları `process.cwd()/src/...` üzerinden okuyor
+    (`lib/wallet/pass-assets.ts`, `lib/ticket-pdf.ts`). Bu okumalar `import`
+    olmadığı için Next'in dosya izlemesi onları GÖRMÜYOR; açık liste olmadan
+    `src/` dağıtılmayan bir ortamda cüzdan ve PDF uçları 500 döner (#48).
+
+    Anahtar route deseni (picomatch). `[code]` köşeli parantezi glob'da karakter
+    sınıfı demek, bu yüzden dinamik segment yerine `**` kullanılıyor.
+  */
+  outputFileTracingIncludes: {
+    '/api/bilet/**': ['./src/lib/wallet/assets/**', './src/assets/fonts/**'],
+  },
+
   images: {
     remotePatterns: [mediaPattern()],
 

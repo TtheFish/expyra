@@ -3,7 +3,7 @@ import path from 'node:path'
 import fontkit from '@pdf-lib/fontkit'
 import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from 'pdf-lib'
 import type { Translate } from '@/features/i18n/dictionary'
-import { formatMoney, formatNumber, upperCase } from '@/features/i18n/format'
+import { formatMinorMoney, formatNumber, upperCase } from '@/features/i18n/format'
 import { formatLocalDateTime, qrPngBytes, type Ticket } from './ticket'
 
 /**
@@ -161,7 +161,7 @@ export async function buildTicketPdf(
   drawLabelled(page, fonts, locale, MARGIN, y, t('ticket.guests'),
     formatNumber(locale, ticket.guests))
   drawLabelled(page, fonts, locale, MARGIN + col, y, t('ticket.amount'),
-    formatMoney(locale, ticket.totalAmount, ticket.currency))
+    formatMinorMoney(locale, ticket.amountMinor, ticket.currencyCode, ticket.minorUnits))
   drawLabelled(page, fonts, locale, MARGIN + col * 2, y, t('ticket.status'),
     ticket.status === 'used' ? t('ticket.status.used') : t('ticket.status.valid'))
   y -= 46

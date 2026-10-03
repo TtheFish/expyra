@@ -39,7 +39,12 @@ EXPYRA_GOOGLE_WALLET_ISSUER_ID=3388000000012345678
 EXPYRA_GOOGLE_WALLET_CLIENT_EMAIL=wallet@…iam.gserviceaccount.com
 EXPYRA_GOOGLE_WALLET_PRIVATE_KEY=<service-account-private-key-pem>
 EXPYRA_GOOGLE_WALLET_CLASS_SUFFIX=expyra_ticket
+EXPYRA_WEB_ORIGIN=https://expyra.com
 ```
+
+`EXPYRA_WEB_ORIGIN` JWT’nin `origins` alanı. **Üretimde zorunlu** — tanımsızsa uç
+açık bir yapılandırma hatası fırlatır; yalnız geliştirmede `http://localhost:3000`
+varsayılır.
 
 **Google Cüzdan’a ekle** → imzalı JWT save URL’sine 302.
 
@@ -47,3 +52,11 @@ EXPYRA_GOOGLE_WALLET_CLASS_SUFFIX=expyra_ticket
 
 `lib/ticket.ts` → iki yaklaşan (`EXP-7K4M-92QD`, `EXP-4H9C-77MK`). Kimlikler
 yokken düğmeler 503 mesajı gösterir; **Bileti görüntüle** ve PDF çalışır.
+
+## Sabit dosyalar
+
+İkonlar (`icon.png` 29 px, `icon@2x.png` 58 px, `icon@3x.png` 87 px), WWDR
+sertifikası ve PDF fontu `process.cwd()/src/...` üzerinden okunuyor. Build
+çıktısına `next.config.ts` → `outputFileTracingIncludes` ile giriyorlar; yeni
+dosya eklersen desenin onu kapsadığını kontrol et. Ad ve ölçüler
+`lib/wallet/pass-assets.test.ts` ile korunuyor.

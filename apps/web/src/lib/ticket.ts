@@ -20,8 +20,15 @@ export type Ticket = {
   startsAtUtc: string
   timeZone: string
   guests: number
-  totalAmount: number
-  currency: string
+  /** MİNÖR birim tam sayısı (CLAUDE.md #7): `7000` + `EUR` = 70,00 €. */
+  amountMinor: number
+  /** ISO 4217 kodu. */
+  currencyCode: string
+  /**
+   * Para biriminin üssü (EUR 2, JPY 0, KWD 3). Web'de tablo tutulmuyor — kaynak
+   * sunucudaki `currency.minor_units`; bilet API'ye taşınınca yanıttan gelecek.
+   */
+  minorUnits: number
   status: TicketStatus
   /** Sadece kullanılmış biletlerde dolu. */
   usedAtUtc?: string
@@ -38,8 +45,9 @@ export const DEMO_TICKETS: Ticket[] = [
     startsAtUtc: '2026-10-18T07:30:00Z',
     timeZone: 'Europe/Prague',
     guests: 2,
-    totalAmount: 70,
-    currency: 'EUR',
+    amountMinor: 7000,
+    currencyCode: 'EUR',
+    minorUnits: 2,
     status: 'valid',
     hue: 220,
   },
@@ -51,8 +59,9 @@ export const DEMO_TICKETS: Ticket[] = [
     startsAtUtc: '2026-10-22T18:00:00Z',
     timeZone: 'Europe/Prague',
     guests: 3,
-    totalAmount: 2100,
-    currency: 'CZK',
+    amountMinor: 210000,
+    currencyCode: 'CZK',
+    minorUnits: 2,
     status: 'valid',
     hue: 350,
   },
@@ -64,8 +73,9 @@ export const DEMO_TICKETS: Ticket[] = [
     startsAtUtc: '2026-06-02T16:00:00Z',
     timeZone: 'Europe/Istanbul',
     guests: 4,
-    totalAmount: 3200,
-    currency: 'TRY',
+    amountMinor: 320000,
+    currencyCode: 'TRY',
+    minorUnits: 2,
     status: 'used',
     usedAtUtc: '2026-06-02T16:04:00Z',
     hue: 25,
@@ -78,8 +88,9 @@ export const DEMO_TICKETS: Ticket[] = [
     startsAtUtc: '2026-05-19T09:00:00Z',
     timeZone: 'Europe/Lisbon',
     guests: 1,
-    totalAmount: 62,
-    currency: 'EUR',
+    amountMinor: 6200,
+    currencyCode: 'EUR',
+    minorUnits: 2,
     status: 'used',
     usedAtUtc: '2026-05-19T09:02:00Z',
     hue: 300,
@@ -130,8 +141,9 @@ export async function qrPngBytes(ticket: Ticket): Promise<Uint8Array> {
  * Locale ilk parametre ve varsayılansız (`features/i18n/format.ts` imza kuralı):
  * biletin en kritik alanı saat, yanlış dilde basılması sessizce geçmemeli.
  *
- * Para için ayrı bir sarmalayıcı yok — `format.ts`'teki `formatMoney` birebir
- * aynı işi yapıyordu, ikinci kopya yalnız ikisinin ayrışmasına yarardı.
+ * Para için ayrı bir sarmalayıcı yok — `format.ts`'teki `formatMinorMoney`
+ * (minör birim + üs) birebir aynı işi yapıyor, ikinci kopya yalnız ikisinin
+ * ayrışmasına yarardı.
  */
 export function formatLocalDateTime(locale: string, ticket: Ticket): string {
   return new Intl.DateTimeFormat(locale, {

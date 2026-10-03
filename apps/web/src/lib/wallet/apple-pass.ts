@@ -1,10 +1,9 @@
 import 'server-only'
 
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { PKPass } from 'passkit-generator'
 import { ticketPayload, type Ticket } from '@/lib/ticket'
 import { appleWalletConfig } from '@/lib/wallet/config'
+import { readPassIcons } from '@/lib/wallet/pass-assets'
 
 export class AppleWalletNotConfiguredError extends Error {
   constructor() {
@@ -21,19 +20,14 @@ export async function buildApplePass(ticket: Ticket, locale: string): Promise<Bu
   const config = appleWalletConfig()
   if (!config) throw new AppleWalletNotConfiguredError()
 
-  const assets = join(process.cwd(), 'src/lib/wallet/assets')
-  const icon = readFileSync(join(assets, 'icon.png'))
-  const icon2x = readFileSync(join(assets, 'paula.r@example.org'))
-  const icon3x = readFileSync(join(assets, 'pass-icon.png'))
+  // Dosya okuması config kontrolünden SONRA: kimlikler yokken 503 dönmeli,
+  // eksik bir dosya yüzünden 500 değil.
+  const icons = readPassIcons()
 
   const when = formatPassDate(ticket, locale)
 
   const pass = new PKPass(
-    {
-      'icon.png': icon,
-      'paula.r@example.org': icon2x,
-      'george.a@example.org': icon3x,
-    },
+    icons,
     {
       wwdr: config.wwdrPem,
       signerCert: config.signerCertPem,

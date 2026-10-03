@@ -2,7 +2,7 @@ import 'server-only'
 
 import { SignJWT, importPKCS8 } from 'jose'
 import { ticketPayload, type Ticket } from '@/lib/ticket'
-import { googleWalletConfig } from '@/lib/wallet/config'
+import { googleWalletConfig, webOrigin } from '@/lib/wallet/config'
 
 export class GoogleWalletNotConfiguredError extends Error {
   constructor() {
@@ -86,7 +86,7 @@ export async function buildGoogleWalletSaveUrl(ticket: Ticket, locale: string): 
     iss: config.clientEmail,
     aud: 'google',
     typ: 'savetowallet',
-    origins: [process.env.EXPYRA_WEB_ORIGIN?.trim() || 'http://localhost:3000'],
+    origins: [webOrigin()],
     payload: {
       eventTicketClasses: [eventTicketClass],
       eventTicketObjects: [eventTicketObject],
