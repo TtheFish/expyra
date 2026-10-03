@@ -23,14 +23,16 @@ import {
 import type { SimpleMessageKey, Translate } from '@/features/i18n/dictionary'
 import { formatMinorMoney, formatWallClock } from '@/features/i18n/format'
 import { getTranslator } from '@/features/i18n/translator'
+import { isDemoContentEnabled } from '@/lib/demo-content'
 import { path } from '@/lib/routes'
 
 /**
  * Onay ve ödeme — Airbnb tarzı iki kolon.
  *
  * Blok 9 (rezervasyon) ve Blok 11 (ödeme) henüz yok: sayfa quote API'sinden
- * fiyatı okuyor, yöntem seçimi ve onay SAHTE. Gerçek kart çekimi / booking
- * satırı o bloklarda bağlanacak; UI sözleşmesi şimdiden oturuyor.
+ * fiyatı okuyor. Onay düğmesi varsayılan olarak KAPALI ve nedenini söylüyor;
+ * sahte "ödeme başarılı" akışı yalnız demo bayrağıyla (`EXPYRA_DEMO_CONTENT=1`)
+ * açılıyor. Gerçek kart çekimi / booking satırı o bloklarda (#19) bağlanacak.
  */
 
 type PageParams = Promise<{ lang: string; slug: string }>
@@ -119,6 +121,7 @@ export default async function CheckoutPage({
         <div className="mt-10 grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-16">
           <CheckoutPaymentForm
             homeHref={path(lang, 'myExperiences')}
+            demoPayment={isDemoContentEnabled()}
             labels={{
               heading: t('checkout.payment.heading'),
               card: t('checkout.payment.card'),
@@ -130,6 +133,7 @@ export default async function CheckoutPage({
               submit: t('checkout.payment.submit'),
               submitting: t('checkout.payment.submitting'),
               demoNote: t('checkout.payment.demoNote'),
+              unavailable: t('checkout.payment.unavailable'),
               successTitle: t('checkout.success.title'),
               successBody: t('checkout.success.body'),
               backHome: t('checkout.success.back'),
@@ -149,11 +153,12 @@ export default async function CheckoutPage({
                   aria-hidden="true"
                 />
               )}
+              {/* Puan yok: yorum sistemi (Blok 14) gelene kadar gösterilecek gerçek
+                  bir ortalama yok; sabit bir sayı uydurma puan olurdu (#43). */}
               <div className="min-w-0">
                 <p className="line-clamp-2 text-sm font-bold" lang={experience.text.language}>
                   {experience.text.title}
                 </p>
-                <p className="mt-1 text-xs text-fg-muted">★ 4,84</p>
               </div>
             </div>
 

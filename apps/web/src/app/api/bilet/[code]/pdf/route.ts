@@ -1,7 +1,6 @@
-import { getSession } from '@/features/auth/session'
 import { UI_LANGUAGE_FIELD, uiLocaleOf } from '@/features/i18n/locale'
 import { getTranslator } from '@/features/i18n/translator'
-import { findTicket } from '@/lib/ticket'
+import { getTicketForCurrentUser, ticketDeniedResponse } from '@/lib/ticket-access'
 import { buildTicketPdf } from '@/lib/ticket-pdf'
 
 /** PDF dosya sistemine ve font'a eriştiği için Node çalışma zamanı gerekiyor. */
@@ -10,23 +9,17 @@ export const runtime = 'nodejs'
 /**
  * Bilet PDF'i.
  *
- * **Neden yalnız oturum kontrolü var (ve neden bu bir ARA ADIM):**
- * Demo biletler (`lib/ticket.ts`) hiçbir kullanıcıya bağlı değil — sahiplik
- * kontrolü yapılacak bir alan yok. Doğrusu "bu bilet bu kullanıcının mı" sorusu
- * ve o soru Blok 9/12'de, `booking.UserId` geldiğinde cevaplanabilir hale gelecek
- * (PDF de o zaman API'ye taşınıyor, PLAN Blok 12). Bugünkü durum ise "kodu bilen
- * herkes indirir": bilet kodu bir sır değil, ekranda ve QR'da açıkta duruyor.
- * Oturum kapısı bu yüzeyi anonim internetten alıp giriş yapmış kullanıcılara
- * daraltıyor — tam çözüm değil, ama ölçülebilir bir daraltma.
+ * Erişim `getTicketForCurrentUser`'da (`lib/ticket-access.ts`):
+ * - Oturum API'ye DOĞRULATILIYOR (`GET /api/auth/me`). Uydurma bir
+ *   `expyra_at` çerezi 401 alır — çerezin varlığı yetmiyor.
+ * - Oturum kontrolü biletten ÖNCE; anonim istek geçerli ve geçersiz kodda aynı
+ *   401'i alır, yanıt farkı kod denemeye yaramaz.
+ * - Bugün gerçek bilet yok; demo bilet yalnız `EXPYRA_DEMO_CONTENT=1` iken.
+ *   Blok 12'de sahiplik API'de denetlenecek ve bu uç değişmeyecek.
  *
- * Kontrol sırası önemli: oturum kontrolü biletten ÖNCE. Tersi olsaydı anonim
- * istek geçerli kodda 401, geçersiz kodda 404 alır ve yanıt farkı kod
- * denemeye (enumeration) yarayan bir kanal olurdu.
- *
- * `getSession()` yalnız çerezin VARLIĞINA bakıyor, token'ı doğrulamıyor —
- * `proxy.ts` ile aynı iyimser kalıp. Buradaki fark: proxy `/api` yollarında hiç
- * çalışmıyor (matcher dışında), yani süresi dolmuş access token bu uçta
- * yenilenmiyor. Bilet API'ye taşındığında doğrulama gerçek olacak.
+ * Proxy `/api` yollarında çalışmıyor (matcher dışında): süresi dolmuş access
+ * token burada yenilenmez ve 401 alır. Bilet sayfası proxy'den geçtiği için
+ * kullanıcı oradan tazelenmiş token'la gelir.
  */
 export async function GET(
   request: Request,
@@ -43,26 +36,11 @@ export async function GET(
     dosya var — biçim hatası yüzünden bileti hiç vermemek orantısız.
   */
   const locale = uiLocaleOf(new URL(request.url).searchParams.get(UI_LANGUAGE_FIELD))
-  const t = await getTranslator(locale)
+  const [t, { code }] = await Promise.all([getTranslator(locale), params])
 
-  const session = await getSession()
-
-  if (!session) {
-    return Response.json(
-      { title: t('ticket.error.signedOut'), status: 401 },
-      { status: 401, headers: { 'Cache-Control': 'private, no-store' } },
-    )
-  }
-
-  const { code } = await params
-  const ticket = findTicket(code)
-
-  if (!ticket) {
-    return Response.json(
-      { title: t('ticket.error.notFound'), status: 404 },
-      { status: 404, headers: { 'Cache-Control': 'private, no-store' } },
-    )
-  }
+  const access = await getTicketForCurrentUser(code)
+  if (access.kind !== 'found') return ticketDeniedResponse(access, t)
+  const { ticket } = access
 
   const pdf = await buildTicketPdf(ticket, locale, t)
 

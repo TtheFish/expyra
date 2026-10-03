@@ -32,8 +32,12 @@ const LANG_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
  * Sayfa kişisel veri göstermiyor: oturumsuz görünümü tamamen tanıtım, oturumlu
  * görünümü ise sayfanın kendi içinde çözülüyor (`become-a-host/page.tsx`).
  * Blok 5'in gerçek host ekranları (`/host/deneyim/...`) bu listeye girecek.
+ *
+ * Buradaki kontrol İYİMSER (çerez var mı) ve tek başına yetmez: korumalı sayfa
+ * oturumu ayrıca kendisi doğrular (`getVerifiedUser`). Proxy'nin işi, oturumsuz
+ * ziyaretçiyi render'a girmeden giriş ekranına almak ve token'ı tazelemek.
  */
-const PROTECTED_PAGES: PageId[] = ['myExperiences', 'account']
+const PROTECTED_PAGES: PageId[] = ['myExperiences', 'account', 'ticketDetail']
 
 type AuthTokens = {
   accessToken: string

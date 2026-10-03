@@ -265,6 +265,8 @@ export const bg = {
   'checkout.payment.submit': 'Потвърди и плати',
   'checkout.payment.submitting': 'Обработва се…',
   'checkout.payment.demoNote': 'Демо: от картата ти не се таксува и не се създава резервация.',
+  'checkout.payment.unavailable':
+    'Плащанията все още не са налични: бутонът ще се активира, щом свържем доставчика на плащания. От картата ти не се таксува и не се създава резервация.',
   'checkout.success.title': 'Готово — демо потвърждение',
   'checkout.success.body':
     'Когато платежният доставчик и API-то за резервации заработят, тук ще се появи истински билет. Засега потокът е завършен.',
@@ -296,6 +298,9 @@ export const bg = {
   'myExperiences.wallet.soon': 'Скоро',
   'myExperiences.rate': 'Оцени',
   'myExperiences.rate.soon': 'Отваря се, след като преживяването приключи',
+  'myExperiences.empty.title': 'Още нямаш билети',
+  'myExperiences.empty.body': 'Когато резервираш преживяване, билетът ти ще се появи тук.',
+  'myExperiences.empty.cta': 'Разгледай преживяванията',
 
   'ticket.demoBadge': 'Демо билет',
   'ticket.demoNote': 'Примерен билет: QR кодът още не е подписан и не може да се провери на входа.',

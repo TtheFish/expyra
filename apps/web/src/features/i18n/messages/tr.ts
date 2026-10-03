@@ -423,6 +423,8 @@ export const tr = {
   'checkout.payment.submit': 'Onaylayın ve ödeyin',
   'checkout.payment.submitting': 'İşleniyor…',
   'checkout.payment.demoNote': 'Demo: kartından para çekilmez; rezervasyon kaydı da oluşmaz.',
+  'checkout.payment.unavailable':
+    'Ödeme henüz alınamıyor: ödeme altyapısı hazır olduğunda bu düğme açılacak. Şimdilik kartından para çekilmez, rezervasyon da oluşmaz.',
   'checkout.success.title': 'Hazır — demo onay',
   'checkout.success.body':
     'Ödeme sağlayıcısı ve rezervasyon API’si gelince burada gerçek bilet oluşacak. Şimdilik akış tamamlandı.',
@@ -465,6 +467,9 @@ export const tr = {
   'myExperiences.wallet.soon': 'Yakında',
   'myExperiences.rate': 'Puan ver',
   'myExperiences.rate.soon': 'Deneyim tamamlanınca açılır',
+  'myExperiences.empty.title': 'Henüz biletin yok',
+  'myExperiences.empty.body': 'Bir deneyim rezerve ettiğinde biletin burada görünür.',
+  'myExperiences.empty.cta': 'Deneyimleri keşfet',
 
   // --- Bilet -----------------------------------------------------------------
   /** Bilet bugün kapıda çalışmıyor; ibare Blok 12'de kalkar (bkz. glass-ticket.tsx). */

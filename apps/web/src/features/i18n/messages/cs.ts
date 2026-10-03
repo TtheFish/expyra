@@ -337,6 +337,8 @@ export const cs = {
   'checkout.payment.submit': 'Potvrdit a zaplatit',
   'checkout.payment.submitting': 'Zpracovává se…',
   'checkout.payment.demoNote': 'Demo: z karty se nic nestrhne a rezervace se nevytvoří.',
+  'checkout.payment.unavailable':
+    'Platby zatím nepřijímáme: tlačítko se zpřístupní, jakmile napojíme platební bránu. Z karty se nic nestrhne a rezervace se nevytvoří.',
   'checkout.success.title': 'Hotovo — demo potvrzení',
   'checkout.success.body':
     'Až přijdou platební brána a rezervační API, tady vznikne skutečný lístek. Zatím je tok dokončený.',
@@ -368,6 +370,9 @@ export const cs = {
   'myExperiences.wallet.soon': 'Brzy',
   'myExperiences.rate': 'Ohodnotit',
   'myExperiences.rate.soon': 'Otevře se po skončení zážitku',
+  'myExperiences.empty.title': 'Zatím nemáš žádné vstupenky',
+  'myExperiences.empty.body': 'Až si zarezervuješ zážitek, vstupenka se objeví tady.',
+  'myExperiences.empty.cta': 'Objevuj zážitky',
 
   'ticket.demoBadge': 'Ukázková vstupenka',
   'ticket.demoNote':

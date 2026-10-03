@@ -43,6 +43,7 @@ import type { Translate } from '@/features/i18n/dictionary'
 import { formatMinorMoney, formatWallClock } from '@/features/i18n/format'
 import { getTranslator } from '@/features/i18n/translator'
 import { cityDisplayName, cityKeyOf } from '@/features/places/api'
+import { isDemoContentEnabled } from '@/lib/demo-content'
 import { localNameOf } from '@/lib/languages'
 import { path } from '@/lib/routes'
 
@@ -408,7 +409,9 @@ export default async function ExperienceDetail({
               </Section>
             )}
 
-            <DemoReviews t={t} />
+            {/* Örnek yorumlar ve puan uydurma — "örnek" etiketi bunu temize
+                çıkarmıyor (AB tüketici hukuku). Yalnız yerel demo bayrağıyla. */}
+            {isDemoContentEnabled() ? <DemoReviews t={t} /> : null}
 
             {knowRows.length > 0 && (
               <Section heading={t('experience.detail.know.heading')}>

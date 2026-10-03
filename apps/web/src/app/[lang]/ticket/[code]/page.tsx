@@ -1,17 +1,15 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { BrandLogo } from '@/components/brand/brand-logo'
 import { HeaderShell } from '@/components/brand/site-header'
 import { GlassButton } from '@/components/ui/glass-button'
 import { GlassTicket } from '@/components/ticket/glass-ticket'
 import { TicketWalletActions } from '@/components/ticket/ticket-wallet-actions'
+import { RETURN_TO_PARAM } from '@/features/auth/return-to'
 import { formatMinorMoney, formatNumber } from '@/features/i18n/format'
 import { getTranslator } from '@/features/i18n/translator'
-import {
-  findTicket,
-  formatLocalDateTime,
-  qrSvg,
-} from '@/lib/ticket'
+import { formatLocalDateTime, qrSvg } from '@/lib/ticket'
+import { getTicketForCurrentUser } from '@/lib/ticket-access'
 import { path } from '@/lib/routes'
 import {
   applePassHref,
@@ -23,27 +21,39 @@ import '../../../ticket.css'
 
 type PageParams = Promise<{ lang: string; code: string }>
 
+/**
+ * Başlıkta deneyim adı YOK: metadata sayfa gövdesinden ayrı çözülüyor ve
+ * bilet içeriğini oraya koymak, erişim kontrolünü ikinci bir yerde tekrarlamak
+ * demek. Sekme adı genel kalıyor; `noindex` zaten var.
+ */
 export async function generateMetadata({ params }: { params: PageParams }): Promise<Metadata> {
-  const { lang, code } = await params
+  const { lang } = await params
   const t = await getTranslator(lang)
-  const ticket = findTicket(code)
 
   return {
-    title: ticket
-      ? `${ticket.experienceTitle} · ${t('ticket.view.title')}`
-      : t('ticket.view.title'),
+    title: t('ticket.view.title'),
     robots: { index: false, follow: false },
   }
 }
 
 /**
  * Bilet görüntüleme — cüzdan kartı + Apple/Google ekleme.
- * Blok 12’de aynı sayfa gerçek `ticket` satırına bağlanır.
+ *
+ * Proxy bu sayfayı `PROTECTED_PAGES` ile korusa da sayfa oturumu KENDİSİ
+ * doğruluyor: proxy yalnız çerezin varlığına bakar. Erişim kararı
+ * `getTicketForCurrentUser`'da — Blok 12'de gerçek `ticket` satırına bağlanan
+ * tek yer orası.
  */
 export default async function TicketDetailPage({ params }: { params: PageParams }) {
   const { lang, code } = await params
-  const ticket = findTicket(code)
-  if (!ticket) notFound()
+  const access = await getTicketForCurrentUser(code)
+
+  if (access.kind === 'unauthenticated') {
+    const query = new URLSearchParams({ [RETURN_TO_PARAM]: ticketPath(lang, code) })
+    redirect(`${path(lang, 'signIn')}?${query.toString()}`)
+  }
+  if (access.kind === 'notFound') notFound()
+  const { ticket } = access
 
   const [t, qrMarkup] = await Promise.all([getTranslator(lang), qrSvg(ticket)])
 

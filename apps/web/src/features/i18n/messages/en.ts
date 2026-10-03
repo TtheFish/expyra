@@ -264,6 +264,8 @@ export const en = {
   'checkout.payment.submit': 'Confirm and pay',
   'checkout.payment.submitting': 'Processing…',
   'checkout.payment.demoNote': 'Demo: your card is not charged and no booking is created.',
+  'checkout.payment.unavailable':
+    'Payments aren’t available yet: this button will be enabled once our payment provider is connected. Your card won’t be charged and no booking is created.',
   'checkout.success.title': 'Done — demo confirmation',
   'checkout.success.body':
     'When the payment provider and booking API ship, a real ticket will appear here. For now the flow is complete.',
@@ -295,6 +297,9 @@ export const en = {
   'myExperiences.wallet.soon': 'Coming soon',
   'myExperiences.rate': 'Rate it',
   'myExperiences.rate.soon': 'Opens once the experience is over',
+  'myExperiences.empty.title': 'No tickets yet',
+  'myExperiences.empty.body': 'When you book an experience, your ticket will appear here.',
+  'myExperiences.empty.cta': 'Explore experiences',
 
   'ticket.demoBadge': 'Demo ticket',
   'ticket.demoNote': 'Sample ticket: the QR isn’t signed yet and can’t be checked at the door.',

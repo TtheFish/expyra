@@ -17,21 +17,29 @@ export type CheckoutPaymentLabels = {
   submit: string
   submitting: string
   demoNote: string
+  /** Ödeme sağlayıcısı yokken düğmenin altındaki dürüst açıklama. */
+  unavailable: string
   successTitle: string
   successBody: string
   backHome: string
 }
 
 /**
- * Sahte ödeme yöntemleri + onay. Blok 11 gelene kadar kart çekilmiyor;
- * onay yalnız "akış tamam" ekranını gösteriyor.
+ * Ödeme yöntemleri + onay. Ödeme sağlayıcısı (#19, Blok 11) gelene kadar kart
+ * çekilmiyor:
+ * - `demoPayment` kapalı (varsayılan, prod): onay düğmesi devre dışı ve
+ *   altında ödemenin henüz alınamadığı yazıyor. Sahte başarı ekranı YOK.
+ * - `demoPayment` açık (`EXPYRA_DEMO_CONTENT=1`, yerel demo): onay yalnız
+ *   "akış tamam" ekranını gösteriyor; metin bunun demo olduğunu söylüyor.
  */
 export function CheckoutPaymentForm({
   labels,
   homeHref,
+  demoPayment,
 }: {
   labels: CheckoutPaymentLabels
   homeHref: string
+  demoPayment: boolean
 }) {
   const [method, setMethod] = useState<PaymentMethodId>('card')
   const [done, setDone] = useState(false)
@@ -61,6 +69,8 @@ export function CheckoutPaymentForm({
       className="grid gap-6"
       onSubmit={(event) => {
         event.preventDefault()
+        // Düğme zaten kapalı; Enter ile gönderim de aynı kapıdan dönmeli.
+        if (!demoPayment) return
         setPending(true)
         // Sahte gecikme: gerçek ödeme sağlayıcısı gibi hissetsin.
         window.setTimeout(() => {
@@ -107,9 +117,18 @@ export function CheckoutPaymentForm({
       </fieldset>
 
       <p className="text-sm leading-relaxed text-fg-muted">{labels.terms}</p>
-      <p className="text-sm text-fg-muted">{labels.demoNote}</p>
+      <p id="odeme-durumu" className="text-sm text-fg-muted">
+        {demoPayment ? labels.demoNote : labels.unavailable}
+      </p>
 
-      <GlassButton type="submit" variant="primary" size="lg" className="w-full" disabled={pending}>
+      <GlassButton
+        type="submit"
+        variant="primary"
+        size="lg"
+        className="w-full"
+        disabled={!demoPayment || pending}
+        aria-describedby="odeme-durumu"
+      >
         {pending ? labels.submitting : labels.submit}
       </GlassButton>
     </form>

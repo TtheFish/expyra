@@ -1,13 +1,15 @@
-import { getSession } from '@/features/auth/session'
 import { UI_LANGUAGE_FIELD, uiLocaleOf } from '@/features/i18n/locale'
 import { getTranslator } from '@/features/i18n/translator'
-import { findTicket } from '@/lib/ticket'
+import { getTicketForCurrentUser, ticketDeniedResponse } from '@/lib/ticket-access'
 import { AppleWalletNotConfiguredError, buildApplePass } from '@/lib/wallet/apple-pass'
 
 export const runtime = 'nodejs'
 
 /**
  * Apple Wallet `.pkpass`.
+ *
+ * Erişim `getTicketForCurrentUser`'da: oturum API'ye doğrulatılır (çerezin
+ * varlığı yetmez), bilet yalnız o kullanıcıya çözülürse döner.
  *
  * Sertifikalar `EXPYRA_APPLE_PASS_*` ortam değişkenlerinde (sır repoda yok).
  * Tanımsızsa 503 — istemci bilet görüntüleme sayfasına düşer.
@@ -17,25 +19,11 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> },
 ) {
   const locale = uiLocaleOf(new URL(request.url).searchParams.get(UI_LANGUAGE_FIELD))
-  const t = await getTranslator(locale)
-  const session = await getSession()
+  const [t, { code }] = await Promise.all([getTranslator(locale), params])
 
-  if (!session) {
-    return Response.json(
-      { title: t('ticket.error.signedOut'), status: 401 },
-      { status: 401, headers: { 'Cache-Control': 'private, no-store' } },
-    )
-  }
-
-  const { code } = await params
-  const ticket = findTicket(code)
-
-  if (!ticket) {
-    return Response.json(
-      { title: t('ticket.error.notFound'), status: 404 },
-      { status: 404, headers: { 'Cache-Control': 'private, no-store' } },
-    )
-  }
+  const access = await getTicketForCurrentUser(code)
+  if (access.kind !== 'found') return ticketDeniedResponse(access, t)
+  const { ticket } = access
 
   try {
     const pass = await buildApplePass(ticket, locale)

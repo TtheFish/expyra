@@ -36,7 +36,12 @@ export type Ticket = {
   hue: number
 }
 
-export const DEMO_TICKETS: Ticket[] = [
+/**
+ * Doğrudan OKUNMAZ — bilet `lib/ticket-access.ts` (`getTicketForCurrentUser`)
+ * üzerinden gelir; oturum doğrulaması ve demo bayrağı (`EXPYRA_DEMO_CONTENT`)
+ * orada. Buradan okuyan bir sayfa iki kapıyı da atlamış olur.
+ */
+export const DEMO_TICKETS: readonly Ticket[] = [
   {
     code: 'EXP-7K4M-92QD',
     experienceTitle: 'Vltava Kıyısında Fotoğraf Turu',
@@ -96,10 +101,6 @@ export const DEMO_TICKETS: Ticket[] = [
     hue: 300,
   },
 ]
-
-export function findTicket(code: string): Ticket | undefined {
-  return DEMO_TICKETS.find((t) => t.code === code)
-}
 
 /**
  * QR içeriği. Gerçekte burada imzalı bir token olur (HMAC veya JWS) —

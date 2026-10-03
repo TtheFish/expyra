@@ -251,6 +251,8 @@ export const de = {
   'checkout.payment.submit': 'Bestätigen und zahlen',
   'checkout.payment.submitting': 'Wird verarbeitet…',
   'checkout.payment.demoNote': 'Demo: Deine Karte wird nicht belastet und es entsteht keine Buchung.',
+  'checkout.payment.unavailable':
+    'Zahlungen sind noch nicht möglich: Dieser Button wird aktiviert, sobald unser Zahlungsanbieter angebunden ist. Deine Karte wird nicht belastet und es entsteht keine Buchung.',
   'checkout.success.title': 'Fertig — Demo-Bestätigung',
   'checkout.success.body':
     'Wenn Zahlungsanbieter und Buchungs-API da sind, erscheint hier ein echtes Ticket. Der Ablauf ist vorerst abgeschlossen.',
@@ -282,6 +284,9 @@ export const de = {
   'myExperiences.wallet.soon': 'Demnächst',
   'myExperiences.rate': 'Bewerten',
   'myExperiences.rate.soon': 'Nach Ende des Erlebnisses verfügbar',
+  'myExperiences.empty.title': 'Noch keine Tickets',
+  'myExperiences.empty.body': 'Sobald du ein Erlebnis buchst, erscheint dein Ticket hier.',
+  'myExperiences.empty.cta': 'Erlebnisse entdecken',
 
   'ticket.demoBadge': 'Demo-Ticket',
   'ticket.demoNote':

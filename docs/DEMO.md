@@ -10,6 +10,24 @@ pnpm api:seed:demo   # demo hesaplar + 5 yayında ilan (yalnız Development)
 İdempotent: ikinci koşu 0 satır yazar. Bir ilanı sıfırlamak istersen satırı sil
 (`delete from experience where slug = 'demo-...'`) ve tekrar koş.
 
+## Web demo içeriği (`EXPYRA_DEMO_CONTENT`)
+
+Rezervasyon, ödeme ve yorum API'leri henüz yok. Bu ekranları demo veriyle görmek
+için `apps/web/.env.local` içine şunu yaz ve `pnpm web`'i yeniden başlat:
+
+```bash
+EXPYRA_DEMO_CONTENT=1
+```
+
+Açınca görünenler: "Deneyimlerim"deki demo biletler, `/tr/bilet/<kod>` sayfası
+ve PDF/cüzdan uçları (yine **giriş yapmış** olmak gerekir — oturum API'ye
+doğrulatılıyor), checkout'ta çalışan "Onaylayın ve ödeyin" (sahte onay ekranı)
+ve detay sayfasındaki örnek yorumlar.
+
+**Varsayılan kapalı; prod'da açılmaz.** Kapalıyken bilet uçları 404, liste boş
+durum gösterir, ödeme düğmesi devre dışıdır ve nedenini yazar, örnek yorumlar
+hiç çizilmez. Yalnız tam olarak `1` açar (`true` açmaz).
+
 ## Hesaplar
 
 Şifre YOK — giriş tek kullanımlık kodla. Dev'de kod e-posta yerine **giriş
