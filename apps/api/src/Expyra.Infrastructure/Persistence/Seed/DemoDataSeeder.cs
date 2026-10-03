@@ -23,10 +23,10 @@ namespace Expyra.Infrastructure.Persistence.Seed;
 /// PNG gradyanlar, gömülü JPEG'lerle değiştirilir. Host kendi fotoğrafını
 /// yüklediyse (<c>image/jpeg</c> / <c>image/webp</c>) dokunulmaz.</para>
 ///
-/// <para><b>Görseller depoya imzalı yükleme yoluyla yazılıyor</b> — yani
-/// <c>FileSystemObjectStorage</c>'ın kendi kapısından, doğrudan diske değil.
-/// Depo bir gün S3 olursa bu seeder de aynı arayüzle çalışır (yalnız
-/// <see cref="ILocalUploadSink"/> yerine gerçek PUT gerekir).</para>
+/// <para><b>Görseller depoya <c>IObjectStorage.PutAsync</c> ile yazılıyor</b> —
+/// doğrudan diske değil, yani depo bir gün S3 olursa bu seeder de aynı arayüzle
+/// çalışır. İmzalı yükleme yolu kullanılmıyor: o yol yalnız <c>uploads/</c> ön ekine
+/// imza veriyor ve repoya gömülü dosya bir kullanıcı yüklemesi değil (issue #50).</para>
 ///
 /// <para><b>Yayın kapısı ATLANMIYOR:</b> ilan Published yazılmadan önce
 /// <see cref="ExperiencePublishRules"/>'un dört koşulu burada da sağlanıyor
@@ -44,13 +44,11 @@ public static class DemoDataSeeder
     public static async Task<DemoSeedResult> SeedAsync(
         AppDbContext dbContext,
         IObjectStorage storage,
-        ILocalUploadSink sink,
         IDateTimeProvider clock,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(dbContext);
         ArgumentNullException.ThrowIfNull(storage);
-        ArgumentNullException.ThrowIfNull(sink);
         ArgumentNullException.ThrowIfNull(clock);
 
         var now = clock.UtcNow;
@@ -75,14 +73,14 @@ public static class DemoDataSeeder
 
         foreach (var spec in Specs(ayse.Id, tuna.Id))
         {
-            var created = await EnsureExperienceAsync(dbContext, storage, sink, spec, now, cancellationToken)
+            var created = await EnsureExperienceAsync(dbContext, storage, spec, now, cancellationToken)
                 .ConfigureAwait(false);
 
             if (created)
             {
                 result.Experiences++;
             }
-            else if (await RefreshPlaceholderMediaAsync(dbContext, storage, sink, spec, cancellationToken)
+            else if (await RefreshPlaceholderMediaAsync(dbContext, storage, spec, cancellationToken)
                 .ConfigureAwait(false))
             {
                 result.MediaRefreshed++;
@@ -173,7 +171,6 @@ public static class DemoDataSeeder
     private static async Task<bool> EnsureExperienceAsync(
         AppDbContext dbContext,
         IObjectStorage storage,
-        ILocalUploadSink sink,
         DemoExperience spec,
         DateTimeOffset now,
         CancellationToken cancellationToken)
@@ -241,7 +238,7 @@ public static class DemoDataSeeder
         // Görseller: kapak + bir galeri karesi (gömülü JPEG, tema uyumlu).
         for (var index = 0; index < spec.Photos.Count; index++)
         {
-            await AddImageAsync(dbContext, storage, sink, experience.Id, spec.Photos[index], index, cancellationToken)
+            await AddImageAsync(dbContext, storage, experience.Id, spec.Photos[index], index, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -304,7 +301,6 @@ public static class DemoDataSeeder
     private static async Task<bool> RefreshPlaceholderMediaAsync(
         AppDbContext dbContext,
         IObjectStorage storage,
-        ILocalUploadSink sink,
         DemoExperience spec,
         CancellationToken cancellationToken)
     {
@@ -327,7 +323,7 @@ public static class DemoDataSeeder
         {
             for (var index = 0; index < spec.Photos.Count; index++)
             {
-                await AddImageAsync(dbContext, storage, sink, experience.Id, spec.Photos[index], index, cancellationToken)
+                await AddImageAsync(dbContext, storage, experience.Id, spec.Photos[index], index, cancellationToken)
                     .ConfigureAwait(false);
             }
 
@@ -350,7 +346,7 @@ public static class DemoDataSeeder
 
         for (var index = 0; index < spec.Photos.Count; index++)
         {
-            await AddImageAsync(dbContext, storage, sink, experience.Id, spec.Photos[index], index, cancellationToken)
+            await AddImageAsync(dbContext, storage, experience.Id, spec.Photos[index], index, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -360,7 +356,6 @@ public static class DemoDataSeeder
     private static async Task AddImageAsync(
         AppDbContext dbContext,
         IObjectStorage storage,
-        ILocalUploadSink sink,
         Guid experienceId,
         string photoFileName,
         int index,
@@ -373,22 +368,9 @@ public static class DemoDataSeeder
         var mediaId = Guid.CreateVersion7();
         var key = MediaRules.ExperienceKey(experienceId, mediaId, extension);
 
-        var upload = await storage
-            .CreateUploadAsync(
-                new PresignedUploadRequest(key, contentType, bytes.Length, TimeSpan.FromMinutes(5)),
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        var token = System.Web.HttpUtility.ParseQueryString(upload.Url.Query)["token"];
-
-        using var body = new MemoryStream(bytes);
-        var accepted = await sink.AcceptAsync(token, contentType, body, cancellationToken).ConfigureAwait(false);
-
-        if (accepted != LocalUploadResult.Accepted)
-        {
-            throw new InvalidOperationException(
-                string.Create(CultureInfo.InvariantCulture, $"Demo görsel depoya yazılamadı: {accepted}."));
-        }
+        // Doğrudan yayın anahtarına: herkese açık anahtara imzalı adres verilmiyor
+        // (issue #50) ve repoya gömülü dosya bir kullanıcı yüklemesi değil.
+        await storage.PutAsync(key, bytes, contentType, cancellationToken).ConfigureAwait(false);
 
         dbContext.ExperienceMedia.Add(new ExperienceMedia
         {

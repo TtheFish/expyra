@@ -19,6 +19,7 @@ public sealed record ConfirmAvatarCommand(string StorageKey) : IRequest<CurrentU
 internal sealed class ConfirmAvatarCommandHandler(
     IAppDbContext dbContext,
     IObjectStorage storage,
+    IImageSanitizer sanitizer,
     ICurrentUser currentUser,
     ILogger<ConfirmAvatarCommandHandler> logger)
     : IRequestHandler<ConfirmAvatarCommand, CurrentUserResponse>
@@ -35,25 +36,16 @@ internal sealed class ConfirmAvatarCommandHandler(
         // Ön ek kontrolü olmasaydı kullanıcı A, kullanıcı B'nin yüklediği nesneyi kendi
         // profiline bağlayabilirdi. Aynı kontrol, keyfî bir anahtarla (ör. bir ilan
         // görseliyle) avatar oluşturmayı da engelliyor.
-        if (!request.StorageKey.StartsWith(MediaRules.AvatarPrefix(userId), StringComparison.Ordinal))
+        //
+        // Gelen anahtar YÜKLEME anahtarı (issue #50); profile yazılan, ondan türetilen
+        // ve hiç imzalanmamış herkese açık anahtar.
+        var uploadKey = request.StorageKey;
+
+        if (!uploadKey.StartsWith(
+                MediaRules.UploadPrefix + MediaRules.AvatarPrefix(userId), StringComparison.Ordinal)
+            || MediaRules.PublicKeyOfUpload(uploadKey) is not { } publicKey)
         {
             throw new NotFoundException("Görsel bulunamadı.");
-        }
-
-        var validation = await UploadedImage
-            .InspectAsync(storage, request.StorageKey, ContentTypeOf(request.StorageKey), cancellationToken)
-            .ConfigureAwait(false);
-
-        if (validation.Info is null)
-        {
-            if (validation.Discard)
-            {
-                await storage.DeleteAsync(request.StorageKey, cancellationToken).ConfigureAwait(false);
-            }
-
-            logger.LogWarning("user.avatar.rejected userId={UserId} reason={Reason}", userId, validation.Reason);
-
-            throw new ConflictException(validation.Message!);
         }
 
         var user = await dbContext.Users
@@ -61,10 +53,40 @@ internal sealed class ConfirmAvatarCommandHandler(
             .ConfigureAwait(false)
             ?? throw new NotFoundException("Kullanıcı bulunamadı.");
 
+        // İDEMPOTENT: aynı onayın ikinci kez gelmesi (ağ tekrarı, çift tıklama) hata
+        // değil. Ham yükleme ilk onayda silindiği için yeniden doğrulamak "yüklenmemiş"
+        // derdi.
+        if (string.Equals(user.AvatarKey, publicKey, StringComparison.Ordinal))
+        {
+            return await GetCurrentUserQuery
+                .ComposeAsync(dbContext, storage, userId, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        var validation = await UploadedImage
+            .PublishAsync(
+                storage, sanitizer, uploadKey, publicKey, ContentTypeOf(uploadKey), cancellationToken)
+            .ConfigureAwait(false);
+
+        if (validation.Info is null)
+        {
+            if (validation.Discard)
+            {
+                await storage.DeleteAsync(uploadKey, cancellationToken).ConfigureAwait(false);
+            }
+
+            logger.LogWarning("user.avatar.rejected userId={UserId} reason={Reason}", userId, validation.Reason);
+
+            throw new ConflictException(validation.Message!);
+        }
+
         var previousKey = user.AvatarKey;
-        user.AvatarKey = request.StorageKey;
+        user.AvatarKey = publicKey;
 
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        // Ham yükleme kayıttan SONRA siliniyor — ilan görselleriyle aynı sıra.
+        await DeleteQuietlyAsync(uploadKey, userId, cancellationToken).ConfigureAwait(false);
 
         // Eski nesne YAZDIKTAN SONRA siliniyor. Ters sırada, kayıt patlarsa kullanıcı
         // hem eski hem yeni fotoğrafını kaybederdi.

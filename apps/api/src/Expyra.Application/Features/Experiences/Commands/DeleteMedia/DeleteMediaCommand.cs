@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Expyra.Application.Common.Exceptions;
 using Expyra.Application.Common.Interfaces;
 using Expyra.Domain.Experiences;
+using Expyra.Domain.Media;
 
 namespace Expyra.Application.Features.Experiences.Commands.DeleteMedia;
 
@@ -103,6 +104,12 @@ internal sealed class DeleteMediaCommandHandler(
         try
         {
             await storage.DeleteAsync(media.StorageKey, cancellationToken).ConfigureAwait(false);
+
+            // Ham yükleme de: onaylanmamış (Pending) satırda bayt yalnız orada, onaylanmış
+            // satırda ise onay sonrası silinemediyse kalmış olabilir. Silme idempotent.
+            await storage
+                .DeleteAsync(MediaRules.UploadKeyOf(media.StorageKey), cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (IOException exception)
         {

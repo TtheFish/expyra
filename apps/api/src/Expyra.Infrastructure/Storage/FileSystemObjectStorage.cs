@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Expyra.Application.Common.Interfaces;
+using Expyra.Domain.Media;
 
 namespace Expyra.Infrastructure.Storage;
 
@@ -61,6 +62,16 @@ internal sealed class FileSystemObjectStorage : IObjectStorage, ILocalUploadSink
     {
         ArgumentNullException.ThrowIfNull(request);
         EnsureSafeKey(request.Key);
+
+        // Servis edilen bir anahtara imza VERİLMİYOR (issue #50). Çağıran bir gün
+        // yanlış anahtar üretirse sessizce kabul etmek, onaylanmış görselin üstüne
+        // yazdırmak olurdu — yüksek sesle patlıyor (CLAUDE.md #1).
+        if (!MediaRules.IsUploadKey(request.Key))
+        {
+            throw new ArgumentException(
+                $"İmzalı yükleme yalnız '{MediaRules.UploadPrefix}' altına verilir: {request.Key}",
+                nameof(request));
+        }
 
         var expiresAt = dateTimeProvider.UtcNow.Add(request.Lifetime);
         var token = CreateToken(request, expiresAt);
@@ -122,6 +133,34 @@ internal sealed class FileSystemObjectStorage : IObjectStorage, ILocalUploadSink
         return Task.FromResult<Stream?>(stream);
     }
 
+    public async Task PutAsync(
+        string key,
+        ReadOnlyMemory<byte> content,
+        string contentType,
+        CancellationToken cancellationToken)
+    {
+        EnsureSafeKey(key);
+
+        var path = PathFor(key);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+
+        // AcceptAsync ile aynı kalıp: önce geçici dosya, sonra taşıma. Okuyan taraf
+        // yarım yazılmış bir görsel görmüyor.
+        var temporaryPath = path + ".part";
+
+        try
+        {
+            await File.WriteAllBytesAsync(temporaryPath, content, cancellationToken).ConfigureAwait(false);
+            File.Move(temporaryPath, path, overwrite: true);
+        }
+        catch
+        {
+            // Yutulmuyor (CLAUDE.md #1) — yalnız geçici dosya temizlenip yeniden fırlatılıyor.
+            File.Delete(temporaryPath);
+            throw;
+        }
+    }
+
     public Task DeleteAsync(string key, CancellationToken cancellationToken)
     {
         EnsureSafeKey(key);
@@ -136,6 +175,13 @@ internal sealed class FileSystemObjectStorage : IObjectStorage, ILocalUploadSink
     public Uri PublicUrl(string key)
     {
         EnsureSafeKey(key);
+
+        // Yükleme alanının herkese açık adresi YOK: orası istemcinin hâlâ yazabildiği,
+        // EXIF'i temizlenmemiş ham bayt (issue #50).
+        if (MediaRules.IsUploadKey(key))
+        {
+            throw new ArgumentException($"Yükleme anahtarı servis edilmez: {key}", nameof(key));
+        }
 
         return new Uri(
             options.PublicBaseUrl,

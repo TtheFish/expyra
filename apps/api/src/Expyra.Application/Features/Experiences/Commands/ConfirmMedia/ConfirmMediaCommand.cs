@@ -33,6 +33,7 @@ public sealed record ConfirmMediaCommand(Guid ExperienceId, Guid MediaId)
 internal sealed class ConfirmMediaCommandHandler(
     IAppDbContext dbContext,
     IObjectStorage storage,
+    IImageSanitizer sanitizer,
     ICurrentUser currentUser,
     ILogger<ConfirmMediaCommandHandler> logger)
     : IRequestHandler<ConfirmMediaCommand, HostExperienceResponse>
@@ -78,8 +79,14 @@ internal sealed class ConfirmMediaCommandHandler(
                 .ConfigureAwait(false);
         }
 
+        // Yeniden kodlama satır kilidi altında: aynı medyanın iki onayı aynı anda
+        // yayın anahtarına yazmasın. Kilit yalnız BU ilanın medya işlemlerini
+        // bekletiyor; çözme küçültülerek yapıldığı için süre kısa.
+        var uploadKey = MediaRules.UploadKeyOf(media.StorageKey);
+
         var validation = await UploadedImage
-            .InspectAsync(storage, media.StorageKey, media.ContentType, cancellationToken)
+            .PublishAsync(
+                storage, sanitizer, uploadKey, media.StorageKey, media.ContentType, cancellationToken)
             .ConfigureAwait(false);
 
         if (validation.Info is null)
@@ -103,6 +110,10 @@ internal sealed class ConfirmMediaCommandHandler(
 
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        // Ham yükleme COMMIT'TEN SONRA siliniyor: ters sırada, commit patlarsa host'un
+        // yüklediği bayt da gitmiş olurdu ve aynı kimlikle yeniden deneyemezdi.
+        await DeleteUploadAsync(uploadKey, media.Id, cancellationToken).ConfigureAwait(false);
 
         logger.LogInformation(
             "experience.media.confirmed experienceId={ExperienceId} mediaId={MediaId} size={Width}x{Height}",
@@ -144,7 +155,28 @@ internal sealed class ConfirmMediaCommandHandler(
 
         if (validation.Discard)
         {
-            await storage.DeleteAsync(media.StorageKey, cancellationToken).ConfigureAwait(false);
+            await storage.DeleteAsync(MediaRules.UploadKeyOf(media.StorageKey), cancellationToken)
+                .ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Ham yüklemeyi siler. Başarısızlık isteği BOZMUYOR: görsel zaten yayında ve yükleme
+    /// alanı servis edilmiyor — geride kalan yalnız temizleyicinin (Blok 10 / kova yaşam
+    /// döngüsü kuralı) alacağı bir yetim. Yalnız G/Ç hatası yakalanıyor (CLAUDE.md #1).
+    /// </summary>
+    private async Task DeleteUploadAsync(string uploadKey, Guid mediaId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await storage.DeleteAsync(uploadKey, cancellationToken).ConfigureAwait(false);
+        }
+        catch (IOException exception)
+        {
+            logger.LogError(
+                exception,
+                "experience.media.upload-orphaned key={Key} mediaId={MediaId}",
+                uploadKey, mediaId);
         }
     }
 

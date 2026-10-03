@@ -3,7 +3,10 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Shouldly;
+using SkiaSharp;
+using Expyra.Application.Common.Interfaces;
 using Expyra.Application.Features.Experiences;
 using Expyra.Application.Features.Host.Commands.ActivateHost;
 using Expyra.Domain.Experiences;
@@ -52,8 +55,7 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
         pending.Status.ShouldBe(MediaStatus.Pending);
         pending.Width.ShouldBe(0);
 
-        var result = await MediaApi.UploadAsync(
-            client, token, draft.Id, MediaApi.Png(1600, 1200, padding: 500));
+        var result = await MediaApi.UploadAsync(client, token, draft.Id, MediaApi.ValidPng(1600, 1200));
 
         var media = result.Media.ShouldHaveSingleItem();
         media.Width.ShouldBe(1600);
@@ -67,8 +69,9 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
         var row = await MediaRowAsync(media.Id);
         row.Status.ShouldBe(MediaStatus.Active);
 
-        // Boyut istemcinin BEYANINDAN değil depodan okunuyor: beyan 1024'tü.
-        row.ByteSize.ShouldBe(524);
+        // Boyut istemcinin BEYANINDAN değil, yayındaki (yeniden kodlanmış) nesneden.
+        var published = await client.GetByteArrayAsync(new Uri(media.Url.PathAndQuery, UriKind.Relative));
+        row.ByteSize.ShouldBe(published.Length);
     }
 
     [Fact]
@@ -145,6 +148,7 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
         // açıklanamayan bir durum üretilmiyor.
         (await MediaRowOrNullAsync(upload.MediaId)).ShouldBeNull();
         (await ObjectExistsAsync(draft.Id, upload.MediaId, "png")).ShouldBeFalse();
+        (await UploadExistsAsync(draft.Id, upload.MediaId, "png")).ShouldBeFalse();
     }
 
     [Fact]
@@ -271,7 +275,7 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
         response.StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
 
         // Yarım nesne kalmıyor: geçici dosyaya yazılıp taşınıyor.
-        (await ObjectExistsAsync(draft.Id, upload.MediaId, "png")).ShouldBeFalse();
+        (await UploadExistsAsync(draft.Id, upload.MediaId, "png")).ShouldBeFalse();
     }
 
     // -----------------------------------------------------------------------
@@ -425,8 +429,8 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
 
         var draft = await CreateCompleteDraftAsync(client, token, "Koy Turu");
 
-        await MediaApi.UploadAsync(client, token, draft.Id, MediaApi.Png(1600, 1200));
-        var uploaded = await MediaApi.UploadAsync(client, token, draft.Id, MediaApi.Png(1000, 900));
+        await MediaApi.UploadAsync(client, token, draft.Id, MediaApi.ValidPng(1600, 1200));
+        var uploaded = await MediaApi.UploadAsync(client, token, draft.Id, MediaApi.ValidPng(1000, 900));
 
         await MediaApi.SendAsync(client, HttpMethod.Post, $"{BasePath}/{draft.Id}/publish", token);
 
@@ -488,6 +492,143 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
             new { contentType = "image/png", byteSize = 1024 });
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [Fact]
+    public async Task Yukleme_EsZamanliIstekler_TavaniAsamiyor()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        // Kilit olmadan aynı anda gelen istekler aynı sayıyı görür ve hepsi satır açardı
+        // (issue #50). Tavanın iki katı istek aynı anda ateşleniyor.
+        const int attempts = MediaRules.MaxPerExperience * 2;
+
+        var responses = await Task.WhenAll(Enumerable.Range(0, attempts).Select(_ => MediaApi.SendAsync(
+            factory.CreateClient(), HttpMethod.Post, $"{BasePath}/{draft.Id}/media/upload-url", token,
+            new { contentType = "image/png", byteSize = 1024 })));
+
+        responses.Count(x => x.StatusCode == HttpStatusCode.OK).ShouldBe(MediaRules.MaxPerExperience);
+        responses.Count(x => x.StatusCode == HttpStatusCode.Conflict)
+            .ShouldBe(attempts - MediaRules.MaxPerExperience);
+
+        var rows = await factory.QueryAsync(db => db.ExperienceMedia
+            .AsNoTracking().CountAsync(x => x.ExperienceId == draft.Id));
+
+        rows.ShouldBe(MediaRules.MaxPerExperience);
+    }
+
+    // -----------------------------------------------------------------------
+    // Meta veri ve yayın anahtarı — issue #50
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public async Task Onay_ExifVeGpsSiliniyor_YonPikseleUygulaniyor()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        // Telefonun dikey çektiği fotoğraf: pikseller yatay (1600×1200) saklanıyor,
+        // EXIF "90° saat yönünde döndür" diyor (6). Sol yarı kırmızı, sağ yarı mavi.
+        const string make = "ExpyraTestPhone";
+        var original = MediaApi.WithExif(
+            MediaApi.RealJpeg(1600, 1200, SKColors.Red, SKColors.Blue), make, orientation: 6);
+
+        AssertHasGps(original);
+
+        var result = await MediaApi.UploadAsync(client, token, draft.Id, original, "image/jpeg");
+        var media = result.Media.ShouldHaveSingleItem();
+
+        // Ölçü yön UYGULANDIKTAN sonraki ölçü — tarayıcının çizeceği.
+        media.Width.ShouldBe(1200);
+        media.Height.ShouldBe(1600);
+
+        var published = await client.GetByteArrayAsync(new Uri(media.Url.PathAndQuery, UriKind.Relative));
+
+        // exiftool -gps:all karşılığı: EXIF bloğu yok, ne GPS ne üretici adı kaldı.
+        published.AsSpan().IndexOf(MediaApi.ExifHeader).ShouldBe(-1);
+        published.AsSpan().IndexOf(Encoding.ASCII.GetBytes(make)).ShouldBe(-1);
+        HasMarker(published, 0xE1).ShouldBeFalse("APP1 (EXIF/XMP) segmenti kalmamalı");
+
+        using var codec = SKCodec.Create(new MemoryStream(published));
+        codec.ShouldNotBeNull();
+        codec.EncodedFormat.ShouldBe(SKEncodedImageFormat.Jpeg);
+        codec.EncodedOrigin.ShouldBe(SKEncodedOrigin.TopLeft);
+
+        // 90° saat yönünde dönünce sol yarı ÜSTE çıkar.
+        using var bitmap = SKBitmap.Decode(published);
+        bitmap.Width.ShouldBe(1200);
+        bitmap.Height.ShouldBe(1600);
+
+        var top = bitmap.GetPixel(600, 200);
+        var bottom = bitmap.GetPixel(600, 1400);
+        top.Red.ShouldBeGreaterThan((byte)200);
+        top.Blue.ShouldBeLessThan((byte)60);
+        bottom.Blue.ShouldBeGreaterThan((byte)200);
+        bottom.Red.ShouldBeLessThan((byte)60);
+
+        // Ham yükleme (GPS'li bayt) onaydan sonra depoda kalmıyor.
+        (await UploadExistsAsync(draft.Id, media.Id, "jpg")).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Onay_SonrasiImzaliAdreseYazmak_YayindakiGorseliDegistirmiyor()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        var first = MediaApi.ValidPng();
+        var upload = await MediaApi.RequestUploadAsync(client, token, draft.Id, MediaRules.MaxByteSize);
+        (await MediaApi.PutAsync(client, upload, first, "image/png")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await MediaApi.ConfirmAsync(client, token, draft.Id, upload.MediaId)).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        var publicUrl = new Uri(
+            "/api/dev/objects/" + MediaRules.ExperienceKey(draft.Id, upload.MediaId, "png"), UriKind.Relative);
+        var before = await client.GetByteArrayAsync(publicUrl);
+
+        // İmzalı adres hâlâ ömrünün içinde ve depo onu kabul ediyor — ama yazdığı yer
+        // yükleme anahtarı, servis edilen nesne değil.
+        var replacement = MediaApi.ValidPng(1700, 1300);
+        (await MediaApi.PutAsync(client, upload, replacement, "image/png")).StatusCode
+            .ShouldBe(HttpStatusCode.NoContent);
+
+        var after = await client.GetByteArrayAsync(publicUrl);
+        after.ShouldBe(before);
+
+        // Yükleme alanı hiçbir adresten servis edilmiyor.
+        var raw = await client.GetAsync(new Uri(
+            "/api/dev/objects/" + MediaRules.UploadKeyOf(MediaRules.ExperienceKey(draft.Id, upload.MediaId, "png")),
+            UriKind.Relative));
+        raw.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+
+        // Tekrar onay idempotent: üzerine yazılan ham bayt yeniden işlenmiyor.
+        (await MediaApi.ConfirmAsync(client, token, draft.Id, upload.MediaId)).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await client.GetByteArrayAsync(publicUrl)).ShouldBe(before);
+    }
+
+    [Fact]
+    public async Task Yukleme_ImzaYalnizYuklemeAnahtarinaVeriliyor()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var draft = await CreateDraftAsync(client, token);
+
+        var upload = await MediaApi.RequestUploadAsync(
+            client, token, draft.Id, byteSize: MediaApi.ValidPng().Length);
+        var row = await MediaRowAsync(upload.MediaId);
+
+        // Satırdaki (servis edilecek) anahtar yükleme ön ekinde DEĞİL; imzalı adres ise
+        // onun yükleme karşılığına yazıyor.
+        MediaRules.IsUploadKey(row.StorageKey).ShouldBeFalse();
+
+        var put = await MediaApi.PutAsync(client, upload, MediaApi.ValidPng(), "image/png");
+        put.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+
+        (await UploadExistsAsync(draft.Id, upload.MediaId, "png")).ShouldBeTrue();
+        (await ObjectExistsAsync(draft.Id, upload.MediaId, "png")).ShouldBeFalse();
     }
 
     [Fact]
@@ -608,6 +749,55 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
             .GetAsync(new Uri($"/api/dev/objects/{key}", UriKind.Relative));
 
         return response.StatusCode == HttpStatusCode.OK;
+    }
+
+    /// <summary>
+    /// Ham yüklemenin (imzalı adresin yazdığı nesne) depoda durup durmadığı. HTTP'den
+    /// bakılamıyor — yükleme alanı bilerek servis edilmiyor — o yüzden depoya doğrudan.
+    /// </summary>
+    private async Task<bool> UploadExistsAsync(Guid experienceId, Guid mediaId, string extension)
+    {
+        var key = MediaRules.UploadKeyOf(MediaRules.ExperienceKey(experienceId, mediaId, extension));
+        var storage = factory.Services.GetRequiredService<IObjectStorage>();
+
+        return await storage.HeadAsync(key, CancellationToken.None) is not null;
+    }
+
+    private static void AssertHasGps(byte[] jpeg)
+    {
+        // Fixture'ın kendisi doğru mu: EXIF bloğu var ve Skia onu okuyup yönü görüyor.
+        // Bu tutmasaydı "yayındakinde EXIF yok" testi hiçbir şey kanıtlamazdı.
+        jpeg.AsSpan().IndexOf(MediaApi.ExifHeader).ShouldBeGreaterThan(0);
+        HasMarker(jpeg, 0xE1).ShouldBeTrue();
+
+        using var codec = SKCodec.Create(new MemoryStream(jpeg));
+        codec.ShouldNotBeNull();
+        codec.EncodedOrigin.ShouldBe(SKEncodedOrigin.RightTop);
+    }
+
+    /// <summary>JPEG segment listesinde (SOS'a kadar) verilen APPn işaretçisi var mı.</summary>
+    private static bool HasMarker(byte[] jpeg, byte marker)
+    {
+        var offset = 2;
+
+        while (offset + 4 <= jpeg.Length && jpeg[offset] == 0xFF)
+        {
+            var current = jpeg[offset + 1];
+
+            if (current == marker)
+            {
+                return true;
+            }
+
+            if (current == 0xDA)
+            {
+                return false;
+            }
+
+            offset += 2 + ((jpeg[offset + 2] << 8) | jpeg[offset + 3]);
+        }
+
+        return false;
     }
 
     private static async Task<HostExperienceResponse> ReadAsync(HttpResponseMessage response)

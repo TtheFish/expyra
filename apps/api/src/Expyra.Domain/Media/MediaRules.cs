@@ -34,6 +34,54 @@ public static class MediaRules
     public const int MaxPerExperience = 12;
 
     /// <summary>
+    /// Herkese açık kopyanın uzun kenar tavanı. Sunucu artık pikselleri ÇÖZÜYOR
+    /// (EXIF temizliği, issue #50); 48 MP'lik bir telefon fotoğrafını tam çözünürlükte
+    /// yeniden kodlamak hem bellek hem süre demek, üstelik hiçbir ekran ilan
+    /// galerisinde 4096 pikselden genişini göstermiyor.
+    /// </summary>
+    public const int MaxStoredEdge = 4096;
+
+    /// <summary>
+    /// Sunucuda tek seferde çözülebilecek piksel sayısı (~160 MB RGBA). JPEG ve WebP
+    /// küçültülerek çözülebildiği için tavana pratikte yalnız dev PNG'ler takılıyor.
+    /// <see cref="ImageProbe.MaxDimension"/> 12000×12000'e izin veriyor; o PNG tam
+    /// çözülse 576 MB isterdi.
+    /// </summary>
+    public const long MaxDecodePixels = 40_000_000;
+
+    /// <summary>
+    /// İmzalı yükleme adreslerinin yazdığı ön ek. <b>Bu ön ekteki nesneler hiçbir zaman
+    /// servis edilmiyor</b> (issue #50): onay adımı baytı buradan okuyor, yeniden
+    /// kodlanmış kopyayı ön eksiz anahtara yazıyor ve buradakini siliyor. İmzalı adres
+    /// ömrü boyunca geçerli kaldığı için onaydan sonra da PUT edilebilir — ama yazdığı
+    /// yer artık kimsenin okumadığı bir anahtar.
+    ///
+    /// <para>Üretimde kovanın bu ön eki herkese KAPALI olmalı ve bir yaşam döngüsü
+    /// kuralıyla (ör. 1 gün) temizlenmeli; dev deposu ön eki zaten servis etmiyor.</para>
+    /// </summary>
+    public const string UploadPrefix = "uploads/";
+
+    /// <summary>Herkese açık anahtarın yükleme karşılığı — imza YALNIZ buna veriliyor.</summary>
+    public static string UploadKeyOf(string publicKey)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(publicKey);
+
+        if (IsUploadKey(publicKey))
+        {
+            throw new ArgumentException($"Zaten bir yükleme anahtarı: {publicKey}", nameof(publicKey));
+        }
+
+        return UploadPrefix + publicKey;
+    }
+
+    /// <summary>Yükleme anahtarının herkese açık karşılığı; yükleme anahtarı değilse <c>null</c>.</summary>
+    public static string? PublicKeyOfUpload(string uploadKey)
+        => IsUploadKey(uploadKey) ? uploadKey[UploadPrefix.Length..] : null;
+
+    public static bool IsUploadKey(string? key)
+        => key is not null && key.StartsWith(UploadPrefix, StringComparison.Ordinal);
+
+    /// <summary>
     /// İmzalı adresin ömrü. Kısa: adres sızarsa saldırganın penceresi bu kadar.
     /// Yavaş bağlantıda büyük dosya yüklemeye yetecek kadar uzun.
     /// </summary>

@@ -9,9 +9,11 @@ namespace Expyra.Domain.Media;
 /// <para><b>Neden bir görüntü kütüphanesi değil:</b> ImageSharp 3.x ticari bir
 /// bölünmüş lisansa geçti ve bu repo aynı tuzağa iki kez düştü (CLAUDE.md paket
 /// bölümü: MediatR 13, FluentAssertions 8). <c>System.Drawing</c> yalnız Windows'ta
-/// destekleniyor, sunucu Linux. İhtiyacımız olan şey de kütüphane gerektirmiyor:
-/// dosyayı ÇÖZMÜYORUZ, yalnız başlığındaki genişlik/yüksekliği okuyoruz. Çözme işi
-/// tarayıcıda, <c>next/image</c>'te.</para>
+/// destekleniyor, sunucu Linux. Bu sınıf kütüphanesiz kalıyor: çözmeden ÖNCE çalışan
+/// ucuz kapı (biçim, ölçü, sıkıştırma bombası). Onaydan geçen dosya sonra
+/// <c>IImageSanitizer</c>'da (SkiaSharp, MIT) çözülüp meta verisiz yeniden kodlanıyor
+/// (issue #50) — o adımın bellek bütçesi bu kapının reddettiği dosyalara hiç
+/// harcanmıyor.</para>
 ///
 /// <para><b>Neden içerik tipine güvenilmiyor:</b> content-type istemcinin yazdığı
 /// bir metin. "image/png" başlığıyla bir HTML dosyası yüklenebilir; depodan
@@ -19,9 +21,8 @@ namespace Expyra.Domain.Media;
 /// baytları okumak bu iddiayı doğrulamanın tek yolu.</para>
 ///
 /// <para><b>Ne YAPMIYOR:</b> dosyanın tamamını doğrulamıyor. Başlığı geçerli olup
-/// gövdesi bozuk bir JPEG buradan geçer ve tarayıcıda yarım görünür. Bunu yakalamak
-/// tam çözme demek; kullanıcının kendi ilanına koyduğu bozuk görselin bedeli
-/// sunucuda her yükleme için tam çözme yapmaktan düşük.</para>
+/// gövdesi bozuk bir JPEG buradan geçer; onu onay adımındaki yeniden kodlama
+/// yakalıyor (çözülemeyen dosya <c>media-not-an-image</c>).</para>
 /// </summary>
 public static class ImageProbe
 {

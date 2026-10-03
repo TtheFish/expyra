@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Expyra.Application.Common.Interfaces;
+using Expyra.Domain.Media;
 using Expyra.Infrastructure.Email;
 using Expyra.Infrastructure.Storage;
 
@@ -65,6 +66,14 @@ internal static class DevelopmentObjectEndpoints
             IObjectStorage storage,
             CancellationToken cancellationToken) =>
         {
+            // Yükleme alanı SERVİS EDİLMİYOR (issue #50): orada istemcinin imzalı adresle
+            // hâlâ yazabildiği, EXIF'i temizlenmemiş ham bayt duruyor. Üretimde aynı
+            // kural kova politikasında.
+            if (MediaRules.IsUploadKey(key))
+            {
+                return Results.NotFound();
+            }
+
             var stored = await storage.HeadAsync(key, cancellationToken);
 
             if (stored is null)

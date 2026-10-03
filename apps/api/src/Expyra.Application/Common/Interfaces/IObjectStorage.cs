@@ -12,15 +12,20 @@ namespace Expyra.Application.Common.Interfaces;
 /// JSON'da ~13 MB'a şişer, MediatR boru hattından geçer ve bir kopyası da
 /// istek log'una düşerdi.</para>
 ///
-/// <para><see cref="OpenReadAsync"/> bunun istisnası değil: doğrulama için
-/// yalnız BAŞLIK okunuyor (<c>ImageProbe.MaxHeaderBytes</c>), dosyanın tamamı
-/// değil.</para>
+/// <para>Tek istisna onay adımı: yüklenen dosya (en çok <c>MediaRules.MaxByteSize</c>)
+/// bir kez okunup meta verisiz yeniden kodlanıyor ve <see cref="PutAsync"/> ile
+/// imzası hiç verilmemiş bir anahtara yazılıyor (issue #50). Bu bayt da istek
+/// gövdesinden ya da MediatR'dan geçmiyor, depo ile sunucu arasında kalıyor.</para>
 /// </summary>
 public interface IObjectStorage
 {
     /// <summary>
     /// Tarayıcının doğrudan PUT edeceği imzalı adres. Adres kısa ömürlü ve tek
     /// nesneye bağlı — sızsa bile başka bir anahtarın üstüne yazmaya yaramaz.
+    ///
+    /// <para>Anahtar daima <c>MediaRules.UploadPrefix</c> altında olmalı: o ön ek servis
+    /// edilmiyor. Herkese açık anahtara imza vermek, onaydan sonra doğrulanmış görselin
+    /// üstüne yazılabilmesi demekti (issue #50).</para>
     /// </summary>
     Task<PresignedUpload> CreateUploadAsync(PresignedUploadRequest request, CancellationToken cancellationToken);
 
@@ -40,6 +45,17 @@ public interface IObjectStorage
     /// o işi CDN yapıyor.</para>
     /// </summary>
     Task<Stream?> OpenReadAsync(string key, int? maxBytes, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// SUNUCUNUN ürettiği baytı yazar — istemci yüklemesi için değil (o hâlâ imzalı
+    /// adresten). Tek kullanıcısı onay adımı: yüklenen dosyanın meta verisiz yeniden
+    /// kodlanmış kopyası, hiçbir zaman imzalı adres verilmemiş bir anahtara yazılıyor
+    /// (issue #50). Böylece servis edilen nesnenin üstüne istemci yazamıyor.
+    ///
+    /// <para>Yazma ATOMİK olmalı: okuyan taraf ya eski nesneyi ya yenisinin tamamını
+    /// görür, yarısını asla.</para>
+    /// </summary>
+    Task PutAsync(string key, ReadOnlyMemory<byte> content, string contentType, CancellationToken cancellationToken);
 
     /// <summary>
     /// Nesneyi siler. Yoksa sessizce başarılı: silme isteği tekrarlanabilir olmalı

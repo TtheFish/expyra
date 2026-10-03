@@ -36,6 +36,9 @@ public static class DependencyInjection
         services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
         services.AddSingleton<IBuildInfo, AssemblyBuildInfo>();
 
+        // Durumsuz: her çağrı kendi codec/bitmap'ini açıp kapatıyor.
+        services.AddSingleton<IImageSanitizer, SkiaImageSanitizer>();
+
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql =>
             {
@@ -272,6 +275,12 @@ public static class DependencyInjection
 
         public Task<Stream?> OpenReadAsync(string key, int? maxBytes, CancellationToken cancellationToken)
             => throw Missing();
+
+        public Task PutAsync(
+            string key,
+            ReadOnlyMemory<byte> content,
+            string contentType,
+            CancellationToken cancellationToken) => throw Missing();
 
         public Task DeleteAsync(string key, CancellationToken cancellationToken) => throw Missing();
 

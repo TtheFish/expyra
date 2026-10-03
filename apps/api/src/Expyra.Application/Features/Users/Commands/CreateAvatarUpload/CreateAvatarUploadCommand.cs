@@ -52,10 +52,12 @@ internal sealed class CreateAvatarUploadCommandHandler(
         // Kimlik token'dan; istemciden kullanıcı kimliği ALINMIYOR (CLAUDE.md #3).
         var userId = currentUser.RequireUserId();
 
-        var key = MediaRules.AvatarKey(
+        // İmza YÜKLEME anahtarına (issue #50): profilde görünecek anahtara hiçbir zaman
+        // imzalı adres verilmiyor, onay adımı oraya yeniden kodlanmış kopyayı yazıyor.
+        var key = MediaRules.UploadKeyOf(MediaRules.AvatarKey(
             userId,
             Guid.CreateVersion7(),
-            MediaRules.ExtensionOfContentType(request.ContentType));
+            MediaRules.ExtensionOfContentType(request.ContentType)));
 
         var upload = await storage
             .CreateUploadAsync(

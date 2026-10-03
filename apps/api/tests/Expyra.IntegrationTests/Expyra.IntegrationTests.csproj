@@ -12,6 +12,8 @@
     <PackageReference Include="Shouldly" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <!-- Gerçekten çözülebilen fixture görseller (EXIF/GPS testi). MIT. -->
+    <PackageReference Include="SkiaSharp" />
   </ItemGroup>
 
 </Project>

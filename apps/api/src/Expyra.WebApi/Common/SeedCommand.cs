@@ -135,7 +135,6 @@ internal static class SeedCommand
         var result = await DemoDataSeeder.SeedAsync(
                 dbContext,
                 services.GetRequiredService<IObjectStorage>(),
-                sink,
                 services.GetRequiredService<IDateTimeProvider>())
             .ConfigureAwait(false);
 

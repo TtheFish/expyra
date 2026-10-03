@@ -30,6 +30,17 @@
     <PackageVersion Include="Scalar.AspNetCore" Version="2.0.0" />
   </ItemGroup>
 
+  <ItemGroup Label="Imaging">
+    <!--
+      Yüklenen görseli yeniden kodlamak için (EXIF/GPS temizliği, issue #50).
+      SkiaSharp MIT lisanslı. ImageSharp 3.x+ Six Labors Split License — yıllık geliri
+      1M$ üstü şirkete ücretli; KULLANMA. Sunucu Linux: native kütüphane ayrı pakette
+      (NoDependencies — fontconfig vb. sistem paketi istemiyor, metin çizmiyoruz).
+    -->
+    <PackageVersion Include="SkiaSharp" Version="4.153.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.153.1" />
+  </ItemGroup>
+
   <ItemGroup Label="Identity">
     <!--
       Infrastructure token üretiyor; ASP.NET'e bağımlı JwtBearer paketini oraya çekmek

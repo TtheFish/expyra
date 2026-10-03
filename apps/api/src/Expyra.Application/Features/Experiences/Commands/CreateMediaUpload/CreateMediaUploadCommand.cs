@@ -61,19 +61,18 @@ internal sealed class CreateMediaUploadCommandHandler(
 
         var hostId = currentUser.RequireHostId();
 
-        // Satır kilidi GEREKMİYOR: burada ilanın hiçbir alanı değişmiyor, yalnız
-        // sahiplik doğrulanıyor. Kilit almak, yükleme ekranını açan her host'un
-        // ilan satırını gereksizce kilitlemesi olurdu.
-        var experience = await dbContext.Experiences
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == request.ExperienceId, cancellationToken)
-            .ConfigureAwait(false);
+        // Tavan kontrolü "oku-say-yaz": kilit olmadan aynı anda gelen N istek aynı
+        // sayıyı (ör. 11) görür ve hepsi satır açardı — 12'lik tavan 12+N olurdu
+        // (CLAUDE.md #5, issue #50). İlan satırı kilitleniyor; aynı ilana gelen
+        // yükleme istekleri sıraya giriyor, farklı ilanlar birbirini beklemiyor.
+        // Diğer medya komutları (onay, silme, sıralama) aynı kilidi alıyor.
+        await using var transaction = await dbContext
+            .BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
         // Başkasının ilanı 404 — enumeration (LoadOwnedForUpdateAsync sınıf notu).
-        if (experience is null || experience.HostId != hostId)
-        {
-            throw new NotFoundException("Deneyim bulunamadı.");
-        }
+        var experience = await HostExperienceStore
+            .LoadOwnedForUpdateAsync(dbContext, request.ExperienceId, hostId, cancellationToken)
+            .ConfigureAwait(false);
 
         // TAZE Pending satırlar da sayılıyor: sayılmasaydı, yüklemeyi hiç bitirmeyen
         // bir istemci sınırsız sayıda imzalı adres alarak tavanı boşa çıkarabilirdi.
@@ -123,11 +122,15 @@ internal sealed class CreateMediaUploadCommandHandler(
         // Satır imzalı adresten ÖNCE yazılıyor: ters sırada, kayıt yazılamadan
         // düşen bir süreç geride izlenemeyen bir yükleme izni bırakırdı.
         await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
 
+        // İmza HERKESE AÇIK anahtara değil yükleme anahtarına veriliyor (issue #50):
+        // satırdaki StorageKey'e hiçbir zaman imzalı adres verilmiyor, onay adımı
+        // oraya yeniden kodlanmış kopyayı kendisi yazıyor.
         var upload = await storage
             .CreateUploadAsync(
                 new PresignedUploadRequest(
-                    key, contentType, request.ByteSize, MediaRules.UploadLifetime),
+                    MediaRules.UploadKeyOf(key), contentType, request.ByteSize, MediaRules.UploadLifetime),
                 cancellationToken)
             .ConfigureAwait(false);
 
