@@ -21,12 +21,15 @@ namespace Expyra.WebApi.Features.Auth;
 /// </summary>
 [Route("api/auth")]
 [EnableRateLimiting(RateLimiterExtensions.AuthPolicy)]
+// [AllowAnonymous] sınıfta DEĞİL, eylemlerde: sınıf düzeyinde olsaydı /me üzerindeki
+// [Authorize]'ı da ezerdi (AllowAnonymous her yetki kontrolünü atlatır).
 public sealed class AuthController(ISender mediator) : ApiControllerBase(mediator)
 {
     /// <summary>
     /// Kod iste. Adres kayıtlı olsun olmasın YANIT AYNI (202, aynı gövde şekli) —
     /// fark yaratmak enumeration oracle'ı kurar.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("request-code")]
     [ProducesResponseType<RequestLoginCodeResponse>(StatusCodes.Status202Accepted)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -43,6 +46,7 @@ public sealed class AuthController(ISender mediator) : ApiControllerBase(mediato
     /// Kodu doğrula, oturumu aç. İstekte E-POSTA ALANI YOK (CLAUDE.md #3): adres
     /// sunucudaki challenge satırından okunur.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("verify-code")]
     [ProducesResponseType<AuthTokensResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -56,6 +60,7 @@ public sealed class AuthController(ISender mediator) : ApiControllerBase(mediato
         return Ok(result);
     }
 
+    [AllowAnonymous]
     [HttpPost("refresh")]
     [ProducesResponseType<AuthTokensResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -69,6 +74,7 @@ public sealed class AuthController(ISender mediator) : ApiControllerBase(mediato
     }
 
     /// <summary>Bilinmeyen/süresi geçmiş token da 204 — idempotent, oracle üretmiyor.</summary>
+    [AllowAnonymous]
     [HttpPost("sign-out")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> SignOutSession(

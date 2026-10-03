@@ -673,7 +673,11 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
         var response = await client.GetAsync(
             new Uri("/api/dev/objects/experiences/../../appsettings.json", UriKind.Relative));
 
-        response.StatusCode.ShouldBeOneOf(HttpStatusCode.NotFound, HttpStatusCode.BadRequest);
+        // 401 de kabul: HttpClient `..` parçalarını gönderMEDEN çözüyor, istek hiçbir uçla
+        // eşleşmiyor ve FallbackPolicy (#49) uç bulunmayan anonim isteğe de oturum soruyor.
+        // Testin iddiası değişmedi — dosya servis edilmiyor.
+        response.StatusCode.ShouldBeOneOf(
+            HttpStatusCode.NotFound, HttpStatusCode.BadRequest, HttpStatusCode.Unauthorized);
     }
 
     // -----------------------------------------------------------------------

@@ -126,6 +126,41 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Development dışında açılışta çağrılır: hâlâ "yapılandırılmamış" yer tutucuya
+    /// çözülen sağlayıcıların AYAR ADLARINI döner. Boş liste = hepsi gerçek.
+    ///
+    /// <para>Neden çalışma anında patlamak yetmiyor (#42): yer tutucuyla API açılıyor,
+    /// <c>/health</c> 200 dönüyor ve ilk giriş kodu isteği 500 veriyor — yani sorun
+    /// deploy'dan sonra ilk kullanıcıyla görünüyordu. Açılışta reddetmek, aynı hatayı
+    /// deploy anında ve ayar adıyla gösteriyor.</para>
+    ///
+    /// <para>Seed komutu bu kontrolü GEÇMİYOR (Program.cs onu seed dalından sonra
+    /// çağırıyor): referans verisi yazmak için e-posta ya da depo gerekmiyor.</para>
+    /// </summary>
+    public static IReadOnlyList<string> MissingProductionProviders(IServiceProvider services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        var missing = new List<string>();
+
+        if (services.GetRequiredService<IEmailSender>() is UnconfiguredEmailSender)
+        {
+            missing.Add(
+                $"{EmailOptions.SectionName}:Smtp:Host — gerçek e-posta göndericisi yok; giriş kodu " +
+                "gönderilemez. SMTP implementasyonu henüz yazılmadı: https://github.com/yldray/expyra/issues/56");
+        }
+
+        if (services.GetRequiredService<IObjectStorage>() is UnconfiguredObjectStorage)
+        {
+            missing.Add(
+                $"{StorageOptions.SectionName}:S3:Bucket — gerçek nesne deposu yok; görsel yüklenemez. " +
+                "S3 uyumlu implementasyon henüz yazılmadı: https://github.com/yldray/expyra/issues/56");
+        }
+
+        return missing;
+    }
+
     private static void AddIdentity(IServiceCollection services, IConfiguration configuration)
     {
         var authOptions = ReadAuthOptions(configuration);

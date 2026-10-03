@@ -80,6 +80,32 @@ Handler içinde `try/catch` ile hata yutmak yasak.
 - `appsettings.Development.json` sadece localhost değerleri içerir.
 - CI'da `gitleaks` her PR'ı tarar.
 
+### Development dışında açılış kontrolü
+
+API Development dışında eksik ayarla **açılmaz**; tüm eksikleri adıyla sayıp çıkar
+(`ProductionReadiness`, Program.cs). Seed komutu bu kontrolden önce çalışır, yani
+sunucuda `seed reference-data` sağlayıcılar hazır olmadan da koşar.
+
+| Ayar (ortam değişkeni) | Ne |
+|---|---|
+| `AllowedHosts` | API'nin kabul ettiği Host adları, `;` ile ayrılmış. `*` yalnız Development'ta. |
+| `Network__TrustedProxies__0..n` | BFF'in ve varsa API önündeki yük dengeleyicinin IP/CIDR'ı. `X-Expyra-Client-Ip` ve `X-Forwarded-For/Proto` yalnız bunlardan okunur. |
+| `Email__Smtp__Host` … | Gerçek e-posta göndericisi — implementasyon #56'da. |
+| `Storage__S3__Bucket` … | Gerçek nesne deposu — implementasyon #56'da. |
+
+#56 kapanana kadar staging/prod API'si **açılmaz**: yer tutucu sağlayıcıyla açılıp ilk
+girişte 500 vermektense deploy anında ayar adıyla düşmek doğrusu (#42).
+
+Boş `Cors:AllowedOrigins` **geçerli**: tarayıcı API'yi hiç çağırmıyor (web her isteği
+BFF'ten yapıyor), Expo da CORS uygulamıyor.
+
+İsteğe bağlı hız sınırı ayarları (dakikada): `Auth:RateLimit:PermitPerMinute` (30),
+`RateLimit:Public:PermitPerMinute` (120, anonim okuma uçları, istemci başına),
+`RateLimit:Public:ProxyPermitPerMinute` (6000, istemci adresi iletmeyen BFF çağrıları).
+
+Yetki varsayılanı KAPALI (`FallbackPolicy`): yeni uç ya `[Authorize]` ya da açıkça
+`[AllowAnonymous]` taşır; anonim uçların tam listesi `AnonymousEndpointTests`'te.
+
 ## Gözlemlenebilirlik
 
 Serilog + konsol. İstek logları `UseSerilogRequestLogging` ile. Faz 6'da yapılandırılmış

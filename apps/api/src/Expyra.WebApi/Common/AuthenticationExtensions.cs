@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Expyra.Application.Common.Interfaces;
 using Expyra.Domain.Users;
@@ -93,6 +94,16 @@ internal static class AuthenticationExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         return services.AddAuthorization(options =>
+        {
+            // Varsayılan KAPALI (#49): hiçbir yetki niteliği taşımayan uç oturum ister.
+            // Fallback olmadan [Authorize]'ı unutulan yeni bir controller sessizce herkese
+            // açık kalıyordu; artık unutulan şey [AllowAnonymous] ve bedeli bir 401 —
+            // hata güvenli yöne düşüyor. Halka açık uçların tam listesi
+            // AnonymousEndpointTests'te beyaz liste olarak duruyor.
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+
             options.AddPolicy(AuthorizationPolicies.Host, policy => policy
                 // İki başarısızlık AYRI kod üretiyor ve bu bilinçli: kimliksiz istek
                 // RequireAuthenticatedUser'a takılıp 401 (challenge) alıyor, kimliği olup
@@ -102,7 +113,8 @@ internal static class AuthenticationExtensions
 
                 // RequireRole DEĞİL: o, RoleClaimType ayarı üzerinden dolaşır.
                 // RequireClaim doğrudan token'da duran adı ve değeri arıyor.
-                .RequireClaim(AuthClaimNames.Role, UserRole.Host)));
+                .RequireClaim(AuthClaimNames.Role, UserRole.Host));
+        });
     }
 
     private static string Required(IConfiguration configuration, string key)

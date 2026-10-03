@@ -19,7 +19,26 @@ internal static class RateLimiterExtensions
     /// <summary>Controller'daki <c>[EnableRateLimiting]</c> ile aynı ad olmak zorunda.</summary>
     internal const string AuthPolicy = "auth";
 
+    /// <summary>
+    /// Anonim okuma uçları (keşif, detay, müsaitlik, teklif, şehir arama, kayıt defteri).
+    /// Bunlar giriş istemiyor ve her biri veritabanına iniyor; limitsiz bırakılınca tek bir
+    /// betik teklif hesaplamasını döngüye sokup veritabanını meşgul edebiliyordu (#47).
+    /// </summary>
+    internal const string PublicPolicy = "public";
+
     private const int VarsayilanAuthPermitLimit = 30;
+
+    /// <summary>Gerçek bir istemci için dakikada; bir insanın sayfa gezmesinin çok üstünde.</summary>
+    private const int VarsayilanPublicPermitLimit = 120;
+
+    /// <summary>
+    /// İstemci adresini İLETMEYEN güvenilir proxy (BFF) için dakikada. Web'in sunucu
+    /// tarafı render'ı kayıt defteri ve ilan çağrılarında <c>X-Expyra-Client-Ip</c>
+    /// göndermiyor; o çağrılar istemci kovasına düşseydi sitenin tüm SSR trafiği
+    /// 120/dk'lık TEK kovaya sıkışırdı. Bu kova yine bir tavan — BFF'in kendisi bir
+    /// döngüye girerse API'yi korur.
+    /// </summary>
+    private const int VarsayilanPublicProxyPermitLimit = 6000;
 
     /// <summary>
     /// Dakikadaki izin. Yapılandırmadan okunuyor çünkü integration testler tek IP'den
@@ -32,6 +51,12 @@ internal static class RateLimiterExtensions
     private static int AuthPermitLimit(IConfiguration configuration)
         => configuration.GetValue<int?>("Auth:RateLimit:PermitPerMinute") ?? VarsayilanAuthPermitLimit;
 
+    private static int PublicPermitLimit(IConfiguration configuration)
+        => configuration.GetValue<int?>("RateLimit:Public:PermitPerMinute") ?? VarsayilanPublicPermitLimit;
+
+    private static int PublicProxyPermitLimit(IConfiguration configuration)
+        => configuration.GetValue<int?>("RateLimit:Public:ProxyPermitPerMinute") ?? VarsayilanPublicProxyPermitLimit;
+
     public static IServiceCollection AddApiRateLimiter(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -42,16 +67,17 @@ internal static class RateLimiterExtensions
 
             options.AddPolicy(AuthPolicy, httpContext => RateLimitPartition.GetFixedWindowLimiter(
                 PartitionKey(httpContext),
-                _ => new FixedWindowRateLimiterOptions
-                {
-                    PermitLimit = AuthPermitLimit(configuration),
-                    Window = TimeSpan.FromMinutes(1),
+                _ => PerMinute(AuthPermitLimit(configuration))));
 
-                    // Kuyruk YOK: hız sınırına takılan istek beklemez, anında 429 alır.
-                    // Kuyruk bırakmak DoS'u "yavaş DoS"a çevirir, sunucu kaynağı tutar.
-                    QueueLimit = 0,
-                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                }));
+            // Anahtarlar önekli: aynı adres iki politikada ayrı kova, ve proxy kovası
+            // bir istemci kovasıyla asla çakışmıyor.
+            options.AddPolicy(PublicPolicy, httpContext => IsUnattributedProxyCall(httpContext)
+                ? RateLimitPartition.GetFixedWindowLimiter(
+                    "proxy:" + httpContext.Connection.RemoteIpAddress,
+                    _ => PerMinute(PublicProxyPermitLimit(configuration)))
+                : RateLimitPartition.GetFixedWindowLimiter(
+                    "client:" + PartitionKey(httpContext),
+                    _ => PerMinute(PublicPermitLimit(configuration))));
 
             options.OnRejected = async (context, _) =>
             {
@@ -84,6 +110,35 @@ internal static class RateLimiterExtensions
                 }).ConfigureAwait(false);
             };
         });
+
+    private static FixedWindowRateLimiterOptions PerMinute(int permitLimit) => new()
+    {
+        PermitLimit = permitLimit,
+        Window = TimeSpan.FromMinutes(1),
+
+        // Kuyruk YOK: hız sınırına takılan istek beklemez, anında 429 alır.
+        // Kuyruk bırakmak DoS'u "yavaş DoS"a çevirir, sunucu kaynağı tutar.
+        QueueLimit = 0,
+        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+    };
+
+    /// <summary>
+    /// Güvenilir bir proxy'den gelen ama istemci adresi taşımayan çağrı (BFF'in SSR
+    /// çağrıları). Peer, <c>UseForwardedHeaders</c>'tan sonraki adres; güvenilmeyen bir
+    /// kaynak bu dala giremiyor çünkü peer'ı güven listesinde değil.
+    /// </summary>
+    private static bool IsUnattributedProxyCall(HttpContext httpContext)
+    {
+        var peer = ClientContext.Normalize(httpContext.Connection.RemoteIpAddress);
+        if (peer is null)
+        {
+            return false;
+        }
+
+        var trustedProxies = httpContext.RequestServices.GetRequiredService<TrustedProxyRegistry>();
+
+        return trustedProxies.Contains(peer) && ClientContext.ReadForwardedIp(httpContext) is null;
+    }
 
     /// <summary>
     /// Bölümleme anahtarı. <see cref="IClientContext.IpPrefix"/> önce gelir: BFF arkasında

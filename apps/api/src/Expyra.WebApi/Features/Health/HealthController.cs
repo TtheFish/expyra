@@ -1,5 +1,7 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Expyra.Application.Features.Health.Queries.GetHealth;
 using Expyra.WebApi.Common;
 
@@ -10,6 +12,8 @@ namespace Expyra.WebApi.Features.Health;
 /// dev "Controllers/" çöplüğünde değil.
 /// </summary>
 [Route("api/health")]
+[AllowAnonymous]
+[EnableRateLimiting(RateLimiterExtensions.PublicPolicy)]
 public sealed class HealthController(ISender mediator) : ApiControllerBase(mediator)
 {
     [HttpGet]

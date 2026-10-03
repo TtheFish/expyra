@@ -53,6 +53,7 @@ if (builder.Environment.IsDevelopment())
 
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddClientContext();
+builder.Services.AddTrustedForwardedHeaders();
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
@@ -63,6 +64,8 @@ builder.Services.AddApiRateLimiter(builder.Configuration);
 
 // CORS: origin'ler config'ten gelir. AllowAnyOrigin YASAK — kimlik doğrulamalı
 // API'de credential taşıyan isteklerde güvenlik açığı yaratır.
+// Üretimde BOŞ liste geçerli bir yapılandırma: tarayıcı API'yi hiç çağırmıyor, web her
+// isteği BFF'ten (sunucudan) yapıyor. Bu yüzden ProductionReadiness boş CORS'u reddetmiyor.
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
     options.AddPolicy("default", policy => policy
@@ -91,6 +94,17 @@ if (SeedCommand.Matches(args, out var seedTarget))
     return seedExitCode;
 }
 
+// Seed dalından SONRA: referans veri yazmak için e-posta ya da depo gerekmiyor ve
+// sunucuya seed atabilmek, sağlayıcılar hazır olmadan da mümkün olmalı. HTTP sunucusu
+// ise eksik bir ayarla HİÇ açılmıyor — ayarın adını söyleyerek çıkıyor (#42, #47).
+ProductionReadiness.Ensure(app);
+
+// EN BAŞTA: hız sınırı, HTTPS yönlendirmesi ve istek logu doğru istemci adresini ve
+// şemayı görsün. Yalnız Network:TrustedProxies'teki peer'ların başlığı okunuyor.
+app.UseForwardedHeaders();
+
+app.UseNoSniff();
+
 app.UseExceptionHandler();
 
 // Gövdesiz 4xx/5xx yanıtlara ProblemDetails gövdesi yazar. Bunsuz [Authorize]
@@ -102,11 +116,15 @@ app.UseSerilogRequestLogging();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
-    app.MapScalarApiReference(options => options.WithTitle("Expyra API"));
+    // FallbackPolicy oturum istiyor (#49); şema ve belge arayüzü dev'de açık kalsın.
+    app.MapOpenApi().AllowAnonymous();
+    app.MapScalarApiReference(options => options.WithTitle("Expyra API")).AllowAnonymous();
 }
 else
 {
+    // HSTS yalnız Development dışında: localhost'a HSTS yazmak tarayıcıyı o makinedeki
+    // her http geliştirme sunucusu için HTTPS'e kilitler.
+    app.UseHsts();
     app.UseHttpsRedirection();
 }
 

@@ -1,11 +1,15 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Expyra.Application.Features.Languages.Queries.GetLanguages;
 using Expyra.WebApi.Common;
 
 namespace Expyra.WebApi.Features.Languages;
 
 [Route("api/languages")]
+[AllowAnonymous]
+[EnableRateLimiting(RateLimiterExtensions.PublicPolicy)]
 public sealed class LanguagesController(ISender mediator) : ApiControllerBase(mediator)
 {
     /// <param name="onlyUiAvailable">

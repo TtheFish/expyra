@@ -1,5 +1,7 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Expyra.Application.Features.Places.Queries.GetCountries;
 using Expyra.Application.Features.Places.Queries.SearchCities;
 using Expyra.WebApi.Common;
@@ -7,11 +9,13 @@ using Expyra.WebApi.Common;
 namespace Expyra.WebApi.Features.Places;
 
 /// <summary>
-/// Yer kayıt defteri. Uçların tamamı ANONİM — <c>[Authorize]</c> yok ve fallback policy
-/// de yok (Program.cs), yani varsayılan anonim. Şehir seçici giriş yapmamış misafirin
-/// gördüğü ilk şey; oturum istemek arama kutusunu kilitlerdi.
+/// Yer kayıt defteri. Uçların tamamı ANONİM — fallback policy oturum istediği için
+/// (#49) bu AÇIKÇA <c>[AllowAnonymous]</c> ile söyleniyor. Şehir seçici giriş yapmamış
+/// misafirin gördüğü ilk şey; oturum istemek arama kutusunu kilitlerdi.
 /// </summary>
 [Route("api/places")]
+[AllowAnonymous]
+[EnableRateLimiting(RateLimiterExtensions.PublicPolicy)]
 public sealed class PlacesController(ISender mediator) : ApiControllerBase(mediator)
 {
     /// <param name="onlyWithCities">

@@ -87,6 +87,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         // tablosundan okunuyor ve bu testlerde AYNEN çalışmaya devam ediyor.
         builder.UseSetting("Auth:RateLimit:PermitPerMinute", "1000000");
 
+        // Anonim okuma uçlarının kovası da aynı gerekçeyle etkisiz. Kovaların kendisi
+        // RateLimitAndForwardedHeadersTests'te düşük limitli ayrı bir host'la sınanıyor.
+        builder.UseSetting("RateLimit:Public:PermitPerMinute", "1000000");
+        builder.UseSetting("RateLimit:Public:ProxyPermitPerMinute", "1000000");
+
         // Nesne deposu koşuya ÖZEL bir klasöre yazıyor. Varsayılan `.object-store`
         // kullanılsaydı iki koşu birbirinin dosyalarını görür ve "yükleme yapılmadan
         // onaylandı" gibi bir hata testte YEŞİL geçerdi.

@@ -30,6 +30,9 @@ internal sealed class ClientContext(
         get
         {
             var httpContext = httpContextAccessor.HttpContext;
+            // Peer, UseForwardedHeaders'tan SONRAKİ adres: güvenilir bir ara katman
+            // (yük dengeleyici) X-Forwarded-For yazdıysa o, değilse soket. Güvenilmeyen
+            // bir kaynağın gönderdiği X-Forwarded-For orada zaten yok sayılıyor.
             var peer = Normalize(httpContext?.Connection.RemoteIpAddress);
             if (httpContext is null || peer is null)
             {
@@ -114,10 +117,11 @@ internal sealed class ClientContext(
     /// Kestrel çift yığın soketlerde IPv4 istemciyi <c>::ffff:127.0.0.1</c> olarak verir.
     /// Düzleştirmezsek hem güvenilir proxy karşılaştırması hem de /64 maskesi yanlış çalışır.
     /// </summary>
-    private static IPAddress? Normalize(IPAddress? address)
+    internal static IPAddress? Normalize(IPAddress? address)
         => address is { IsIPv4MappedToIPv6: true } ? address.MapToIPv4() : address;
 
-    private static IPAddress? ReadForwardedIp(HttpContext httpContext)
+    /// <summary>BFF'in ilettiği istemci IP'si; yoksa, birden fazlaysa ya da bozuksa <c>null</c>.</summary>
+    internal static IPAddress? ReadForwardedIp(HttpContext httpContext)
     {
         var values = httpContext.Request.Headers[ClientIpHeader];
 
@@ -139,6 +143,13 @@ internal sealed class TrustedProxyRegistry(
     private readonly IPNetwork[] networks = Load(configuration, logger);
 
     public bool IsConfigured => networks.Length > 0;
+
+    /// <summary>
+    /// <c>UseForwardedHeaders</c>'ın <c>KnownIPNetworks</c> listesi de buradan doluyor:
+    /// iki ayrı liste tutulsaydı biri güncellenip öbürü unutulur ve "kime güveniyoruz"
+    /// sorusunun iki farklı cevabı olurdu.
+    /// </summary>
+    public IReadOnlyList<IPNetwork> Networks => networks;
 
     public bool Contains(IPAddress peer) => Array.Exists(networks, x => x.Contains(peer));
 

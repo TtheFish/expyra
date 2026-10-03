@@ -1,5 +1,7 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Expyra.Application.Features.Experiences;
 using Expyra.Application.Features.Experiences.Queries.GetAvailability;
 using Expyra.Application.Features.Experiences.Queries.GetExperienceBySlug;
@@ -10,8 +12,8 @@ using Expyra.WebApi.Common;
 namespace Expyra.WebApi.Features.Experiences;
 
 /// <summary>
-/// Misafirin gördüğü deneyimler. Uçların <b>hepsi ANONİM</b> — <c>[Authorize]</c> yok
-/// ve Program.cs'te fallback policy de yok, yani varsayılan anonim. Keşif, giriş yapmamış
+/// Misafirin gördüğü deneyimler. Uçların <b>hepsi ANONİM</b> — fallback policy oturum
+/// istediği için (#49) bu AÇIKÇA <c>[AllowAnonymous]</c> ile söyleniyor. Keşif, giriş yapmamış
 /// misafirin gördüğü ilk şey; oturum istemek vitrini kilitlerdi. Fiyat ve müsaitlik de
 /// aynı kapıda: tarih ve tutarı görmek için hesap açtırmak, satın alma kararından
 /// önce bir duvar örmek olurdu.
@@ -30,6 +32,8 @@ namespace Expyra.WebApi.Features.Experiences;
 /// yayınla/arşivle akışına bağlı bir CDN temizleme (purge) yolu — bir başlık değil.</para>
 /// </summary>
 [Route("api/experiences")]
+[AllowAnonymous]
+[EnableRateLimiting(RateLimiterExtensions.PublicPolicy)]
 public sealed class ExperiencesController(ISender mediator) : ApiControllerBase(mediator)
 {
     /// <summary>
