@@ -553,6 +553,10 @@ namespace Expyra.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at_utc");
 
+                    b.Property<Guid?>("SuccessorTokenId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("successor_token_id");
+
                     b.Property<byte[]>("TokenHash")
                         .IsRequired()
                         .HasColumnType("bytea")

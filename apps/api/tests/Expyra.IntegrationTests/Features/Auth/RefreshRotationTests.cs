@@ -73,6 +73,78 @@ public sealed class RefreshRotationTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task Refresh_GraceIcindeTekrarlar_AiledeTekAktifTokenKaliyor()
+    {
+        // Issue #51: pencere içindeki her tekrar aileye YENİ geçerli bir halka
+        // ekliyorsa, çalınan token 30 sn içinde istediği kadar kardeş üretir ve
+        // hiçbiri reuse tespitine takılmaz — mutlak tavana kadar yaşar.
+        var client = factory.CreateClient();
+        var tokens = await AuthApi.SignInAsync(factory, client, AuthApi.NewEmail());
+
+        var first = await AuthApi.RefreshAsync(client, tokens.RefreshToken);
+        var second = await AuthApi.RefreshAsync(client, tokens.RefreshToken);
+        var third = await AuthApi.RefreshAsync(client, tokens.RefreshToken);
+
+        var now = factory.Clock.UtcNow;
+        var family = await FamilyOfAsync(tokens.RefreshToken);
+
+        family.Count(x => x.IsActive(now)).ShouldBe(1);
+
+        // Hayatta kalan, EN SON verilen halef; öncekiler halef olarak değiştirildi.
+        var active = family.Single(x => x.IsActive(now));
+        active.TokenHash.ShouldBe(factory.HashRefreshToken(third.RefreshToken));
+
+        // Değiştirilen halefler de Rotated: pencere içinde onları taşıyan istemci
+        // (paralel isteğin kaybeden tarafı) hâlâ yenileyebilir.
+        (await FindTokenAsync(first.RefreshToken)).RevocationReason
+            .ShouldBe(TokenRevocationReason.Rotated);
+        (await FindTokenAsync(second.RefreshToken)).RevocationReason
+            .ShouldBe(TokenRevocationReason.Rotated);
+    }
+
+    [Fact]
+    public async Task Refresh_GraceIcindeEsZamanliTekrarlar_TekAktifTokenKaliyor()
+    {
+        var client = factory.CreateClient();
+        var tokens = await AuthApi.SignInAsync(factory, client, AuthApi.NewEmail());
+
+        await AuthApi.RefreshAsync(client, tokens.RefreshToken);
+
+        // Satır kilidi olmasaydı iki eş zamanlı tekrar aynı halefi görüp ikisi de
+        // yeni bir halka basardı.
+        var replays = await Task.WhenAll(Enumerable.Range(0, 5)
+            .Select(_ => AuthApi.PostRefreshAsync(client, tokens.RefreshToken)));
+
+        replays.ShouldAllBe(x => x.StatusCode == HttpStatusCode.OK);
+
+        var now = factory.Clock.UtcNow;
+        var family = await FamilyOfAsync(tokens.RefreshToken);
+
+        family.Count(x => x.IsActive(now)).ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task Refresh_GraceIcindeAmaHalefZatenIlerlemis_AileIptal()
+    {
+        // A → B, sonra B → C (meşru istemci zincirde ilerledi). A'nın pencere içinde
+        // yeniden sunulması artık paralel yenileme değil: B'yi taşıyan istemci A'yı
+        // tekrar sunmaz. Halka çalınmış sayılır.
+        var client = factory.CreateClient();
+        var tokens = await AuthApi.SignInAsync(factory, client, AuthApi.NewEmail());
+
+        var b = await AuthApi.RefreshAsync(client, tokens.RefreshToken);
+        await AuthApi.RefreshAsync(client, b.RefreshToken);
+
+        var replay = await AuthApi.PostRefreshAsync(client, tokens.RefreshToken);
+
+        replay.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+
+        var family = await FamilyOfAsync(tokens.RefreshToken);
+        family.ShouldAllBe(x => x.RevokedAtUtc != null);
+        family.ShouldContain(x => x.RevocationReason == TokenRevocationReason.ReuseDetected);
+    }
+
+    [Fact]
     public async Task Refresh_GraceDisindaIkinciKullanim_401VeAileninTamamiIptal()
     {
         var client = factory.CreateClient();

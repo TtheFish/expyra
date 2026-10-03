@@ -36,6 +36,9 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         builder.Property(x => x.PreviousTokenId)
             .HasColumnName("previous_token_id");
 
+        builder.Property(x => x.SuccessorTokenId)
+            .HasColumnName("successor_token_id");
+
         builder.Property(x => x.ExpiresAtUtc)
             .HasColumnName("expires_at_utc")
             .IsRequired();
@@ -80,7 +83,7 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
         builder.HasIndex(x => x.ExpiresAtUtc)
             .HasDatabaseName("ix_refresh_token_expires_at");
 
-        // previous_token_id'ye FK YOK: temizlik eski satırı silince sarkması serbest,
+        // previous_token_id ve successor_token_id'ye FK YOK: temizlik eski satırı silince sarkması serbest,
         // forensik işaretçi — bütünlük kısıtı değil.
         builder.HasOne<User>()
             .WithMany()

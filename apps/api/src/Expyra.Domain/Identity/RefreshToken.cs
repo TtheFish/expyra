@@ -27,6 +27,15 @@ public sealed class RefreshToken : BaseAuditableEntity
     /// forensik işaretçi, bütünlük kısıtı değil. Insert anında yazılır, hiç UPDATE edilmez.</summary>
     public Guid? PreviousTokenId { get; set; }
 
+    /// <summary>
+    /// Bu token'ın yerine verilen halef. Rotasyonda yazılır; grace penceresindeki bir
+    /// tekrar halefi DEĞİŞTİRİRSE güncellenir. Pencere içi tekrarlar bu işaretçiyle
+    /// "ailede tek aktif halka" kuralını koruyor (issue #51) — işaretçi olmadan her
+    /// tekrar aileye yeni bir geçerli kardeş ekliyordu. FK YOK, sebebi
+    /// <see cref="PreviousTokenId"/> ile aynı.
+    /// </summary>
+    public Guid? SuccessorTokenId { get; set; }
+
     public required DateTimeOffset ExpiresAtUtc { get; set; }
 
     /// <summary>Rotasyonla UZAMAZ. Tavan olmadan çalınan zincir sonsuza kadar yaşar.</summary>

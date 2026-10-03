@@ -116,14 +116,55 @@ internal sealed class RefreshSessionCommandHandler(
             throw new ForbiddenException(SuspendedMessage);
         }
 
-        // Grace penceresindeysek sunulan token ZATEN iptal edilmiş durumda; iptal anı
-        // forensik kayıt, üzerine yazılmaz.
+        // Grace penceresindeki tekrarda değiştirilecek halef (varsa). Tekrar meşru
+        // değilse aile iptal edilip 401 dönülüyor.
+        RefreshToken? replacedSuccessor = null;
+
         if (presented.RevokedAtUtc is null)
         {
             presented.RevokedAtUtc = now;
             presented.RevocationReason = TokenRevocationReason.Rotated;
         }
+        else if (presented.SuccessorTokenId is { } successorId)
+        {
+            // Grace penceresi içinde tekrar. Sunulan satır yukarıda FOR UPDATE ile
+            // kilitli: eş zamanlı iki tekrar burada sıraya giriyor ve ikincisi
+            // birincinin yazdığı halefi görüyor. Halef de kilitleniyor — kendi
+            // rotasyonuyla yarışmasın.
+            var successor = await dbContext
+                .FindForUpdateAsync<RefreshToken>(successorId, cancellationToken)
+                .ConfigureAwait(false);
 
+            if (successor is null || !successor.IsActive(now))
+            {
+                // Halef zaten ilerlemiş (kendisi rotasyona girmiş) ya da iptal
+                // edilmiş: meşru istemci artık bu token'ı sunmaz. Çalınmış halka.
+                await RevokeFamilyAsync(
+                    presented.FamilyId, TokenRevocationReason.ReuseDetected, now, cancellationToken)
+                    .ConfigureAwait(false);
+
+                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+                logger.LogError(
+                    "auth.refresh.reuse_detected familyId={FamilyId} userId={UserId} reason=successor_advanced",
+                    presented.FamilyId,
+                    presented.UserId);
+
+                throw new UnauthorizedException(InvalidSessionMessage);
+            }
+
+            // Ham halef değeri DB'de yok (yalnız SHA-256 özeti), aynısını geri
+            // veremiyoruz. Onun yerine halef DEĞİŞTİRİLİYOR: eskisi Rotated olarak
+            // iptal (paralel isteğin kaybeden tarafı pencere içinde onu hâlâ
+            // kullanabilir), yerine yenisi. Ailede aktif halka sayısı 1'de kalıyor.
+            successor.RevokedAtUtc = now;
+            successor.RevocationReason = TokenRevocationReason.Rotated;
+            replacedSuccessor = successor;
+        }
+
+        // SuccessorTokenId'si boş + iptal edilmiş bir satır yalnız bu alan eklenmeden
+        // ÖNCE dönmüş token olabilir; onun için eski davranış (yeni halka) korunuyor —
+        // pencere 30 sn, geçiş anından sonra bu dal ölü.
         var material = tokenService.CreateRefreshToken();
 
         // Mutlak tavan KOPYALANIR, uzatılmaz. Yeni ömür tavanı aşarsa tavana kırpılır —
@@ -146,6 +187,15 @@ internal sealed class RefreshSessionCommandHandler(
             AbsoluteExpiresAtUtc = presented.AbsoluteExpiresAtUtc,
             CreatedByIp = clientContext.IpPrefix,
         });
+
+        presented.SuccessorTokenId = rotatedId;
+
+        // Değiştirilen halef de yenisini gösteriyor: onu taşıyan istemci pencere
+        // içinde yenilerse yine TEK halef üzerinden geçer, kardeş üretmez.
+        if (replacedSuccessor is not null)
+        {
+            replacedSuccessor.SuccessorTokenId = rotatedId;
+        }
 
         // Roller her yenilemede DB'den TAZE okunuyor (satır yukarıda ban kontrolü için
         // zaten çekildi). İki sonucu var: host olan kullanıcı 90 gün boyunca rolünü
