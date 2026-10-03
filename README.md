@@ -5,11 +5,13 @@ Yerel deneyim rezervasyon platformu. Host'lar deneyim yayınlar, gezginler rezer
 ## Durum
 
 **Blok 1-7 tamam.** Çalışan: şifresiz kimlik (e-posta + tek kullanımlık kod), host rolü,
-arayüz dili (tr/en/cs, lokalize URL'ler), yer/kategori/para birimi kayıt defteri, deneyim
+arayüz dili (tr/en/cs/de/bg, lokalize URL'ler), yer/kategori/para birimi kayıt defteri, deneyim
 oluşturma ve yayınlama, görsel yükleme, host takvimi + fiyat, misafir tarafında
 müsaitlik ve teklif.
 
-Henüz yok: rezervasyon (Blok 9), ödeme, bilet, yorum, mobil uygulama.
+Henüz yok: rezervasyon (Blok 9), gerçek ödeme, gerçek bilet, yorum, mobil uygulama.
+Checkout, bilet ve yorum ekranlarının yalnız **demo** arayüzleri var; prod'da
+kapalı kalırlar (bkz. [docs/DEMO.md](docs/DEMO.md)).
 Blok tanımları [docs/PLAN.md](docs/PLAN.md)'de, açık işler
 [GitHub issue'larında](https://github.com/yldray/expyra/issues) ve
 [docs/ACIK-EKSIKLER.md](docs/ACIK-EKSIKLER.md)'de.
@@ -23,7 +25,7 @@ Projenin amacı ve iş modeli için [docs/VISION.md](docs/VISION.md). Mimari iç
 
 ```
 apps/api       ASP.NET Core 10 + PostgreSQL + EF Core (Clean Architecture, CQRS)
-apps/web       Next.js 16 + Tailwind 4 (Liquid Glass tasarım sistemi)
+apps/web       Next.js 16 + Tailwind 4 ("Expyra Yeni" tasarım sistemi: kağıt + kart + cam)
 apps/mobile    Expo — Blok 19'da kurulacak
 packages/      web + mobil ortak tipler
 docs/*.json    referans verinin tek kaynağı (koda gömülü değil, seed okuyor)
@@ -31,7 +33,7 @@ docs/*.json    referans verinin tek kaynağı (koda gömülü değil, seed okuyo
 
 ## Kurulum
 
-Gerekenler: .NET 10 SDK, Node 20+, pnpm 10, PostgreSQL 16+.
+Gerekenler: .NET 10 SDK, Node 20+, pnpm 10, PostgreSQL 18 (compose ve CI ile aynı major; collation farkı olmasın).
 
 Sıfırdan çalışır hale getiren tam zincir — **adımlar sırayla, hiçbiri atlanamaz**:
 

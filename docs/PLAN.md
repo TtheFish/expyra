@@ -535,7 +535,7 @@ yazılmadı — doğrulanmamış bir kısıt, geçerli fiyatları sessizce redde
 
 **Ne:** İki tarafın da güvenebileceği bir sistem.
 **Kapsam:** Kalan hız sınırları + güvenlik başlıkları, observability (yapılandırılmış log, hata takibi, uptime), GDPR/KVKK (veri silme/dışa aktarma, çerez onayı), yedek + **geri yükleme provası**, deploy pipeline (staging + prod, migration adımı), yük testi (rezervasyon ucu: eşzamanlı 100).
-**Kabul:** Yedekten geri yükleme en az bir kez prova edildi; rezervasyon ucu 100 eşzamanlıda kapasiteyi bozmuyor. **Risk:** `apps/api/src/Expyra.WebApi/WeatherForecast.cs` gibi ölü şablon kodu ve `Expyra.Infrastructure` için hiç test projesi olmaması — bu blok bunları da kapsar.
+**Kabul:** Yedekten geri yükleme en az bir kez prova edildi; rezervasyon ucu 100 eşzamanlıda kapasiteyi bozmuyor. **Risk:** `Expyra.Infrastructure` için ayrı bir test projesi olmaması (bugün yalnız integration testler dolaylı kapsıyor) — bu blok bunu da kapsar.
 
 ---
 

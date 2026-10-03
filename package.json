@@ -14,7 +14,6 @@
     "api:seed": "dotnet run --project apps/api/src/Expyra.WebApi -- seed reference-data",
     "api:seed:demo": "dotnet run --project apps/api/src/Expyra.WebApi -- seed demo-data",
     "web": "pnpm --filter @expyra/web dev",
-    "mobile": "pnpm --filter @expyra/mobile start",
     "types:generate": "pnpm --filter @expyra/shared-types generate",
     "db:up": "./scripts/db-up.sh",
     "lint": "pnpm -r lint",

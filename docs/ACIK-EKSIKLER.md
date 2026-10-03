@@ -72,6 +72,3 @@ demek — kendi işini hak ediyor.
   taşıyor.
 - **Takvimde ay ızgarası yok**, düz liste var. Izgara klavye gezinmesi ve odak
   yönetimi istiyor; yarım yapılmış bir ızgara listeden daha erişilemez olur.
-- **`pnpm check` web için `typecheck` çalıştırmıyor** — `next build` zaten tip
-  denetimi yapıyor, yani kapsam var; ama hızlı geri bildirim için ayrı bir adım
-  faydalı olurdu.
