@@ -49,16 +49,24 @@ public sealed class HostExperiencesController(ISender mediator) : ApiControllerB
     /// <c>Draft</c> | <c>Published</c> | <c>Archived</c>. Tanınmayan değer 400 döner,
     /// sessizce yok sayılmaz.
     /// </param>
+    /// <param name="cursor">
+    /// Önceki sayfanın <c>nextCursor</c> değeri (keyset, bkz. <c>GET /api/experiences</c>).
+    /// Bozuk değer 400.
+    /// </param>
+    /// <param name="limit">Sayfa boyutu, 1–100; boşsa 24.</param>
     [HttpGet]
-    [ProducesResponseType<IReadOnlyList<HostExperienceResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<HostExperiencePageResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<IReadOnlyList<HostExperienceResponse>>> List(
+    public async Task<ActionResult<HostExperiencePageResponse>> List(
         CancellationToken cancellationToken,
-        [FromQuery] string? status = null)
+        [FromQuery] string? status = null,
+        [FromQuery] string? cursor = null,
+        [FromQuery] int? limit = null)
     {
-        var result = await Mediator.Send(new GetHostExperiencesQuery(status), cancellationToken);
+        var result = await Mediator.Send(
+            new GetHostExperiencesQuery(status, cursor, limit), cancellationToken);
         return Ok(result);
     }
 

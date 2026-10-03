@@ -114,7 +114,7 @@ public sealed class HostExperienceTests(ApiFactory factory)
         await HostApi.SetMinimalPriceAsync(client, token, draft.Id);
         await MediaApi.UploadAsync(client, token, draft.Id);
 
-        var before = await GetAsync<HostExperienceResponse[]>(client, token, BasePath);
+        var before = (await GetAsync<HostExperiencePageResponse>(client, token, BasePath)).Items;
         before.Single(x => x.Id == draft.Id).MissingPublishRequirements
             .ShouldHaveSingleItem()
             .ShouldBe(ExperiencePublishRequirement.Capacity);
@@ -174,7 +174,7 @@ public sealed class HostExperienceTests(ApiFactory factory)
             .StatusCode.ShouldBe(HttpStatusCode.NotFound);
 
         // Başkasının ilanı listede de yok.
-        var list = await GetAsync<HostExperienceResponse[]>(intruderClient, intruderToken, BasePath);
+        var list = (await GetAsync<HostExperiencePageResponse>(intruderClient, intruderToken, BasePath)).Items;
         list.ShouldNotContain(x => x.Id == experience.Id);
 
         // Sahibi hâlâ dokunabiliyor: 404'ün sebebi ilanın yok olması değil.
@@ -550,15 +550,15 @@ public sealed class HostExperienceTests(ApiFactory factory)
         var live = await CreatePublishableAsync(client, token, "Yayındaki Gezi");
         await PublishAsync(client, token, live.Id);
 
-        var drafts = await GetAsync<HostExperienceResponse[]>(client, token, $"{BasePath}?status=draft");
+        var drafts = (await GetAsync<HostExperiencePageResponse>(client, token, $"{BasePath}?status=draft")).Items;
         drafts.ShouldContain(x => x.Id == draft.Id);
         drafts.ShouldNotContain(x => x.Id == live.Id);
 
-        var published = await GetAsync<HostExperienceResponse[]>(client, token, $"{BasePath}?status=Published");
+        var published = (await GetAsync<HostExperiencePageResponse>(client, token, $"{BasePath}?status=Published")).Items;
         published.ShouldContain(x => x.Id == live.Id);
         published.ShouldNotContain(x => x.Id == draft.Id);
 
-        var all = await GetAsync<HostExperienceResponse[]>(client, token, BasePath);
+        var all = (await GetAsync<HostExperiencePageResponse>(client, token, BasePath)).Items;
         all.Select(x => x.Id).ShouldContain(draft.Id);
         all.Select(x => x.Id).ShouldContain(live.Id);
     }
@@ -571,6 +571,71 @@ public sealed class HostExperienceTests(ApiFactory factory)
 
         // Sessizce yok sayılsaydı istemci "taslaklarım" sanırken yayındakileri de görürdü.
         var response = await SendAsync(client, HttpMethod.Get, $"{BasePath}?status=taslak", token);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Liste_CursorIleSayfalaniyor_TekrarVeKayipYok()
+    {
+        // Issue #54: liste sınırsız dönüyordu.
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+
+        var created = new List<Guid>();
+        for (var i = 0; i < 5; i++)
+        {
+            created.Add((await CreateDraftAsync(client, token)).Id);
+        }
+
+        // En yeni üstte: (created_at_utc, id) azalan.
+        var expected = created.AsEnumerable().Reverse().ToList();
+
+        var first = await GetAsync<HostExperiencePageResponse>(client, token, $"{BasePath}?limit=2");
+        first.Items.Select(x => x.Id).ShouldBe(expected.Take(2));
+        first.NextCursor.ShouldNotBeNull();
+
+        var second = await GetAsync<HostExperiencePageResponse>(
+            client, token, $"{BasePath}?limit=2&cursor={first.NextCursor}");
+        second.Items.Select(x => x.Id).ShouldBe(expected.Skip(2).Take(2));
+        second.NextCursor.ShouldNotBeNull();
+
+        var last = await GetAsync<HostExperiencePageResponse>(
+            client, token, $"{BasePath}?limit=2&cursor={second.NextCursor}");
+        last.Items.Select(x => x.Id).ShouldBe(expected.Skip(4));
+
+        // Bir fazla satır çekiliyor: dolu cursor boş bir son sayfaya götürmüyor.
+        last.NextCursor.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task Liste_VarsayilanSayfaBoyutu_TumuSigarsaCursorYok()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+
+        await CreateDraftAsync(client, token);
+        await CreateDraftAsync(client, token);
+
+        var page = await GetAsync<HostExperiencePageResponse>(client, token, BasePath);
+
+        page.Items.Count.ShouldBe(2);
+        page.NextCursor.ShouldBeNull();
+    }
+
+    [Theory]
+    [InlineData("?cursor=bozuk")]
+    [InlineData("?limit=0")]
+    [InlineData("?limit=101")]
+    [InlineData("?limit=abc")]
+    public async Task Liste_GecersizSayfalamaParametresi_400(string query)
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+
+        // Sessizce yok sayılsaydı bozuk cursor sonsuz ilk sayfaya, aşan limit
+        // sınırsız listeye dönerdi.
+        var response = await SendAsync(client, HttpMethod.Get, $"{BasePath}{query}", token);
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }

@@ -20,7 +20,7 @@ public sealed class ExperienceCursorTests
 
         var decoded = Decode(new ExperienceCursor(publishedAt, id).Encode());
 
-        decoded.PublishedAtUtc.UtcTicks.ShouldBe(publishedAt.UtcTicks);
+        decoded.SortedAtUtc.UtcTicks.ShouldBe(publishedAt.UtcTicks);
         decoded.Id.ShouldBe(id);
     }
 

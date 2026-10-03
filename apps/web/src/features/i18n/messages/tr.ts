@@ -613,6 +613,15 @@ export const tr = {
   'host.panel.new': 'Yeni deneyim',
 
   'host.listings.heading': 'İlanlarım · {sayi}',
+  /**
+   * Liste sayfalı (issue #54) ve API toplam sayı dönmüyor: sayfalama varsa
+   * yalnız "bu sayfada N" doğru, `explore.summary.page` ile aynı ayrım.
+   */
+  'host.listings.headingPage': 'İlanlarım · bu sayfada {sayi}',
+  /** Sunucu gezinmesi: cursor tek yönlü, "önceki" yok, "başa dön" var. */
+  'host.listings.pager.label': 'İlan sayfaları',
+  'host.listings.pager.next': 'Sonraki ilanlar',
+  'host.listings.pager.first': 'İlk sayfaya dön',
   'host.listings.edit': 'Düzenle',
   'host.listings.view': 'İlanı gör',
   'host.listings.status.draft': 'Taslak',

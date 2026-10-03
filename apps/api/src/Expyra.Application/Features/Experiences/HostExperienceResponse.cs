@@ -5,6 +5,16 @@ using Expyra.Domain.Experiences;
 namespace Expyra.Application.Features.Experiences;
 
 /// <summary>
+/// Host ilan listesinin bir sayfası — misafir listesiyle (<see cref="GuestExperiencePageResponse"/>)
+/// aynı sözleşme: toplam sayı yok, <c>NextCursor</c> son sayfada <c>null</c> ve dolu bir
+/// cursor daima gerçekten satır olduğu anlamına geliyor (sayfa boyutundan bir fazla
+/// satır çekiliyor).
+/// </summary>
+public sealed record HostExperiencePageResponse(
+    IReadOnlyList<HostExperienceResponse> Items,
+    string? NextCursor);
+
+/// <summary>
 /// Host'un kendi ilanını gördüğü şekil. <b>Beş host ucunun tamamı bunu döner</b>
 /// (oluştur, düzenle, çeviri yaz, yayınla, arşivle) ve liste ucu da aynı şekli taşır —
 /// istemci tek bir gövde ayrıştırıcısı yazıyor, uç başına bir tane değil

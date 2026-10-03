@@ -508,6 +508,10 @@ export const cs = {
   'host.panel.new': 'Nový zážitek',
 
   'host.listings.heading': 'Moje nabídky · {sayi}',
+  'host.listings.headingPage': 'Moje nabídky · {sayi} na této stránce',
+  'host.listings.pager.label': 'Stránky nabídek',
+  'host.listings.pager.next': 'Další nabídky',
+  'host.listings.pager.first': 'Zpět na první stránku',
   'host.listings.edit': 'Upravit',
   'host.listings.view': 'Zobrazit nabídku',
   'host.listings.status.draft': 'Koncept',

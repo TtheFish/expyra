@@ -430,6 +430,10 @@ export const en = {
   'host.panel.new': 'New experience',
 
   'host.listings.heading': 'My listings · {sayi}',
+  'host.listings.headingPage': 'My listings · {sayi} on this page',
+  'host.listings.pager.label': 'Listing pages',
+  'host.listings.pager.next': 'More listings',
+  'host.listings.pager.first': 'Back to first page',
   'host.listings.edit': 'Edit',
   'host.listings.view': 'View listing',
   'host.listings.status.draft': 'Draft',

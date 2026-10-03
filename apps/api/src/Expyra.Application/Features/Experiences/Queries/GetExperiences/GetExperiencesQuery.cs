@@ -90,7 +90,7 @@ internal sealed class GetExperiencesQueryHandler(IAppDbContext dbContext, IObjec
             // Cursor alanları YEREL değişkene alınıyor: EF, yakalanan struct'ın alanlarını
             // parametreye çevirirken daha az sürprizle çalışıyor ve üretilen SQL okunur
             // kalıyor.
-            var cursorPublishedAt = cursor.PublishedAtUtc;
+            var cursorPublishedAt = cursor.SortedAtUtc;
             var cursorId = cursor.Id;
 
             // Keyset: "bu satırdan kesin olarak sonra gelenler". Eşit zaman damgasında

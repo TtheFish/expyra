@@ -79,7 +79,7 @@ public sealed class ExperienceMediaTests(ApiFactory factory)
         var draft = await CreateCompleteDraftAsync(client, token, "Kapaksız İlan");
 
         var list = await MediaApi.SendAsync(client, HttpMethod.Get, BasePath, token);
-        var listed = (await list.Content.ReadFromJsonAsync<HostExperienceResponse[]>(AuthApi.Json))!;
+        var listed = (await list.Content.ReadFromJsonAsync<HostExperiencePageResponse>(AuthApi.Json))!.Items;
 
         listed.Single(x => x.Id == draft.Id).MissingPublishRequirements
             .ShouldHaveSingleItem()

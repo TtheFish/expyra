@@ -372,23 +372,46 @@ async function send({ accessToken, method, path, body }: RequestInput): Promise<
  *
  * `status` verilmezse hepsi gelir. Tanınmayan değer API'de 400; arayüz kapalı bir
  * kümeden seçtiği için oraya düşmüyor.
+ *
+ * **Keyset sayfalı** (issue #54), misafir listesiyle aynı sözleşme: toplam sayı yok,
+ * `nextCursor` son sayfada `null`, değer opak — olduğu gibi geri gönderiliyor.
+ * `limit` boşsa API 24 kullanıyor, tavan {@link HOST_EXPERIENCES_MAX_LIMIT}.
  */
 export async function fetchHostExperiences(
   accessToken: string,
-  status?: HostExperienceStatus,
-): Promise<HostExperience[]> {
-  const query = status ? `?status=${encodeURIComponent(status)}` : ''
-  const response = await send({ accessToken, method: 'GET', path: `/api/host/experiences${query}` })
+  options: { status?: HostExperienceStatus; cursor?: string | null; limit?: number } = {},
+): Promise<HostExperiencePage> {
+  const params = new URLSearchParams()
+  if (options.status) params.set('status', options.status)
+  if (options.cursor) params.set('cursor', options.cursor)
+  if (options.limit !== undefined) params.set('limit', String(options.limit))
 
-  return (await response.json()) as HostExperience[]
+  const query = params.toString()
+  const response = await send({
+    accessToken,
+    method: 'GET',
+    path: query ? `/api/host/experiences?${query}` : '/api/host/experiences',
+  })
+
+  return (await response.json()) as HostExperiencePage
 }
+
+export type HostExperiencePage = {
+  items: HostExperience[]
+  /** Sonraki sayfanın opak anahtarı; son sayfada `null`. */
+  nextCursor: string | null
+}
+
+/** `GetHostExperiencesQuery.MaxPageSize` — aşan değer API'de 400. */
+export const HOST_EXPERIENCES_MAX_LIMIT = 100
 
 /**
  * Tek ilan. **API'de tekil bir GET ucu YOK** (`HostExperiencesController`: liste ucu
- * var, `GET /{id}` yok), bu yüzden liste çekilip içinden seçiliyor.
+ * var, `GET /{id}` yok), bu yüzden liste sayfa sayfa geziliyor ve id aranıyor.
  *
- * Bedeli görünür olsun diye burada yazılı: ilan sayısı büyüdükçe düzenleme sayfası
- * gereksiz satır taşıyor. Bugün bir host'un ilan sayısı tek haneli; `GET
+ * Bedeli görünür olsun diye burada yazılı: liste sayfalandıktan sonra (issue #54)
+ * eski ilanların düzenleme sayfası birden fazla istek ediyor — sayfa başına 100
+ * ilan, yani yüz ilanın altındaki host için yine tek tur. `GET
  * /api/host/experiences/{id}` eklendiği gün bu fonksiyonun gövdesi tek satıra iner
  * ve çağıranların hiçbiri değişmez.
  *
@@ -399,8 +422,21 @@ export async function fetchHostExperience(
   accessToken: string,
   id: string,
 ): Promise<HostExperience | null> {
-  const all = await fetchHostExperiences(accessToken)
-  return all.find((experience) => experience.id === id) ?? null
+  let cursor: string | null = null
+
+  do {
+    const page: HostExperiencePage = await fetchHostExperiences(accessToken, {
+      cursor,
+      limit: HOST_EXPERIENCES_MAX_LIMIT,
+    })
+
+    const match = page.items.find((experience) => experience.id === id)
+    if (match) return match
+
+    cursor = page.nextCursor
+  } while (cursor !== null)
+
+  return null
 }
 
 /**

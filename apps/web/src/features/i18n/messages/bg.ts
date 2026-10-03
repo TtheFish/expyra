@@ -431,6 +431,10 @@ export const bg = {
   'host.panel.new': 'Ново преживяване',
 
   'host.listings.heading': 'Моите обяви · {sayi}',
+  'host.listings.headingPage': 'Моите обяви · {sayi} на тази страница',
+  'host.listings.pager.label': 'Страници с обяви',
+  'host.listings.pager.next': 'Още обяви',
+  'host.listings.pager.first': 'Обратно към първата страница',
   'host.listings.edit': 'Редактирай',
   'host.listings.view': 'Виж обявата',
   'host.listings.status.draft': 'Чернова',

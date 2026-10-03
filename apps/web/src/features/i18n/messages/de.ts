@@ -417,6 +417,10 @@ export const de = {
   'host.panel.new': 'Neues Erlebnis',
 
   'host.listings.heading': 'Meine Angebote · {sayi}',
+  'host.listings.headingPage': 'Meine Angebote · {sayi} auf dieser Seite',
+  'host.listings.pager.label': 'Angebotsseiten',
+  'host.listings.pager.next': 'Weitere Angebote',
+  'host.listings.pager.first': 'Zurück zur ersten Seite',
   'host.listings.edit': 'Bearbeiten',
   'host.listings.view': 'Angebot ansehen',
   'host.listings.status.draft': 'Entwurf',

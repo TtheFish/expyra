@@ -4,7 +4,11 @@ using System.Buffers.Text;
 namespace Expyra.Application.Features.Experiences;
 
 /// <summary>
-/// Misafir listesinin sayfa sınırı: <c>(published_at_utc, id)</c> çiftinin taşınabilir hâli.
+/// İlan listelerinin sayfa sınırı: <c>(sıralama damgası, id)</c> çiftinin taşınabilir hâli.
+/// Misafir listesinde damga <c>published_at_utc</c>, host listesinde <c>created_at_utc</c>
+/// (host taslaklarını da görüyor ve taslağın yayın damgası yok). Cursor hangi listenin
+/// olduğunu taşımıyor; öbür listeye verilirse yalnızca anlamsız bir yer imi olur — yetki
+/// değil, her iki sorgu da kendi filtresini (yayında / host'un kendisi) ayrıca uyguluyor.
 ///
 /// <para><b>Neden keyset (cursor), OFFSET değil:</b> <c>OFFSET 24</c> ile ikinci sayfayı
 /// isteyen bir misafir, arada yeni bir ilan yayınlandıysa ilk sayfanın son satırını BİR
@@ -29,7 +33,7 @@ namespace Expyra.Application.Features.Experiences;
 /// sözleşmenin parçası olur ve değiştirilemez hâle gelir. İçinde sır yok, bu yüzden
 /// imzalanmıyor da: cursor bir yetki değil, yalnızca bir yer imi.</para>
 /// </summary>
-internal readonly record struct ExperienceCursor(DateTimeOffset PublishedAtUtc, Guid Id)
+internal readonly record struct ExperienceCursor(DateTimeOffset SortedAtUtc, Guid Id)
 {
     private const int TicksLength = sizeof(long);
     private const int IdLength = 16;
@@ -49,7 +53,7 @@ internal readonly record struct ExperienceCursor(DateTimeOffset PublishedAtUtc, 
 
         // Big-endian: baytlar zaman sırasına göre diziliyor, yani kodlanmış cursor'ın
         // metin sırası da zaman sırası. Doğruluk için gerekmiyor, hata ayıklarken bedava.
-        BinaryPrimitives.WriteInt64BigEndian(buffer, PublishedAtUtc.UtcTicks);
+        BinaryPrimitives.WriteInt64BigEndian(buffer, SortedAtUtc.UtcTicks);
 
         if (!Id.TryWriteBytes(buffer[TicksLength..]))
         {

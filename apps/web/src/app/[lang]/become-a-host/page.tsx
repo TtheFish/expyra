@@ -3,7 +3,7 @@ import { SiteFooter } from '@/components/brand/site-footer'
 import { SiteHeader } from '@/components/brand/site-header'
 import { GlassButton } from '@/components/ui/glass-button'
 import { ApiError, fetchCurrentUser } from '@/features/auth/api'
-import { experiencePath } from '@/features/experiences/api'
+import { experiencePath, isExperienceCursor } from '@/features/experiences/api'
 import { RETURN_TO_PARAM } from '@/features/auth/return-to'
 import { getSession } from '@/features/auth/session'
 import { ActivateHostForm } from '@/features/host/activate-host-form'
@@ -94,14 +94,37 @@ type Panel = {
    * silindiğini düşündürürdü (CLAUDE.md #1).
    */
   experiences: HostExperience[] | null
+  /** Sonraki ilan sayfasının opak anahtarı; son sayfada ya da liste yokken `null`. */
+  nextCursor: string | null
   /** Yalnız host'ta; satır yoksa alanlar null ve dil tercih dili. */
   profile?: HostProfile | null
 }
 
-export default async function BecomeHostPage({ params }: { params: Promise<{ lang: string }> }) {
-  const { lang } = await params
+/**
+ * İlan listesi sayfa işareti (`?devam=`), keşif sayfasıyla aynı ad ve biçim.
+ * Biçimi bozuk değer API'ye hiç gitmiyor: sessizce ilk sayfayı göstermek yerine
+ * liste "okunamadı" durumuna düşüyor ve ilk sayfaya dönüş bağlantısı çiziliyor.
+ */
+const CURSOR_PARAM = 'devam'
+
+const first = (value: string | string[] | undefined): string =>
+  (Array.isArray(value) ? value[0] : value) ?? ''
+
+export default async function BecomeHostPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ lang: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const [{ lang }, query] = await Promise.all([params, searchParams])
   const t = await getTranslator(lang)
-  const panel = await resolvePanel()
+
+  const requestedCursor = first(query[CURSOR_PARAM])
+  const cursor = isExperienceCursor(requestedCursor) ? requestedCursor : null
+  const cursorBroken = requestedCursor !== '' && cursor === null
+
+  const panel = await resolvePanel(cursor, cursorBroken)
 
   const isHost = panel.viewer === 'host'
   const hasListings = (panel.experiences?.length ?? 0) > 0
@@ -134,7 +157,15 @@ export default async function BecomeHostPage({ params }: { params: Promise<{ lan
           <ActivateCard viewer={panel.viewer} lang={lang} t={t} />
         )}
 
-        {isHost ? <ListingsSection experiences={panel.experiences} lang={lang} t={t} /> : null}
+        {isHost ? (
+          <ListingsSection
+            experiences={panel.experiences}
+            cursor={requestedCursor === '' ? null : requestedCursor}
+            nextCursor={panel.nextCursor}
+            lang={lang}
+            t={t}
+          />
+        ) : null}
         {isHost ? <ProfileSection profile={panel.profile ?? null} lang={lang} t={t} /> : null}
 
         {/*
@@ -196,13 +227,15 @@ export default async function BecomeHostPage({ params }: { params: Promise<{ lan
  *   "Host ol" İDEMPOTENT — basarsa zararsız, üstüne taze token alır. Ters yön
  *   (rol yokken paneli göstermek) kullanıcıyı çalışmayan düğmelerle bırakırdı.
  */
-async function resolvePanel(): Promise<Panel> {
+async function resolvePanel(cursor: string | null, cursorBroken: boolean): Promise<Panel> {
+  const none = { experiences: null, nextCursor: null } as const
+
   const session = await getSession()
-  if (!session) return { viewer: 'anonymous', experiences: null }
+  if (!session) return { viewer: 'anonymous', ...none }
 
   // Access çerezi düşmüş ama refresh duruyor: proxy yenilemeyi denemiş ve API'ye
   // ulaşamamış olabilir. Oturumu ölü SAYMIYORUZ.
-  if (!session.accessToken) return { viewer: 'traveler', experiences: null }
+  if (!session.accessToken) return { viewer: 'traveler', ...none }
 
   const accessToken = session.accessToken
 
@@ -212,23 +245,28 @@ async function resolvePanel(): Promise<Panel> {
     viewer = user.isHost ? 'host' : 'traveler'
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
-      return { viewer: 'anonymous', experiences: null }
+      return { viewer: 'anonymous', ...none }
     }
 
     console.error('host.viewer.failed', error)
-    return { viewer: 'traveler', experiences: null }
+    return { viewer: 'traveler', ...none }
   }
 
   if (viewer !== 'host') {
-    return { viewer, experiences: null }
+    return { viewer, ...none }
   }
 
   try {
-    const [experiences, profile] = await Promise.all([
-      fetchHostExperiences(accessToken),
+    const [page, profile] = await Promise.all([
+      cursorBroken ? null : fetchHostExperiences(accessToken, { cursor }),
       fetchHostProfile(accessToken),
     ])
-    return { viewer: 'host', experiences, profile }
+    return {
+      viewer: 'host',
+      experiences: page?.items ?? null,
+      nextCursor: page?.nextCursor ?? null,
+      profile,
+    }
   } catch (error) {
     /*
       403 burada BEKLENEN bir durum: `/me` veritabanına bakıyor ve "host" diyor
@@ -239,12 +277,12 @@ async function resolvePanel(): Promise<Panel> {
       kalan yarısının kapandığı yer.
     */
     if (error instanceof HostExperienceAccessError) {
-      return { viewer: error.reason === 'notHost' ? 'traveler' : 'anonymous', experiences: null }
+      return { viewer: error.reason === 'notHost' ? 'traveler' : 'anonymous', ...none }
     }
 
     // 5xx / ağ: liste YOK değil, OKUNAMADI. Ekranda ikisi ayrı cümle.
     console.error('host.listings.failed', error)
-    return { viewer: 'host', experiences: null }
+    return { viewer: 'host', ...none }
   }
 }
 
@@ -393,16 +431,47 @@ function ActivateCard({ viewer, lang, t }: { viewer: Viewer; lang: string; t: Tr
  *   host paneli ilk kez açan biri burada ne yapacağını okuyor ve tek tıkla
  *   sihirbaza giriyor.
  * - dolu → satırlar.
+ *
+ * Liste keyset sayfalı (issue #54): "sonraki ilanlar" bir sunucu gezinmesi —
+ * JS'siz de çalışıyor, keşif sayfasının sayfalayıcısıyla aynı desen. Cursor tek
+ * yönlü olduğu için "önceki" yok, "ilk sayfaya dön" var.
  */
 function ListingsSection({
   experiences,
+  cursor,
+  nextCursor,
   lang,
   t,
 }: {
   experiences: HostExperience[] | null
+  /** Bu sayfayı açan işaret (ham değer); ilk sayfada `null`. */
+  cursor: string | null
+  nextCursor: string | null
   lang: string
   t: Translate
 }) {
+  const pageHref = (target: string | null): string => {
+    const base = path(lang, 'becomeHost')
+    return target ? `${base}?${new URLSearchParams({ [CURSOR_PARAM]: target }).toString()}` : base
+  }
+
+  const pager =
+    cursor !== null || nextCursor !== null ? (
+      <nav
+        className="mt-6 flex flex-wrap items-center justify-center gap-3"
+        aria-label={t('host.listings.pager.label')}
+      >
+        {cursor !== null && (
+          <GlassButton href={pageHref(null)}>{t('host.listings.pager.first')}</GlassButton>
+        )}
+        {nextCursor !== null && (
+          <GlassButton variant="primary" href={pageHref(nextCursor)}>
+            {t('host.listings.pager.next')}
+          </GlassButton>
+        )}
+      </nav>
+    ) : null
+
   if (experiences === null) {
     return (
       <section className="mt-10" aria-labelledby="host-ilanlar">
@@ -412,11 +481,12 @@ function ListingsSection({
         <div className="glass glass-edge rounded-[var(--radius-glass)] p-5 text-sm text-fg-muted">
           {t('host.listings.error')}
         </div>
+        {pager}
       </section>
     )
   }
 
-  if (experiences.length === 0) {
+  if (experiences.length === 0 && cursor === null) {
     return (
       <section className="mt-10" aria-labelledby="host-ilanlar">
         <h2 id="host-ilanlar" className="mb-4 text-sm font-semibold text-fg-muted">
@@ -441,7 +511,9 @@ function ListingsSection({
   return (
     <section className="mt-10" aria-labelledby="host-ilanlar">
       <h2 id="host-ilanlar" className="mb-4 text-sm font-semibold text-fg-muted">
-        {t('host.listings.heading', { sayi: experiences.length })}
+        {cursor !== null || nextCursor !== null
+          ? t('host.listings.headingPage', { sayi: experiences.length })
+          : t('host.listings.heading', { sayi: experiences.length })}
       </h2>
 
       <ul className="grid gap-4">
@@ -492,6 +564,8 @@ function ListingsSection({
           </li>
         ))}
       </ul>
+
+      {pager}
     </section>
   )
 }
