@@ -480,6 +480,71 @@ public sealed class HostScheduleTests(ApiFactory factory)
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
+    // #44: bu iki girdi validator olmadan veritabanı kısıtına çarpıp 500 dönüyordu.
+
+    [Theory]
+    [InlineData(AvailabilityBlackout.MaxNoteLength, HttpStatusCode.Created)]
+    [InlineData(AvailabilityBlackout.MaxNoteLength + 1, HttpStatusCode.BadRequest)]
+    public async Task BlackoutNotu_SinirDegerde_201_BirFazlasinda_400(int length, HttpStatusCode expected)
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var experience = await SchedulableExperienceAsync(client, token);
+
+        var day = TodayInPrague().AddDays(30).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{experience}/blackouts", token,
+            new { startsOnLocal = day, endsOnLocal = day, note = new string('n', length) });
+
+        response.StatusCode.ShouldBe(expected);
+    }
+
+    [Fact]
+    public async Task Blackout_BaslangicBitistenSonra_400()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var experience = await SchedulableExperienceAsync(client, token);
+
+        var starts = TodayInPrague().AddDays(30);
+
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{experience}/blackouts", token,
+            new
+            {
+                startsOnLocal = starts.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                endsOnLocal = starts.AddDays(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+
+        (await factory.QueryAsync(db => db.AvailabilityBlackouts
+                .AsNoTracking().CountAsync(x => x.ExperienceId == experience)))
+            .ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task Sablon_TanimsizGunSayisi_400()
+    {
+        var client = factory.CreateClient();
+        var token = await NewHostTokenAsync(client);
+        var experience = await SchedulableExperienceAsync(client, token);
+
+        // JsonStringEnumConverter tam sayıyı kabul ediyor; 9 hiçbir güne karşılık
+        // gelmiyor ve ck_recurrence_template_day_of_week'e çarpardı.
+        var response = await MediaApi.SendAsync(
+            client, HttpMethod.Post, $"{BasePath}/{experience}/recurrences", token,
+            new
+            {
+                daysOfWeek = new[] { 9 },
+                startTimeLocal = "14:00",
+                startsOnLocal = TodayInPrague().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
     // -----------------------------------------------------------------------
     // Seans yaşam döngüsü
     // -----------------------------------------------------------------------

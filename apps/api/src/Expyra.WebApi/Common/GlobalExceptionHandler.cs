@@ -2,6 +2,8 @@ using System.Globalization;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Expyra.Application.Common.Exceptions;
 
 namespace Expyra.WebApi.Common;
@@ -28,6 +30,15 @@ internal sealed class GlobalExceptionHandler(
         if (problemDetails.Status >= 500)
         {
             logger.LogError(exception, "İşlenmemiş hata: {Path}", path);
+        }
+        else if (ConstraintViolation(exception) is { } violation)
+        {
+            // 4xx ama Information DEĞİL: buraya düşmek, kolonu yazan komutun
+            // validator'ında bir kuralın eksik olduğu ya da bir yarışın olduğu
+            // anlamına geliyor (#44). Kısıt adı ve SQLSTATE yalnız logda.
+            logger.LogWarning(exception,
+                "Veritabanı kısıtı validator'dan kaçtı ({Status}) {Path}: {SqlState} {Constraint}",
+                problemDetails.Status, path, violation.SqlState, violation.ConstraintName);
         }
         else if (logger.IsEnabled(LogLevel.Information))
         {
@@ -77,6 +88,25 @@ internal sealed class GlobalExceptionHandler(
                 : new Dictionary<string, object?>(StringComparer.Ordinal) { ["code"] = app.Code },
         },
 
+        // SON ÇARE. Asıl savunma validator'da; bu dallar yalnız bir kuralın eksik
+        // kaldığı ya da validator'ın göremeyeceği bir yarışın (iki eşzamanlı istek
+        // aynı tekil anahtarı yazıyor) olduğu durumlar için. Gövdede kısıt adı,
+        // tablo ya da SQL YOK — şemayı dışarı sızdırmamak için.
+        _ when ConstraintViolation(exception) is
+            { SqlState: PostgresErrorCodes.StringDataRightTruncation or PostgresErrorCodes.CheckViolation }
+            => new ProblemDetails
+            {
+                Status = 400,
+                Title = "Gönderilen değer izin verilen sınırların dışında.",
+            },
+
+        _ when ConstraintViolation(exception) is { SqlState: PostgresErrorCodes.UniqueViolation }
+            => new ProblemDetails
+            {
+                Status = 409,
+                Title = "Bu kayıt başka bir istekle çakıştı; yenileyip tekrar deneyin.",
+            },
+
         UnauthorizedAccessException => new ProblemDetails
         {
             Status = 401,
@@ -96,4 +126,25 @@ internal sealed class GlobalExceptionHandler(
             Title = "Beklenmeyen bir hata oluştu.",
         },
     };
+
+    /// <summary>
+    /// Eşlenen üç SQLSTATE'ten (22001, 23514, 23505) birini taşıyan Postgres hatası.
+    /// EF onu <see cref="DbUpdateException"/> içine sarıyor; ham SQL / ExecuteUpdate
+    /// yolu doğrudan atıyor — ikisi de aynı sonuca gitmeli.
+    /// </summary>
+    private static PostgresException? ConstraintViolation(Exception exception)
+    {
+        var postgres = exception switch
+        {
+            PostgresException direct => direct,
+            DbUpdateException { InnerException: PostgresException inner } => inner,
+            _ => null,
+        };
+
+        return postgres?.SqlState is PostgresErrorCodes.StringDataRightTruncation
+            or PostgresErrorCodes.CheckViolation
+            or PostgresErrorCodes.UniqueViolation
+            ? postgres
+            : null;
+    }
 }

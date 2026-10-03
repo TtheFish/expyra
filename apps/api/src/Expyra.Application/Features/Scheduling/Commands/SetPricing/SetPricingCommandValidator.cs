@@ -32,6 +32,10 @@ internal sealed class SetPricingCommandValidator : AbstractValidator<SetPricingC
 
         RuleForEach(x => x.Rules).ChildRules(rule =>
         {
+            // Tanımsız tam sayı (JsonStringEnumConverter izin veriyor) kolona "7"
+            // olarak yazılırdı ve okuma tarafında enum'a dönüşemezdi.
+            rule.RuleFor(x => x.GuestType).IsInEnum();
+
             // Negatif tutar Money genelinde geçerli (iade, Blok 13) ama bir İLAN
             // FİYATI negatif olamaz. Sıfır geçerli: host bebeği ücretsiz yapabilir.
             rule.RuleFor(x => x.UnitAmountMinor)

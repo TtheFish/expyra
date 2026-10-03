@@ -150,6 +150,30 @@ public sealed class RefreshRotationTests(ApiFactory factory)
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(null)]
+    public async Task SignOut_BosToken_400_500DEGIL(string? token)
+    {
+        var client = factory.CreateClient();
+
+        // #44: validator yokken boş token HashRefreshToken'da ArgumentException
+        // atıyor ve 500 dönüyordu.
+        var response = await AuthApi.PostSignOutAsync(client, token!);
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task SignOut_CokUzunToken_400()
+    {
+        var client = factory.CreateClient();
+
+        var response = await AuthApi.PostSignOutAsync(client, new string('a', 513));
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
     private async Task<RefreshToken> FindTokenAsync(string rawToken)
     {
         var hash = factory.HashRefreshToken(rawToken);

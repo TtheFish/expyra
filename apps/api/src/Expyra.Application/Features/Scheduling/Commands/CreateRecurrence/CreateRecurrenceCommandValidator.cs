@@ -19,6 +19,12 @@ internal sealed class CreateRecurrenceCommandValidator : AbstractValidator<Creat
             .Must(days => days.Distinct().Count() == days.Count)
             .WithMessage("Aynı gün birden fazla kez verilemez.");
 
+        // JsonStringEnumConverter tam sayıyı da kabul ediyor: `9` gelirse
+        // ck_recurrence_template_day_of_week'e çarpıp 500 olurdu (#44).
+        RuleForEach(x => x.DaysOfWeek).IsInEnum();
+
+        RuleFor(x => x.DstOverlap).IsInEnum();
+
         // Saniye ve altı REDDEDİLİYOR: seans başlangıcı dakika hassasiyetinde ve
         // "14:00:30" gibi bir değer, ekranda 14:00 görünüp veritabanında başka
         // olurdu.
