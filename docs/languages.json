@@ -7,7 +7,7 @@
     { "code": "tr", "nativeName": "Türkçe",           "englishName": "Turkish",        "searchConfig": "turkish",    "uiAvailable": true,  "rtl": false },
 
     { "code": "bg", "nativeName": "Български",        "englishName": "Bulgarian",      "searchConfig": null,         "uiAvailable": true,  "rtl": false },
-    { "code": "hr", "nativeName": "Hrvatski",         "englishName": "Croatian",       "searchConfig": null,         "uiAvailable": false, "rtl": false },
+    { "code": "hr", "nativeName": "Hrvatski",         "englishName": "Croatian",       "searchConfig": null,         "uiAvailable": true,  "rtl": false },
     { "code": "cs", "nativeName": "Čeština",          "englishName": "Czech",          "searchConfig": null,         "uiAvailable": true,  "rtl": false },
     { "code": "da", "nativeName": "Dansk",            "englishName": "Danish",         "searchConfig": "danish",     "uiAvailable": false, "rtl": false },
     { "code": "nl", "nativeName": "Nederlands",       "englishName": "Dutch",          "searchConfig": "dutch",      "uiAvailable": false, "rtl": false },

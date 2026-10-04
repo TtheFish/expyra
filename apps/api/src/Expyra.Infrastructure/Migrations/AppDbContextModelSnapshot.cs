@@ -676,7 +676,7 @@ namespace Expyra.Infrastructure.Migrations
                             EnglishName = "Croatian",
                             IsRightToLeft = false,
                             NativeName = "Hrvatski",
-                            UiAvailable = false
+                            UiAvailable = true
                         },
                         new
                         {

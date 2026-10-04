@@ -215,6 +215,35 @@ export const boundaryMessages = {
       reference: 'Код за поддръжка',
     },
   },
+
+  hr: {
+    loading: 'Stranica se učitava',
+
+    notFound: {
+      code: 'Greška 404 · stranica nije pronađena',
+      title: 'Ova stranica ne postoji',
+      lede: 'Veza je možda stara ili je adresa krivo napisana. Ono što tražiš možda je još ovdje — pokušaj istražiti.',
+      explore: 'Istraži iskustva',
+      home: 'Natrag na početnu',
+    },
+
+    error: {
+      title: 'Nešto je pošlo po zlu',
+      lede: 'Nismo uspjeli učitati ovu stranicu. Problem može biti kod nas — ponovni pokušaj obično pomogne.',
+      retry: 'Pokušaj ponovno',
+      home: 'Natrag na početnu',
+      reference: 'Šifra za podršku',
+    },
+
+    globalError: {
+      documentTitle: 'Nešto je pošlo po zlu · Expyra',
+      title: 'Nešto je pošlo po zlu',
+      lede: 'Aplikacija se neočekivano zaustavila. Ponovno učitavanje stranice obično pomogne.',
+      retry: 'Učitaj ponovno',
+      home: 'Natrag na početnu',
+      reference: 'Šifra za podršku',
+    },
+  },
 } as const satisfies Record<UiLocale, BoundaryMessages>
 
 /**

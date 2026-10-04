@@ -491,6 +491,13 @@ public static class DemoDataSeeder
                 null,
                 null,
                 []),
+            ["hr"] = new(
+                "Otkrij Prag s turskim vodičem",
+                "Prođi centrom Praga, sporednim uličicama i manje poznatim kutovima s lokalnim vodičem koji govori turski.",
+                null,
+                null,
+                null,
+                []),
         };
 
         var existingLanguages = await dbContext.ExperienceTranslations
@@ -646,6 +653,18 @@ public static class DemoDataSeeder
                     ("Крайбрежието на Мода", "Кафе пауза и разходка край морето."),
                     ("Сладкарница", "Край с печен млечен ориз."),
                 ]),
+            ["hr"] = new(
+                "Gurmanska šetnja Kadıköyem",
+                "Tri sata degustacije od tržnice do Mode: povijesna börekarnica, kiseli specijaliteti, pržionica kave i najbolji slastičar u četvrti. Mala grupa, puno razgovora.",
+                "Ispred kipa bika; nosit ću narančastu torbu.",
+                "Prazan želudac i udobne cipele.",
+                "Pića (po želji).",
+                [
+                    ("Sastanak na Altıyolu", "Kratko upoznavanje i plan."),
+                    ("Povijesna tržnica", "Börek, sir i masline."),
+                    ("Obala Mode", "Pauza za kavu i šetnja uz more."),
+                    ("Slastičarna", "Završetak s pečenim mliječnim rižinom."),
+                ]),
         });
 
     private static DemoExperience Balat(Guid hostId) => new(
@@ -722,6 +741,17 @@ public static class DemoDataSeeder
                     ("Среща на кея", null),
                     ("Цветните улици", "Улица Киремит и стълбите."),
                     ("Кафе и обратна връзка", "Заедно гледаме снимките."),
+                ]),
+            ["hr"] = new(
+                "Jutarnja foto šetnja Balatom",
+                "Šarene kuće, uske uličice i jutarnje svjetlo. Možeš i s telefonom; pričamo o kompoziciji i svjetlu.",
+                "Izlaz s pristaništa, ispod sata.",
+                "Fotoaparat ili telefon, napunjen.",
+                null,
+                [
+                    ("Sastanak na pristaništu", null),
+                    ("Šarene ulice", "Ulica Kiremit i stepenice."),
+                    ("Kava i povratne informacije", "Zajedno gledamo snimke."),
                 ]),
         });
 
@@ -805,6 +835,18 @@ public static class DemoDataSeeder
                     ("Залез пред крепостта Румели", "Чай и симит."),
                     ("Връщане", null),
                 ]),
+            ["hr"] = new(
+                "Zalazak sunca brodom na Bosporu",
+                "Mali brod od Beşiktaşa do tvrđave Rumeli. Čaj, simit i zalazak sunca.",
+                "Mali dok desno od trajektnog pristaništa.",
+                "Vjetrovka; navečer zahladi.",
+                "Alkoholna pića.",
+                [
+                    ("Polazak iz Beşiktaşa", null),
+                    ("Ortaköy i ispod mosta", "Foto stanka."),
+                    ("Zalazak kod tvrđave Rumeli", "Čaj i simit."),
+                    ("Povratak", null),
+                ]),
         });
 
     private static DemoExperience Kemeralti(Guid hostId) => new(
@@ -881,6 +923,17 @@ public static class DemoDataSeeder
                     ("Среща при часовниковата кула", null),
                     ("Бойоз и геврек", "На крак, на входа на чаршията."),
                     ("Хан Къзлараасъ", "Кафе и разговор."),
+                ]),
+            ["hr"] = new(
+                "Doručak i šetnja čaršijom Kemeraltı",
+                "Boyoz, gevrek i jutarnji ritam čaršije. Zatim turska kava u hanu Kızlarağası.",
+                "Strana satnog tornja prema moru.",
+                null,
+                null,
+                [
+                    ("Sastanak kod satnog tornja", null),
+                    ("Boyoz i gevrek", "Stojeći, na ulazu u čaršiju."),
+                    ("Han Kızlarağası", "Kava i razgovor."),
                 ]),
         });
 
@@ -963,6 +1016,18 @@ public static class DemoDataSeeder
                     ("Червената долина", "Изгрев и балони."),
                     ("Розовата долина", "Скални църкви."),
                     ("Чавушин", "Край на разходката, обратно в селото."),
+                ]),
+            ["hr"] = new(
+                "Izlazak sunca — šetnja dolinom kod Göremea",
+                "Od Crvene do Ružičaste doline dok se baloni dižu. Srednja težina, oko 7 km.",
+                "Ispred autobusnog kolodvora; dolazim po tebe minibustom.",
+                "Čizme, slojevi odjeće, litra vode.",
+                "Doručak (poslije preporučujem mjesto).",
+                [
+                    ("Sastanak na kolodvoru", "10 minuta minibustom do početka staze."),
+                    ("Crvena dolina", "Izlazak sunca i baloni."),
+                    ("Ružičasta dolina", "Stambene crkve."),
+                    ("Çavuşin", "Kraj šetnje, natrag u selo."),
                 ]),
         });
 

@@ -87,6 +87,20 @@
       "signIn": "vhod",
       "account": "akaunt",
       "hostExperienceEdit": "host/experience/:id"
+    },
+    "hr": {
+      "home": "",
+      "explore": "istrazi",
+      "howItWorks": "kako-funkcionira",
+      "myExperiences": "moja-iskustva",
+      "ticketDetail": "ulaznica/:code",
+      "becomeHost": "postani-domacin",
+      "experienceDetail": "iskustvo/:slug",
+      "experienceCheckout": "iskustvo/:slug/placanje",
+      "hostExperienceNew": "domacin/iskustvo/novo",
+      "signIn": "prijava",
+      "account": "racun",
+      "hostExperienceEdit": "host/experience/:id"
     }
   }
 }
