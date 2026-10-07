@@ -1,6 +1,7 @@
 import { LanguageContentPicker } from '@/components/i18n/language-content-picker'
 import { interpolate } from '@/features/i18n/format'
 import {
+  contentLanguages,
   findLanguage,
   localNameOf,
   uiLanguages,
@@ -101,6 +102,7 @@ export function LanguagePicker({
 
         <LanguageContentPicker
           current={current}
+          initialNames={contentLanguageNames(current)}
           labels={{
             searchLabel: labels.searchLabel,
             searchPlaceholder: labels.searchPlaceholder,
@@ -111,5 +113,22 @@ export function LanguagePicker({
         />
       </div>
     </details>
+  )
+}
+
+/**
+ * İçerik dillerinin `current` dilindeki adları — SUNUCUDA hesaplanıp istemci
+ * adasına veriliyor. `Intl.DisplayNames` sonucu Node ve tarayıcı ICU'sunda
+ * aynı değil (ör. `se`/hr: biri "sjeverni sami", öbürü "Northern Sami" diyor);
+ * ada kendisi hesaplasaydı ilk çizim hydration hatası verirdi.
+ */
+function contentLanguageNames(current: string): Record<string, string> {
+  return Object.fromEntries(
+    contentLanguages
+      .filter((language) => !language.uiAvailable)
+      .map((language) => [
+        language.code,
+        localNameOf(language.code, current) ?? language.englishName,
+      ]),
   )
 }

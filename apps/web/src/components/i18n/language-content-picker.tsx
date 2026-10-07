@@ -18,9 +18,17 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
 export function LanguageContentPicker({
   current,
+  initialNames,
   labels,
 }: {
   current: string
+  /**
+   * `current` dilindeki adlar, sunucudan. İlk çizim bunları kullanmak ZORUNDA:
+   * Node ve tarayıcı ICU'su bazı dil adlarında ayrışıyor, istemcide yeniden
+   * hesaplamak hydration hatası verir. Kullanıcı başka dil seçince (hydration
+   * bittikten sonra) adlar istemcide hesaplanır.
+   */
+  initialNames: Readonly<Record<string, string>>
   labels: {
     searchLabel: string
     searchPlaceholder: string
@@ -71,7 +79,10 @@ export function LanguageContentPicker({
       */}
       <ul className="space-y-0.5">
         {matches.map((language) => {
-          const localName = localNameOf(language.code, selected) ?? language.englishName
+          const localName =
+            (selected === current
+              ? initialNames[language.code]
+              : localNameOf(language.code, selected)) ?? language.englishName
           const isSelected = language.code === selected
 
           return (
