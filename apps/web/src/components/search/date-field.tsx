@@ -230,8 +230,7 @@ function Wheel({
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const lastIdx = useRef(-1)
-  const suppressTick = useRef(true)
-  const wheelAcc = useRef(0)
+  const scrollTarget = useRef<number | null>(null)
   const labelId = useId()
 
   const indexOf = useCallback(
@@ -245,6 +244,7 @@ function Wheel({
   const scrollToIndex = useCallback((index: number, smooth: boolean) => {
     const el = scrollerRef.current
     if (!el) return
+    scrollTarget.current = smooth ? index * ITEM_H : null
     el.scrollTo({ top: index * ITEM_H, behavior: smooth ? 'smooth' : 'auto' })
   }, [])
 
@@ -262,56 +262,44 @@ function Wheel({
 
   const step = (delta: number) => {
     void unlockAudio()
-    const idx = indexOf(value)
+    const idx = lastIdx.current
     const next = clamp(idx + delta, 0, values.length - 1)
     if (next === idx) return
     selectIndex(next, { tick: true, smooth: true })
   }
 
-  // Dışarıdan değer değişince (ay günü kırpma / ok) sessizce hizala.
+  // Yalnız dışarıdan gelen değişiklikleri hizala. Kendi seçimimizi tekrar
+  // kaydırmak animasyonu, dokunmatik kaydırmayı ve momentumu keser.
   useEffect(() => {
     const idx = indexOf(value)
-    suppressTick.current = true
+    if (idx === lastIdx.current) return
     lastIdx.current = idx
-    // Panel yeni açıldığında layout otursun diye rAF.
-    const id = requestAnimationFrame(() => {
-      scrollToIndex(idx, false)
-      window.setTimeout(() => {
-        suppressTick.current = false
-      }, 120)
-    })
-    return () => cancelAnimationFrame(id)
+    scrollToIndex(idx, false)
   }, [value, values, indexOf, scrollToIndex])
 
-  // Masaüstünde tekerlek: serbest scroll yerine net adım — "aşağı inemiyorum"
-  // hissini keser; her adımda tik.
+  // Trackpad momentumu ve CSS snap tarayıcıya ait. Wheel olayını iptal
+  // edip her delta için scrollTo çağırmak devam eden hareketi keser.
   useEffect(() => {
     const el = scrollerRef.current
     if (!el) return
 
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault()
-      event.stopPropagation()
+    const onWheel = () => {
+      scrollTarget.current = null
       void unlockAudio()
-
-      wheelAcc.current += event.deltaY
-      const threshold = 24
-      if (Math.abs(wheelAcc.current) < threshold) return
-
-      const dir = wheelAcc.current > 0 ? 1 : -1
-      wheelAcc.current = 0
-      const idx = clamp(lastIdx.current + dir, 0, values.length - 1)
-      if (idx === lastIdx.current) return
-      selectIndex(idx, { tick: true, smooth: true })
     }
 
-    el.addEventListener('wheel', onWheel, { passive: false })
+    el.addEventListener('wheel', onWheel, { passive: true })
     return () => el.removeEventListener('wheel', onWheel)
-  }, [selectIndex, values.length])
+  }, [])
 
   const onScroll = () => {
     const el = scrollerRef.current
-    if (!el || suppressTick.current) return
+    if (!el) return
+    // Ok / tıklama animasyonunun ara satırları yeni bir seçim değildir.
+    if (scrollTarget.current !== null) {
+      if (Math.abs(el.scrollTop - scrollTarget.current) < 1) scrollTarget.current = null
+      return
+    }
     const idx = clamp(Math.round(el.scrollTop / ITEM_H), 0, values.length - 1)
     if (idx === lastIdx.current) return
     lastIdx.current = idx
@@ -349,6 +337,9 @@ function Wheel({
           tabIndex={0}
           className="date-wheel-scroller"
           onScroll={onScroll}
+          onTouchStart={() => {
+            scrollTarget.current = null
+          }}
           onKeyDown={(event) => {
             if (event.key === 'ArrowDown') {
               event.preventDefault()
@@ -377,7 +368,7 @@ function Wheel({
                   selectIndex(idx, { tick: n !== value, smooth: true })
                 }}
               >
-                {format(n)}
+                <span>{format(n)}</span>
               </div>
             )
           })}
