@@ -498,6 +498,34 @@ public static class DemoDataSeeder
                 null,
                 null,
                 []),
+            ["da"] = new(
+                "Oplev Prag med en tyrkisktalende guide",
+                "Se Prags centrum, sidegader og mindre kendte hjørner med en lokal guide, der taler tyrkisk.",
+                null,
+                null,
+                null,
+                []),
+            ["nl"] = new(
+                "Ontdek Praag met een Turkssprekende gids",
+                "Bekijk het centrum van Praag, de zijstraatjes en minder bekende hoekjes met een lokale gids die Turks spreekt.",
+                null,
+                null,
+                null,
+                []),
+            ["et"] = new(
+                "Avasta Praha türgi keelt kõneleva giidiga",
+                "Vaata Praha kesklinna, kõrvaltänavaid ja vähem tuntud nurgakesi koos kohaliku giidiga, kes räägib türgi keelt.",
+                null,
+                null,
+                null,
+                []),
+            ["fi"] = new(
+                "Tutustu Prahaan turkkia puhuvan oppaan kanssa",
+                "Näe Prahan keskusta, sivukujat ja vähemmän tunnetut kolkat paikallisen, turkkia puhuvan oppaan kanssa.",
+                null,
+                null,
+                null,
+                []),
         };
 
         var existingLanguages = await dbContext.ExperienceTranslations
@@ -665,6 +693,54 @@ public static class DemoDataSeeder
                     ("Obala Mode", "Pauza za kavu i šetnja uz more."),
                     ("Slastičarna", "Završetak s pečenim mliječnim rižinom."),
                 ]),
+            ["da"] = new(
+                "Madvandring i Kadıköy",
+                "Tre timers smagstur fra markedet til Moda: et historisk börek-bageri, en syltemager, et kafferisteri og kvarterets bedste konditor. Lille gruppe, masser af snak.",
+                "Foran tyrestatuen; jeg har en orange taske med.",
+                "En tom mave og gode gåsko.",
+                "Drikkevarer (valgfrit).",
+                [
+                    ("Vi mødes ved Altıyol", "Kort præsentation og plan."),
+                    ("Det historiske marked", "Börek, ost og oliven."),
+                    ("Strandpromenaden i Moda", "Kaffepause og gåtur ved vandet."),
+                    ("Konditoriet", "Vi slutter med bagt risengrød."),
+                ]),
+            ["nl"] = new(
+                "Culinaire wandeling door Kadıköy",
+                "Een proeverij van drie uur van de markt naar Moda: een historische börekbakker, een inmaker, een koffiebranderij en de beste banketbakker van de buurt. Kleine groep, veel gesprekken.",
+                "Voor het stierenbeeld; ik heb een oranje tas bij me.",
+                "Een lege maag en goede wandelschoenen.",
+                "Drankjes (optioneel).",
+                [
+                    ("Verzamelen bij Altıyol", "Korte kennismaking en de planning."),
+                    ("De historische markt", "Börek, kaas en olijven proeven."),
+                    ("De kust van Moda", "Koffiepauze en een wandeling langs het water."),
+                    ("Banketbakker", "Afsluiting met gebakken rijstpudding."),
+                ]),
+            ["et"] = new(
+                "Maitseretk Kadıköys",
+                "Kolmetunnine maitsmisretk turult Modasse: ajalooline börekipagar, hapendaja, kohvirösteri ja linnaosa parim kondiiter. Väike grupp, palju juttu.",
+                "Pullikuju ees; mul on käes oranž kott.",
+                "Tühi kõht ja mugavad jalanõud.",
+                "Joogid (soovi korral).",
+                [
+                    ("Kohtumine Altıyolis", "Lühike tutvumine ja plaan."),
+                    ("Ajalooline turg", "Böreki, juustu ja oliivide maitsmine."),
+                    ("Moda rannapromenaad", "Kohvipaus ja jalutuskäik mere ääres."),
+                    ("Kondiitriäri", "Lõpetuseks küpsetatud riisipuding."),
+                ]),
+            ["fi"] = new(
+                "Makukävely Kadıköyssä",
+                "Kolmen tunnin maistelukierros torilta Modaan: historiallinen börek-leipomo, säilykemestari, kahvipaahtimo ja kaupunginosan paras kondiittori. Pieni ryhmä, paljon juttelua.",
+                "Härkäpatsaan edessä; minulla on oranssi laukku.",
+                "Tyhjä vatsa ja hyvät kävelykengät.",
+                "Juomat (valinnaiset).",
+                [
+                    ("Tapaaminen Altıyolissa", "Lyhyt tutustuminen ja suunnitelma."),
+                    ("Historiallinen tori", "Börekiä, juustoa ja oliiveja."),
+                    ("Modan rantabulevardi", "Kahvitauko ja kävely meren rannalla."),
+                    ("Konditoria", "Lopuksi uunissa paistettua riisipuuroa."),
+                ]),
         });
 
     private static DemoExperience Balat(Guid hostId) => new(
@@ -752,6 +828,50 @@ public static class DemoDataSeeder
                     ("Sastanak na pristaništu", null),
                     ("Šarene ulice", "Ulica Kiremit i stepenice."),
                     ("Kava i povratne informacije", "Zajedno gledamo snimke."),
+                ]),
+            ["da"] = new(
+                "Fotovandring i Balat om morgenen",
+                "Farverige huse, smalle gader og morgenlys. Du kan også komme med din telefon; vi taler om komposition og lys.",
+                "Ved udgangen fra færgelejet, under uret.",
+                "Kamera eller telefon, fuldt opladet.",
+                null,
+                [
+                    ("Vi mødes ved færgelejet", null),
+                    ("De farverige gader", "Kiremit-gaden og trapperne."),
+                    ("Kaffe og feedback", "Vi ser billederne igennem sammen."),
+                ]),
+            ["nl"] = new(
+                "Ochtendfotowandeling in Balat",
+                "Kleurrijke huizen, smalle straatjes en ochtendlicht. Je kunt ook met je telefoon komen; we praten over compositie en licht.",
+                "Bij de uitgang van de aanlegsteiger, onder de klok.",
+                "Een camera of telefoon, volledig opgeladen.",
+                null,
+                [
+                    ("Verzamelen bij de steiger", null),
+                    ("De kleurrijke straten", "De Kiremitstraat en de trappen."),
+                    ("Koffie en feedback", "We bekijken de foto’s samen."),
+                ]),
+            ["et"] = new(
+                "Hommikune fotoretk Balatis",
+                "Värvilised majad, kitsad tänavad ja hommikuvalgus. Võid tulla ka telefoniga; räägime kompositsioonist ja valgusest.",
+                "Sadamakai väljapääsu juures, kella all.",
+                "Kaamera või telefon, täis laetud.",
+                null,
+                [
+                    ("Kohtumine kai ääres", null),
+                    ("Värvilised tänavad", "Kiremiti tänav ja trepid."),
+                    ("Kohv ja tagasiside", "Vaatame pildid koos üle."),
+                ]),
+            ["fi"] = new(
+                "Aamun valokuvauskävely Balatissa",
+                "Värikkäät talot, kapeat kujat ja aamun valo. Voit tulla myös puhelimen kanssa; puhumme sommittelusta ja valosta.",
+                "Laiturin uloskäynnillä, kellon alla.",
+                "Kamera tai puhelin, täyteen ladattuna.",
+                null,
+                [
+                    ("Tapaaminen laiturilla", null),
+                    ("Värikkäät kadut", "Kiremit-katu ja portaat."),
+                    ("Kahvi ja palaute", "Katsomme kuvat yhdessä läpi."),
                 ]),
         });
 
@@ -847,6 +967,54 @@ public static class DemoDataSeeder
                     ("Zalazak kod tvrđave Rumeli", "Čaj i simit."),
                     ("Povratak", null),
                 ]),
+            ["da"] = new(
+                "Solnedgangstur med båd på Bosporus",
+                "En lille båd fra Beşiktaş til Rumeli-fæstningen. Te, simit og solnedgang.",
+                "Den lille bådebro til højre for færgelejet.",
+                "En vindjakke; om aftenen bliver det køligt.",
+                "Alkoholiske drikke.",
+                [
+                    ("Afgang fra Beşiktaş", null),
+                    ("Ortaköy og under broen", "Fotostop."),
+                    ("Solnedgang ved Rumeli-fæstningen", "Te og simit."),
+                    ("Hjemtur", null),
+                ]),
+            ["nl"] = new(
+                "Boottocht bij zonsondergang op de Bosporus",
+                "Met een kleine boot van Beşiktaş naar het fort Rumeli. Thee, simit en de zonsondergang.",
+                "De kleine bootsteiger rechts van de veerpont.",
+                "Een windjack; ’s avonds wordt het koel.",
+                "Alcoholische dranken.",
+                [
+                    ("Vertrek vanuit Beşiktaş", null),
+                    ("Ortaköy en onder de brug", "Fotostop."),
+                    ("Zonsondergang bij het fort Rumeli", "Thee en simit."),
+                    ("Terugvaart", null),
+                ]),
+            ["et"] = new(
+                "Päikeseloojangu paadisõit Bosporusel",
+                "Väikese paadiga Beşiktaşist Rumeli kindluseni. Tee, simit ja päikeseloojang.",
+                "Väike paadisild praamikaist paremal.",
+                "Tuulejope; õhtuti läheb jahedaks.",
+                "Alkohoolsed joogid.",
+                [
+                    ("Väljumine Beşiktaşist", null),
+                    ("Ortaköy ja silla all", "Fotopeatus."),
+                    ("Päikeseloojang Rumeli kindluse juures", "Tee ja simit."),
+                    ("Tagasisõit", null),
+                ]),
+            ["fi"] = new(
+                "Auringonlaskun veneretki Bosporinsalmella",
+                "Pienellä veneellä Beşiktaşista Rumelin linnoitukselle. Teetä, simit-rinkeleitä ja auringonlasku.",
+                "Pieni venelaituri lauttalaiturin oikealla puolella.",
+                "Tuulitakki; iltaisin tulee viileää.",
+                "Alkoholijuomat.",
+                [
+                    ("Lähtö Beşiktaşista", null),
+                    ("Ortaköy ja sillan alitse", "Kuvaustauko."),
+                    ("Auringonlasku Rumelin linnoituksella", "Teetä ja simitiä."),
+                    ("Paluu", null),
+                ]),
         });
 
     private static DemoExperience Kemeralti(Guid hostId) => new(
@@ -934,6 +1102,50 @@ public static class DemoDataSeeder
                     ("Sastanak kod satnog tornja", null),
                     ("Boyoz i gevrek", "Stojeći, na ulazu u čaršiju."),
                     ("Han Kızlarağası", "Kava i razgovor."),
+                ]),
+            ["da"] = new(
+                "Morgenmad og basartur i Kemeraltı",
+                "Boyoz, gevrek og basarens morgenrytme. Bagefter tyrkisk kaffe i Kızlarağası Han.",
+                "Ved havsiden af klokketårnet.",
+                null,
+                null,
+                [
+                    ("Vi mødes ved klokketårnet", null),
+                    ("Boyoz og gevrek", "Stående, ved indgangen til basaren."),
+                    ("Kızlarağası Han", "Kaffe og snak."),
+                ]),
+            ["nl"] = new(
+                "Ontbijt en bazaarwandeling in Kemeraltı",
+                "Boyoz, gevrek en het ochtendritme van de bazaar. Daarna Turkse koffie in de Kızlarağası Han.",
+                "Aan de zeekant van de klokkentoren.",
+                null,
+                null,
+                [
+                    ("Verzamelen bij de klokkentoren", null),
+                    ("Boyoz en gevrek", "Staand, bij de ingang van de bazaar."),
+                    ("Kızlarağası Han", "Koffie en een praatje."),
+                ]),
+            ["et"] = new(
+                "Hommikusöök ja basaariretk Kemeraltıs",
+                "Boyoz, gevrek ja basaari hommikune rütm. Seejärel türgi kohv Kızlarağası hanis.",
+                "Kellatorni mere poolsel küljel.",
+                null,
+                null,
+                [
+                    ("Kohtumine kellatorni juures", null),
+                    ("Boyoz ja gevrek", "Püsti seistes, basaari sissepääsu juures."),
+                    ("Kızlarağası han", "Kohv ja jutuajamine."),
+                ]),
+            ["fi"] = new(
+                "Aamiainen ja basaarikävely Kemeraltıssa",
+                "Boyozia, gevrekiä ja basaarin aamurytmi. Sen jälkeen turkkilaista kahvia Kızlarağasın karavaaniserajissa.",
+                "Kellotornin merenpuoleisella sivulla.",
+                null,
+                null,
+                [
+                    ("Tapaaminen kellotornilla", null),
+                    ("Boyoz ja gevrek", "Seisaaltaan, basaarin sisäänkäynnillä."),
+                    ("Kızlarağasın karavaaniseraji", "Kahvia ja juttelua."),
                 ]),
         });
 
@@ -1028,6 +1240,54 @@ public static class DemoDataSeeder
                     ("Crvena dolina", "Izlazak sunca i baloni."),
                     ("Ružičasta dolina", "Stambene crkve."),
                     ("Çavuşin", "Kraj šetnje, natrag u selo."),
+                ]),
+            ["da"] = new(
+                "Solopgangsvandring i dalen ved Göreme",
+                "Fra Den Røde Dal til Rosendalen, mens ballonerne stiger op. Middel sværhedsgrad, cirka 7 km.",
+                "Foran busstationen; jeg henter dig i minibus.",
+                "Vandrestøvler, flere lag tøj, en liter vand.",
+                "Morgenmad (bagefter anbefaler jeg et sted).",
+                [
+                    ("Vi mødes ved busstationen", "10 minutter i minibus til startpunktet."),
+                    ("Den Røde Dal", "Solopgang og balloner."),
+                    ("Rosendalen", "Klippekirker."),
+                    ("Çavuşin", "Vandringen slutter, tilbage til landsbyen."),
+                ]),
+            ["nl"] = new(
+                "Zonsopgangswandeling door de vallei bij Göreme",
+                "Van de Rode Vallei naar de Rozenvallei terwijl de ballonnen opstijgen. Gemiddeld zwaar, ongeveer 7 km.",
+                "Voor het busstation; ik haal je op met een minibus.",
+                "Wandelschoenen, laagjes kleding, een liter water.",
+                "Ontbijt (daarna raad ik een adresje aan).",
+                [
+                    ("Verzamelen bij het busstation", "10 minuten met de minibus naar het startpunt."),
+                    ("De Rode Vallei", "Zonsopgang en ballonnen."),
+                    ("De Rozenvallei", "Rotskerken."),
+                    ("Çavuşin", "Einde van de wandeling, terug naar het dorp."),
+                ]),
+            ["et"] = new(
+                "Päikesetõusu matk orus Göreme lähedal",
+                "Punasest orust Roosade orgu, samal ajal kui õhupallid tõusevad. Keskmise raskusega, umbes 7 km.",
+                "Bussijaama ees; tulen sulle minibussiga järele.",
+                "Matkasaapad, kihiti riided, liiter vett.",
+                "Hommikusöök (pärast soovitan üht kohta).",
+                [
+                    ("Kohtumine bussijaamas", "Minibussiga 10 minutit raja alguseni."),
+                    ("Punane org", "Päikesetõus ja õhupallid."),
+                    ("Roosade org", "Kaljukirikud."),
+                    ("Çavuşin", "Matka lõpp, tagasi külla."),
+                ]),
+            ["fi"] = new(
+                "Auringonnousuvaellus laaksossa Göremen lähellä",
+                "Punaisesta laaksosta Ruusulaaksoon, kun kuumailmapallot nousevat. Keskivaativa, noin 7 km.",
+                "Linja-autoaseman edessä; haen sinut pikkubussilla.",
+                "Vaelluskengät, kerrospukeutuminen, litra vettä.",
+                "Aamiainen (suosittelen jälkeenpäin yhtä paikkaa).",
+                [
+                    ("Tapaaminen linja-autoasemalla", "Pikkubussilla 10 minuuttia polun alkuun."),
+                    ("Punainen laakso", "Auringonnousu ja kuumailmapallot."),
+                    ("Ruusulaakso", "Kalliokirkot."),
+                    ("Çavuşin", "Vaellus päättyy, paluu kylään."),
                 ]),
         });
 

@@ -69,6 +69,14 @@ export const pluralCategories = {
   bg: ['one', 'other'],
   // Hırvatça üç biçim: one (1, 21…), few (2–4, 22–24…), other (0, 5–20…).
   hr: ['one', 'few', 'other'],
+  // Danca: one + other (CLDR; `Intl.PluralRules('da')`).
+  da: ['one', 'other'],
+  // Felemenkçe: one + other (CLDR; `Intl.PluralRules('nl')`).
+  nl: ['one', 'other'],
+  // Estonca: one + other (CLDR; `Intl.PluralRules('et')`).
+  et: ['one', 'other'],
+  // Fince: one + other (CLDR; `Intl.PluralRules('fi')`).
+  fi: ['one', 'other'],
 } as const satisfies Record<UiLocale, readonly Intl.LDMLPluralRule[]>
 
 export type PluralCategoryOf<L extends UiLocale> = (typeof pluralCategories)[L][number]

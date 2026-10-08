@@ -244,6 +244,122 @@ export const boundaryMessages = {
       reference: 'Šifra za podršku',
     },
   },
+
+  da: {
+    loading: 'Siden indlæses',
+
+    notFound: {
+      code: 'Fejl 404 · siden blev ikke fundet',
+      title: 'Denne side findes ikke',
+      lede: 'Linket kan være gammelt, eller adressen er stavet forkert. Det, du leder efter, er måske stadig her — prøv at udforske.',
+      explore: 'Udforsk oplevelser',
+      home: 'Tilbage til forsiden',
+    },
+
+    error: {
+      title: 'Noget gik galt',
+      lede: 'Vi kunne ikke indlæse denne side. Fejlen kan ligge hos os — et nyt forsøg hjælper som regel.',
+      retry: 'Prøv igen',
+      home: 'Tilbage til forsiden',
+      reference: 'Supportkode',
+    },
+
+    globalError: {
+      documentTitle: 'Noget gik galt · Expyra',
+      title: 'Noget gik galt',
+      lede: 'Appen stoppede uventet. Det hjælper som regel at genindlæse siden.',
+      retry: 'Genindlæs',
+      home: 'Tilbage til forsiden',
+      reference: 'Supportkode',
+    },
+  },
+
+  nl: {
+    loading: 'De pagina wordt geladen',
+
+    notFound: {
+      code: 'Fout 404 · pagina niet gevonden',
+      title: 'Deze pagina bestaat niet',
+      lede: 'De link is misschien oud, of het adres is verkeerd gespeld. Wat je zoekt, is er misschien nog — probeer te ontdekken.',
+      explore: 'Belevenissen ontdekken',
+      home: 'Terug naar de startpagina',
+    },
+
+    error: {
+      title: 'Er ging iets mis',
+      lede: 'We konden deze pagina niet laden. Het probleem kan bij ons liggen — opnieuw proberen helpt meestal.',
+      retry: 'Opnieuw proberen',
+      home: 'Terug naar de startpagina',
+      reference: 'Supportcode',
+    },
+
+    globalError: {
+      documentTitle: 'Er ging iets mis · Expyra',
+      title: 'Er ging iets mis',
+      lede: 'De app is onverwacht gestopt. De pagina opnieuw laden helpt meestal.',
+      retry: 'Opnieuw laden',
+      home: 'Terug naar de startpagina',
+      reference: 'Supportcode',
+    },
+  },
+
+  et: {
+    loading: 'Lehte laaditakse',
+
+    notFound: {
+      code: 'Viga 404 · lehte ei leitud',
+      title: 'Seda lehte pole olemas',
+      lede: 'Link võib olla vana või aadress valesti kirjutatud. See, mida otsid, võib siin ikka olemas olla — proovi avastada.',
+      explore: 'Avasta elamusi',
+      home: 'Tagasi avalehele',
+    },
+
+    error: {
+      title: 'Midagi läks valesti',
+      lede: 'Me ei saanud seda lehte laadida. Viga võib olla meie poolel — uuesti proovimine tavaliselt aitab.',
+      retry: 'Proovi uuesti',
+      home: 'Tagasi avalehele',
+      reference: 'Toe kood',
+    },
+
+    globalError: {
+      documentTitle: 'Midagi läks valesti · Expyra',
+      title: 'Midagi läks valesti',
+      lede: 'Rakendus peatus ootamatult. Lehe uuesti laadimine tavaliselt aitab.',
+      retry: 'Laadi uuesti',
+      home: 'Tagasi avalehele',
+      reference: 'Toe kood',
+    },
+  },
+
+  fi: {
+    loading: 'Sivua ladataan',
+
+    notFound: {
+      code: 'Virhe 404 · sivua ei löytynyt',
+      title: 'Tätä sivua ei ole olemassa',
+      lede: 'Linkki voi olla vanha tai osoite kirjoitettu väärin. Etsimäsi voi silti olla täällä — kokeile tutustua.',
+      explore: 'Tutustu elämyksiin',
+      home: 'Takaisin etusivulle',
+    },
+
+    error: {
+      title: 'Jokin meni pieleen',
+      lede: 'Emme saaneet ladattua tätä sivua. Vika voi olla meidän päässämme — uusi yritys yleensä auttaa.',
+      retry: 'Yritä uudelleen',
+      home: 'Takaisin etusivulle',
+      reference: 'Tukikoodi',
+    },
+
+    globalError: {
+      documentTitle: 'Jokin meni pieleen · Expyra',
+      title: 'Jokin meni pieleen',
+      lede: 'Sovellus pysähtyi odottamatta. Sivun lataaminen uudelleen yleensä auttaa.',
+      retry: 'Lataa uudelleen',
+      home: 'Takaisin etusivulle',
+      reference: 'Tukikoodi',
+    },
+  },
 } as const satisfies Record<UiLocale, BoundaryMessages>
 
 /**

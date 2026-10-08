@@ -101,6 +101,62 @@
       "signIn": "prijava",
       "account": "racun",
       "hostExperienceEdit": "host/experience/:id"
+    },
+    "da": {
+      "home": "",
+      "explore": "udforsk",
+      "howItWorks": "saadan-virker-det",
+      "myExperiences": "mine-oplevelser",
+      "ticketDetail": "billet/:code",
+      "becomeHost": "bliv-vaert",
+      "experienceDetail": "oplevelse/:slug",
+      "experienceCheckout": "oplevelse/:slug/betaling",
+      "hostExperienceNew": "vaert/oplevelse/ny",
+      "signIn": "log-ind",
+      "account": "konto",
+      "hostExperienceEdit": "host/experience/:id"
+    },
+    "nl": {
+      "home": "",
+      "explore": "ontdekken",
+      "howItWorks": "hoe-het-werkt",
+      "myExperiences": "mijn-belevenissen",
+      "ticketDetail": "ticket/:code",
+      "becomeHost": "word-host",
+      "experienceDetail": "belevenis/:slug",
+      "experienceCheckout": "belevenis/:slug/betalen",
+      "hostExperienceNew": "host/belevenis/nieuw",
+      "signIn": "inloggen",
+      "account": "account",
+      "hostExperienceEdit": "host/experience/:id"
+    },
+    "et": {
+      "home": "",
+      "explore": "avasta",
+      "howItWorks": "kuidas-see-toimib",
+      "myExperiences": "minu-elamused",
+      "ticketDetail": "pilet/:code",
+      "becomeHost": "hakka-voorustajaks",
+      "experienceDetail": "elamus/:slug",
+      "experienceCheckout": "elamus/:slug/maksmine",
+      "hostExperienceNew": "voorustaja/elamus/uus",
+      "signIn": "logi-sisse",
+      "account": "konto",
+      "hostExperienceEdit": "host/experience/:id"
+    },
+    "fi": {
+      "home": "",
+      "explore": "tutustu",
+      "howItWorks": "nain-se-toimii",
+      "myExperiences": "omat-elamykset",
+      "ticketDetail": "lippu/:code",
+      "becomeHost": "ryhdy-jarjestajaksi",
+      "experienceDetail": "elamys/:slug",
+      "experienceCheckout": "elamys/:slug/maksu",
+      "hostExperienceNew": "jarjestaja/elamys/uusi",
+      "signIn": "kirjaudu",
+      "account": "tili",
+      "hostExperienceEdit": "host/experience/:id"
     }
   }
 }

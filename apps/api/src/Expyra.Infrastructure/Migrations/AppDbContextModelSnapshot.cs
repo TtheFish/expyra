@@ -695,7 +695,7 @@ namespace Expyra.Infrastructure.Migrations
                             IsRightToLeft = false,
                             NativeName = "Dansk",
                             SearchConfig = "danish",
-                            UiAvailable = false
+                            UiAvailable = true
                         },
                         new
                         {
@@ -705,7 +705,7 @@ namespace Expyra.Infrastructure.Migrations
                             IsRightToLeft = false,
                             NativeName = "Nederlands",
                             SearchConfig = "dutch",
-                            UiAvailable = false
+                            UiAvailable = true
                         },
                         new
                         {
@@ -715,7 +715,7 @@ namespace Expyra.Infrastructure.Migrations
                             IsRightToLeft = false,
                             NativeName = "Eesti",
                             SearchConfig = "estonian",
-                            UiAvailable = false
+                            UiAvailable = true
                         },
                         new
                         {
@@ -725,7 +725,7 @@ namespace Expyra.Infrastructure.Migrations
                             IsRightToLeft = false,
                             NativeName = "Suomi",
                             SearchConfig = "finnish",
-                            UiAvailable = false
+                            UiAvailable = true
                         },
                         new
                         {

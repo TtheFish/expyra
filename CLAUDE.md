@@ -91,8 +91,8 @@ Kaynak tasarım: **"Expyra Yeni"** (Claude Design, 05.09.2026). Tanım ve gerek�
 
 ## Çeviri — yarım dil push edilmez
 
-Arayüz dilleri: **tr, en, cs, de, bg, hr**. Kaynak sözlük `messages/tr.ts`; çeviriler
-`en.ts`, `cs.ts`, `de.ts`, `bg.ts` ve `hr.ts`. Yeni bir panel, ekran ya da tek bir düğme metni eklendiğinde
+Arayüz dilleri: **tr, en, cs, de, bg, hr, da, nl, et, fi**. Kaynak sözlük `messages/tr.ts`; çeviriler
+`en.ts`, `cs.ts`, `de.ts`, `bg.ts`, `hr.ts`, `da.ts`, `nl.ts`, `et.ts` ve `fi.ts`. Yeni bir panel, ekran ya da tek bir düğme metni eklendiğinde
 **hepsine birden** eklenir. Bir dilde eksik anahtar bırakıp "sonra bakarız"
 denmez — kullanıcı o ekranda boşluk ya da yabancı dilde cümle görür.
 
