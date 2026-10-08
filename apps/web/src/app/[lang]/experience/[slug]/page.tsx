@@ -173,6 +173,8 @@ export default async function ExperienceDetail({
   const categoryKey = categoryMessageKey(experience.categorySlug)
   const cityName = cityDisplayName(lang, experience.city)
   const textLanguage = localNameOf(experience.text.language, lang) ?? experience.text.language
+  const originalLanguage =
+    localNameOf(experience.originalLanguage, lang) ?? experience.originalLanguage
   const cityHref = `${path(lang, 'explore')}?nerede=${encodeURIComponent(cityKeyOf(experience.city))}`
 
   const booking = (
@@ -382,8 +384,14 @@ export default async function ExperienceDetail({
 
             {(experience.meetingPoint || experience.text.meetingInstructions) && (
               <Section heading={t('experience.detail.meeting.heading')}>
+                {experience.meetingPoint?.address && experience.originalLanguage !== lang && (
+                  <p className="mb-4 inline-flex rounded-full bg-brand-500/12 px-3 py-1 text-xs font-semibold text-brand-700">
+                    {t('experience.detail.text.fallback', { dil: originalLanguage })}
+                  </p>
+                )}
+                {/* Adresin çeviri satırı yok: host'un yazdığı dilde, `text.language`'da değil. */}
                 {experience.meetingPoint?.address && (
-                  <p className="text-[1.0625rem] font-semibold">
+                  <p className="text-[1.0625rem] font-semibold" lang={experience.originalLanguage}>
                     {experience.meetingPoint.address}
                   </p>
                 )}
@@ -471,8 +479,9 @@ export default async function ExperienceDetail({
                     <li
                       key={tag}
                       className="pill"
-                      /* Etiketler host'un yazdığı içerik — ilan metniyle aynı dilde. */
-                      lang={experience.text.language}
+                      /* Etiketin çevirisi yok (ExperienceTag notu): başlık çevrilmiş
+                         olsa da etiket host'un yazdığı dilde kalıyor. */
+                      lang={experience.originalLanguage}
                     >
                       {tag}
                     </li>

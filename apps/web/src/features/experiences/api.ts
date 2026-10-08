@@ -132,6 +132,11 @@ export type GuestExperienceDetail = Omit<GuestExperienceSummary, 'text'> & {
   spokenLanguages: string[]
   /** Host'un yazdığı serbest etiketler, yazdığı hâliyle. Kategori değil. */
   tags: string[]
+  /**
+   * Host'un ilanı yazdığı dil. Çevirisi olmayan host metinleri (etiketler, buluşma
+   * adresi) bu dilde; `text.language` başlık çevrildiyse başka bir dil olabilir.
+   */
+  originalLanguage: string
   text: GuestExperienceDetailText
   /** Galeri, kapak ilk sırada. Kapaksız eski ilanlarda boş. */
   images: GuestExperienceImage[]

@@ -412,6 +412,7 @@ internal static class GuestExperienceQuery
             row.Capacity,
             spokenLanguages,
             tags,
+            row.OriginalLanguage,
             new GuestExperienceDetailTextResponse(
                 text.Language,
                 text.Title,
@@ -443,9 +444,10 @@ internal static class GuestExperienceQuery
 }
 
 /// <summary>
-/// Sorgudan dönen ham satır. Yanıt tipi DEĞİL: <see cref="GuestExperienceRow.Id"/> ve
-/// <see cref="GuestExperienceRow.OriginalLanguage"/> yalnız sunucu tarafında işe yarıyor
-/// (cursor ve fallback zinciri), istemciye gitmiyor.
+/// Sorgudan dönen ham satır. Yanıt tipi DEĞİL: <see cref="GuestExperienceRow.Id"/> yalnız
+/// sunucu tarafında işe yarıyor (cursor), istemciye gitmiyor.
+/// <see cref="GuestExperienceRow.OriginalLanguage"/> fallback zincirinin sonu; yalnız
+/// detay yanıtına çıkıyor (çeviri tablosu olmayan alanların dili).
 /// </summary>
 internal sealed record GuestExperienceRow(
     Guid Id,

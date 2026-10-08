@@ -382,6 +382,25 @@ public sealed class GuestExperienceTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task Detay_BaslikCevrilmisOlsaBile_OrijinalDilAyriAlandaGeliyor()
+    {
+        var host = await NewHostAsync();
+        var slug = await SeedAsync(
+            host, "de-dresden", "de",
+            [
+                ("de", "Dresdner Altstadt", "Ein Spaziergang durch die Altstadt."),
+                ("en", "Dresden old town", "A walk through the old town."),
+            ],
+            tags: [("altstadt", "Altstadt")]);
+
+        var detail = await GetDetailAsync(slug, "en");
+
+        // Etiket ve adresin çevirisi yok; arayüz onları metnin değil, ilanın diliyle işaretliyor.
+        detail.Text.Language.ShouldBe("en");
+        detail.OriginalLanguage.ShouldBe("de");
+    }
+
+    [Fact]
     public async Task Detay_BuyukHarfliUrl_AyniIlana_Cozuluyor()
     {
         // Postadan/PDF'ten gelen bağlantılarda büyük harfe dönmüş slug'lar oluyor.

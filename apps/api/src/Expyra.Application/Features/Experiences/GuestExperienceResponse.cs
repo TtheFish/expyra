@@ -79,6 +79,12 @@ public sealed record GuestExperienceSummaryResponse(
 /// Host'un yazdığı serbest etiketler, yazdığı hâliyle. Kategori değil — o bizim kapalı
 /// listemiz ve adı arayüz sözlüğünde.
 /// </param>
+/// <param name="OriginalLanguage">
+/// Host'un ilanı yazdığı dil. Çeviri tablosu OLMAYAN host metinleri — <paramref name="Tags"/>
+/// ve buluşma adresi — bu dilde varsayılıyor; arayüz onları bu <c>lang</c> ile işaretliyor
+/// (WCAG 3.1.2). <paramref name="Text"/>'in dili DEĞİL: başlık istenen dile çevrilmiş
+/// olabilir, adres olamaz.
+/// </param>
 /// <param name="Pricing">Bkz. <c>GuestExperienceSummaryResponse.Pricing</c>.</param>
 public sealed record GuestExperienceDetailResponse(
     string Slug,
@@ -88,6 +94,7 @@ public sealed record GuestExperienceDetailResponse(
     int Capacity,
     IReadOnlyList<string> SpokenLanguages,
     IReadOnlyList<string> Tags,
+    string OriginalLanguage,
     GuestExperienceDetailTextResponse Text,
     IReadOnlyList<GuestExperienceImageResponse> Images,
     GuestExperienceHostResponse Host,
