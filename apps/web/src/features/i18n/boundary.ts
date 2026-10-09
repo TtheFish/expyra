@@ -360,6 +360,35 @@ export const boundaryMessages = {
       reference: 'Tukikoodi',
     },
   },
+
+  fr: {
+    loading: 'Chargement de la page',
+
+    notFound: {
+      code: 'Erreur 404 · page introuvable',
+      title: 'Cette page n’existe pas',
+      lede: 'Le lien est peut-être ancien ou l’adresse mal saisie. Ce que vous cherchez est peut-être quand même ici — essayez d’explorer.',
+      explore: 'Explorer les expériences',
+      home: 'Retour à l’accueil',
+    },
+
+    error: {
+      title: 'Un problème est survenu',
+      lede: 'Nous n’avons pas pu charger cette page. Le problème vient peut-être de chez nous — un nouvel essai suffit généralement.',
+      retry: 'Réessayer',
+      home: 'Retour à l’accueil',
+      reference: 'Code d’assistance',
+    },
+
+    globalError: {
+      documentTitle: 'Un problème est survenu · Expyra',
+      title: 'Un problème est survenu',
+      lede: 'L’application s’est arrêtée de manière inattendue. Recharger la page suffit généralement.',
+      retry: 'Recharger',
+      home: 'Retour à l’accueil',
+      reference: 'Code d’assistance',
+    },
+  },
 } as const satisfies Record<UiLocale, BoundaryMessages>
 
 /**

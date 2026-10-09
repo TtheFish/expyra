@@ -526,6 +526,13 @@ public static class DemoDataSeeder
                 null,
                 null,
                 []),
+            ["fr"] = new(
+                "Découvrez Prague avec un guide turcophone",
+                "Le centre de Prague, ses ruelles et ses recoins méconnus, avec un guide local qui parle turc.",
+                null,
+                null,
+                null,
+                []),
         };
 
         var existingLanguages = await dbContext.ExperienceTranslations
@@ -741,6 +748,18 @@ public static class DemoDataSeeder
                     ("Modan rantabulevardi", "Kahvitauko ja kävely meren rannalla."),
                     ("Konditoria", "Lopuksi uunissa paistettua riisipuuroa."),
                 ]),
+            ["fr"] = new(
+                "Balade gourmande à Kadıköy",
+                "Trois heures de dégustation, du marché jusqu’à Moda : une boulangerie à börek historique, un maître des conserves, un torréfacteur et la meilleure pâtisserie du quartier. Petit groupe, beaucoup d’échanges.",
+                "Devant la statue du Taureau ; je porte un sac orange.",
+                "L’estomac vide et de bonnes chaussures de marche.",
+                "Boissons (facultatives).",
+                [
+                    ("Rendez-vous à Altıyol", "Courte présentation et programme."),
+                    ("Marché historique", "Börek, fromage et olives."),
+                    ("Promenade de Moda", "Pause café et balade au bord de la mer."),
+                    ("Pâtisserie", "Pour finir, du riz au lait gratiné au four."),
+                ]),
         });
 
     private static DemoExperience Balat(Guid hostId) => new(
@@ -872,6 +891,17 @@ public static class DemoDataSeeder
                     ("Tapaaminen laiturilla", null),
                     ("Värikkäät kadut", "Kiremit-katu ja portaat."),
                     ("Kahvi ja palaute", "Katsomme kuvat yhdessä läpi."),
+                ]),
+            ["fr"] = new(
+                "Balade photo matinale à Balat",
+                "Maisons colorées, ruelles étroites et lumière du matin. Vous pouvez venir avec un simple téléphone ; on parle cadrage et lumière.",
+                "À la sortie de l’embarcadère, sous l’horloge.",
+                "Un appareil photo ou un téléphone, bien chargé.",
+                null,
+                [
+                    ("Rendez-vous à l’embarcadère", null),
+                    ("Rues colorées", "Rue Kiremit et les escaliers."),
+                    ("Café et retours", "On regarde les photos ensemble."),
                 ]),
         });
 
@@ -1015,6 +1045,18 @@ public static class DemoDataSeeder
                     ("Auringonlasku Rumelin linnoituksella", "Teetä ja simitiä."),
                     ("Paluu", null),
                 ]),
+            ["fr"] = new(
+                "Coucher de soleil en bateau sur le Bosphore",
+                "En petit bateau de Beşiktaş jusqu’à la forteresse de Rumeli. Thé, simit et coucher de soleil.",
+                "Au petit embarcadère, à droite de l’embarcadère des ferries.",
+                "Un coupe-vent ; il fait frais le soir.",
+                "Boissons alcoolisées.",
+                [
+                    ("Départ de Beşiktaş", null),
+                    ("Ortaköy et passage sous le pont", "Pause photo."),
+                    ("Coucher de soleil à la forteresse de Rumeli", "Thé et simit."),
+                    ("Retour", null),
+                ]),
         });
 
     private static DemoExperience Kemeralti(Guid hostId) => new(
@@ -1146,6 +1188,17 @@ public static class DemoDataSeeder
                     ("Tapaaminen kellotornilla", null),
                     ("Boyoz ja gevrek", "Seisaaltaan, basaarin sisäänkäynnillä."),
                     ("Kızlarağasın karavaaniseraji", "Kahvia ja juttelua."),
+                ]),
+            ["fr"] = new(
+                "Petit-déjeuner et balade au bazar de Kemeraltı",
+                "Boyoz, gevrek et le rythme du bazar au petit matin. Puis un café turc au caravansérail de Kızlarağası.",
+                "Du côté mer de la tour de l’Horloge.",
+                null,
+                null,
+                [
+                    ("Rendez-vous à la tour de l’Horloge", null),
+                    ("Boyoz et gevrek", "Debout, à l’entrée du bazar."),
+                    ("Caravansérail de Kızlarağası", "Café et discussion."),
                 ]),
         });
 
@@ -1288,6 +1341,18 @@ public static class DemoDataSeeder
                     ("Punainen laakso", "Auringonnousu ja kuumailmapallot."),
                     ("Ruusulaakso", "Kalliokirkot."),
                     ("Çavuşin", "Vaellus päättyy, paluu kylään."),
+                ]),
+            ["fr"] = new(
+                "Randonnée au lever du soleil dans une vallée près de Göreme",
+                "De la vallée Rouge à la vallée des Roses, pendant que les montgolfières s’élèvent. Niveau moyen, environ 7 km.",
+                "Devant la gare routière ; je viens vous chercher en minibus.",
+                "Chaussures de randonnée, plusieurs couches, un litre d’eau.",
+                "Le petit-déjeuner (je vous recommande une adresse pour après).",
+                [
+                    ("Rendez-vous à la gare routière", "10 minutes de minibus jusqu’au départ du sentier."),
+                    ("Vallée Rouge", "Lever du soleil et montgolfières."),
+                    ("Vallée des Roses", "Églises rupestres."),
+                    ("Çavuşin", "Fin de la randonnée, retour au village."),
                 ]),
         });
 

@@ -77,6 +77,9 @@ export const pluralCategories = {
   et: ['one', 'other'],
   // Fince: one + other (CLDR; `Intl.PluralRules('fi')`).
   fi: ['one', 'other'],
+  // Fransızca üç biçim: one (0, 1 ve 0–2 arası ondalık: "1,5 heure"), many (milyonlar:
+  // "1 000 000 d'heures"), other (2+). `many` tam sayıda yalnız milyonun katlarında.
+  fr: ['one', 'many', 'other'],
 } as const satisfies Record<UiLocale, readonly Intl.LDMLPluralRule[]>
 
 export type PluralCategoryOf<L extends UiLocale> = (typeof pluralCategories)[L][number]

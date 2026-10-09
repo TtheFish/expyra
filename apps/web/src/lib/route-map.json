@@ -157,6 +157,20 @@
       "signIn": "kirjaudu",
       "account": "tili",
       "hostExperienceEdit": "host/experience/:id"
+    },
+    "fr": {
+      "home": "",
+      "explore": "explorer",
+      "howItWorks": "comment-ca-marche",
+      "myExperiences": "mes-experiences",
+      "ticketDetail": "billet/:code",
+      "becomeHost": "devenir-hote",
+      "experienceDetail": "experience/:slug",
+      "experienceCheckout": "experience/:slug/paiement",
+      "hostExperienceNew": "hote/experience/nouvelle",
+      "signIn": "connexion",
+      "account": "compte",
+      "hostExperienceEdit": "host/experience/:id"
     }
   }
 }

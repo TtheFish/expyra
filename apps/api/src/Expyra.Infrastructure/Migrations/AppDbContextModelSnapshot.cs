@@ -735,7 +735,7 @@ namespace Expyra.Infrastructure.Migrations
                             IsRightToLeft = false,
                             NativeName = "Français",
                             SearchConfig = "french",
-                            UiAvailable = false
+                            UiAvailable = true
                         },
                         new
                         {

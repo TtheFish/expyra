@@ -55,6 +55,7 @@ const dictionaries: Record<UiLocale, () => Promise<LoadedDictionary>> = {
   nl: () => import('./messages/nl').then((module) => module.nl),
   et: () => import('./messages/et').then((module) => module.et),
   fi: () => import('./messages/fi').then((module) => module.fi),
+  fr: () => import('./messages/fr').then((module) => module.fr),
 }
 
 /**

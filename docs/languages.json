@@ -13,7 +13,7 @@
     { "code": "nl", "nativeName": "Nederlands",       "englishName": "Dutch",          "searchConfig": "dutch",      "uiAvailable": true,  "rtl": false },
     { "code": "et", "nativeName": "Eesti",            "englishName": "Estonian",       "searchConfig": "estonian",   "uiAvailable": true,  "rtl": false },
     { "code": "fi", "nativeName": "Suomi",            "englishName": "Finnish",        "searchConfig": "finnish",    "uiAvailable": true,  "rtl": false },
-    { "code": "fr", "nativeName": "Français",         "englishName": "French",         "searchConfig": "french",     "uiAvailable": false, "rtl": false },
+    { "code": "fr", "nativeName": "Français",         "englishName": "French",         "searchConfig": "french",     "uiAvailable": true,  "rtl": false },
     { "code": "de", "nativeName": "Deutsch",          "englishName": "German",         "searchConfig": "german",     "uiAvailable": true,  "rtl": false },
     { "code": "el", "nativeName": "Ελληνικά",         "englishName": "Greek",          "searchConfig": "greek",      "uiAvailable": false, "rtl": false },
     { "code": "hu", "nativeName": "Magyar",           "englishName": "Hungarian",      "searchConfig": "hungarian",  "uiAvailable": false, "rtl": false },
