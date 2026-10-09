@@ -171,6 +171,34 @@
       "signIn": "connexion",
       "account": "compte",
       "hostExperienceEdit": "host/experience/:id"
+    },
+    "el": {
+      "home": "",
+      "explore": "exerevnisi",
+      "howItWorks": "pos-leitourgei",
+      "myExperiences": "oi-empeiries-mou",
+      "ticketDetail": "eisitirio/:code",
+      "becomeHost": "gineite-oikodespotis",
+      "experienceDetail": "empeiria/:slug",
+      "experienceCheckout": "empeiria/:slug/pliromi",
+      "hostExperienceNew": "oikodespotis/empeiria/nea",
+      "signIn": "syndesi",
+      "account": "logariasmos",
+      "hostExperienceEdit": "host/experience/:id"
+    },
+    "hu": {
+      "home": "",
+      "explore": "felfedezes",
+      "howItWorks": "hogyan-mukodik",
+      "myExperiences": "elmenyeim",
+      "ticketDetail": "jegy/:code",
+      "becomeHost": "legyel-hazigazda",
+      "experienceDetail": "elmeny/:slug",
+      "experienceCheckout": "elmeny/:slug/fizetes",
+      "hostExperienceNew": "hazigazda/elmeny/uj",
+      "signIn": "bejelentkezes",
+      "account": "fiok",
+      "hostExperienceEdit": "host/experience/:id"
     }
   }
 }

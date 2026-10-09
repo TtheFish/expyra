@@ -755,7 +755,7 @@ namespace Expyra.Infrastructure.Migrations
                             IsRightToLeft = false,
                             NativeName = "Ελληνικά",
                             SearchConfig = "greek",
-                            UiAvailable = false
+                            UiAvailable = true
                         },
                         new
                         {
@@ -765,7 +765,7 @@ namespace Expyra.Infrastructure.Migrations
                             IsRightToLeft = false,
                             NativeName = "Magyar",
                             SearchConfig = "hungarian",
-                            UiAvailable = false
+                            UiAvailable = true
                         },
                         new
                         {

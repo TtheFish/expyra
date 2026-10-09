@@ -389,6 +389,64 @@ export const boundaryMessages = {
       reference: 'Code d’assistance',
     },
   },
+
+  el: {
+    loading: 'Φόρτωση σελίδας',
+
+    notFound: {
+      code: 'Σφάλμα 404 · η σελίδα δεν βρέθηκε',
+      title: 'Αυτή η σελίδα δεν υπάρχει',
+      lede: 'Ο σύνδεσμος ίσως είναι παλιός ή η διεύθυνση γράφτηκε λάθος. Αυτό που ψάχνετε μπορεί να βρίσκεται ακόμα εδώ — δοκιμάστε την εξερεύνηση.',
+      explore: 'Εξερευνήστε εμπειρίες',
+      home: 'Επιστροφή στην αρχική',
+    },
+
+    error: {
+      title: 'Κάτι πήγε στραβά',
+      lede: 'Δεν μπορέσαμε να φορτώσουμε αυτή τη σελίδα. Το πρόβλημα ίσως είναι από τη δική μας πλευρά — συνήθως μια νέα προσπάθεια αρκεί.',
+      retry: 'Δοκιμάστε ξανά',
+      home: 'Επιστροφή στην αρχική',
+      reference: 'Κωδικός υποστήριξης',
+    },
+
+    globalError: {
+      documentTitle: 'Κάτι πήγε στραβά · Expyra',
+      title: 'Κάτι πήγε στραβά',
+      lede: 'Η εφαρμογή σταμάτησε απροσδόκητα. Συνήθως αρκεί να φορτώσετε ξανά τη σελίδα.',
+      retry: 'Επαναφόρτωση',
+      home: 'Επιστροφή στην αρχική',
+      reference: 'Κωδικός υποστήριξης',
+    },
+  },
+
+  hu: {
+    loading: 'Az oldal betöltése',
+
+    notFound: {
+      code: '404-es hiba · az oldal nem található',
+      title: 'Ez az oldal nem létezik',
+      lede: 'Lehet, hogy a link régi, vagy elírtad a címet. Amit keresel, attól még itt lehet — próbálj meg felfedezni.',
+      explore: 'Élmények felfedezése',
+      home: 'Vissza a kezdőlapra',
+    },
+
+    error: {
+      title: 'Valami hiba történt',
+      lede: 'Nem sikerült betölteni ezt az oldalt. Lehet, hogy nálunk van a hiba — egy újabb próbálkozás általában segít.',
+      retry: 'Próbáld újra',
+      home: 'Vissza a kezdőlapra',
+      reference: 'Támogatási kód',
+    },
+
+    globalError: {
+      documentTitle: 'Valami hiba történt · Expyra',
+      title: 'Valami hiba történt',
+      lede: 'Az alkalmazás váratlanul leállt. Az oldal újratöltése általában segít.',
+      retry: 'Újratöltés',
+      home: 'Vissza a kezdőlapra',
+      reference: 'Támogatási kód',
+    },
+  },
 } as const satisfies Record<UiLocale, BoundaryMessages>
 
 /**

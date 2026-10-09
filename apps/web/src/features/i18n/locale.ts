@@ -80,6 +80,11 @@ export const pluralCategories = {
   // Fransızca üç biçim: one (0, 1 ve 0–2 arası ondalık: "1,5 heure"), many (milyonlar:
   // "1 000 000 d'heures"), other (2+). `many` tam sayıda yalnız milyonun katlarında.
   fr: ['one', 'many', 'other'],
+  // Yunanca: one + other (CLDR; `Intl.PluralRules('el')`). 0 ve ondalık `other`.
+  el: ['one', 'other'],
+  // Macarca: one + other (CLDR) — ama sayıdan sonra isim TEKİL kalıyor ("3 óra"),
+  // yani iki biçim çoğu anahtarda aynı metin. Bu bir hata değil, dilin kuralı.
+  hu: ['one', 'other'],
 } as const satisfies Record<UiLocale, readonly Intl.LDMLPluralRule[]>
 
 export type PluralCategoryOf<L extends UiLocale> = (typeof pluralCategories)[L][number]

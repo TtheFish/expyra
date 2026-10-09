@@ -533,6 +533,20 @@ public static class DemoDataSeeder
                 null,
                 null,
                 []),
+            ["el"] = new(
+                "Ανακαλύψτε την Πράγα με τουρκόφωνο ξεναγό",
+                "Το κέντρο της Πράγας, τα στενά της και οι λιγότερο γνωστές γωνιές της, με έναν                 ντόπιο ξεναγό που μιλά τουρκικά.",
+                null,
+                null,
+                null,
+                []),
+            ["hu"] = new(
+                "Fedezd fel Prágát törökül beszélő idegenvezetővel",
+                "Prága belvárosa, sikátorai és kevésbé ismert zugai egy törökül beszélő helyi idegenvezetővel.",
+                null,
+                null,
+                null,
+                []),
         };
 
         var existingLanguages = await dbContext.ExperienceTranslations
@@ -760,6 +774,30 @@ public static class DemoDataSeeder
                     ("Promenade de Moda", "Pause café et balade au bord de la mer."),
                     ("Pâtisserie", "Pour finir, du riz au lait gratiné au four."),
                 ]),
+            ["el"] = new(
+                "Γευστική βόλτα στο Καντίκιοϊ",
+                "Τρεις ώρες γευσιγνωσίας από την αγορά ως τη Μόντα: ιστορικός φούρνος για μπουρέκια, μάστορας των τουρσιών, καβουρδιστήριο καφέ και το καλύτερο ζαχαροπλαστείο της γειτονιάς. Μικρή ομάδα, πολλή κουβέντα.",
+                "Μπροστά στο άγαλμα του Ταύρου· κρατάω πορτοκαλί τσάντα.",
+                "Άδειο στομάχι και καλά παπούτσια για περπάτημα.",
+                "Ποτά (προαιρετικά).",
+                [
+                    ("Συνάντηση στο Altıyol", "Σύντομη γνωριμία και το πρόγραμμα."),
+                    ("Ιστορική αγορά", "Μπουρέκι, τυρί και ελιές."),
+                    ("Παραλία της Μόντα", "Διάλειμμα για καφέ και βόλτα δίπλα στη θάλασσα."),
+                    ("Ζαχαροπλαστείο", "Στο τέλος, ρυζόγαλο ψημένο στον φούρνο."),
+                ]),
+            ["hu"] = new(
+                "Gasztroséta Kadıköyben",
+                "Három óra kóstolás a piactól Modáig: történelmi börek-pékség, savanyúságmester, kávépörkölő és a környék legjobb cukrászdája. Kis csoport, sok beszélgetés.",
+                "A Bika-szobor előtt; narancssárga táska lesz nálam.",
+                "Üres gyomor és kényelmes sétacipő.",
+                "Italok (opcionális).",
+                [
+                    ("Találkozó Altıyolban", "Rövid ismerkedés és a program."),
+                    ("A történelmi piac", "Börek, sajt és olajbogyó."),
+                    ("A modai part", "Kávészünet és séta a tenger mellett."),
+                    ("Cukrászda", "A végén sütőben sült tejberizs."),
+                ]),
         });
 
     private static DemoExperience Balat(Guid hostId) => new(
@@ -902,6 +940,28 @@ public static class DemoDataSeeder
                     ("Rendez-vous à l’embarcadère", null),
                     ("Rues colorées", "Rue Kiremit et les escaliers."),
                     ("Café et retours", "On regarde les photos ensemble."),
+                ]),
+            ["el"] = new(
+                "Πρωινή φωτογραφική βόλτα στο Μπαλάτ",
+                "Πολύχρωμα σπίτια, στενά σοκάκια και το πρωινό φως. Μπορείτε να έρθετε και μόνο με το κινητό σας· θα μιλήσουμε για κάδρο και φως.",
+                "Στην έξοδο της προβλήτας, κάτω από το ρολόι.",
+                "Φωτογραφική μηχανή ή κινητό, πλήρως φορτισμένο.",
+                null,
+                [
+                    ("Συνάντηση στην προβλήτα", null),
+                    ("Πολύχρωμοι δρόμοι", "Η οδός Kiremit και τα σκαλιά."),
+                    ("Καφές και σχόλια", "Βλέπουμε μαζί τις φωτογραφίες."),
+                ]),
+            ["hu"] = new(
+                "Reggeli fotós séta Balatban",
+                "Színes házak, szűk utcák és a reggeli fény. Akár csak a telefonoddal is jöhetsz; beszélünk a képkivágásról és a fényről.",
+                "A kikötő kijáratánál, az óra alatt.",
+                "Fényképezőgép vagy teljesen feltöltött telefon.",
+                null,
+                [
+                    ("Találkozó a kikötőnél", null),
+                    ("Színes utcák", "A Kiremit utca és a lépcsők."),
+                    ("Kávé és értékelés", "Együtt átnézzük a fotókat."),
                 ]),
         });
 
@@ -1057,6 +1117,30 @@ public static class DemoDataSeeder
                     ("Coucher de soleil à la forteresse de Rumeli", "Thé et simit."),
                     ("Retour", null),
                 ]),
+            ["el"] = new(
+                "Βαρκάδα στο ηλιοβασίλεμα στον Βόσπορο",
+                "Με μικρό σκάφος από το Μπεσίκτας ως το Ρούμελι Χισάρ. Τσάι, κουλούρι και ηλιοβασίλεμα.",
+                "Στη μικρή προβλήτα, δεξιά από την προβλήτα του πλοίου.",
+                "Αντιανεμικό· το βράδυ κάνει δροσιά.",
+                "Αλκοολούχα ποτά.",
+                [
+                    ("Αναχώρηση από το Μπεσίκτας", null),
+                    ("Ορτάκιοϊ και πέρασμα κάτω από τη γέφυρα", "Στάση για φωτογραφίες."),
+                    ("Ηλιοβασίλεμα στο Ρούμελι Χισάρ", "Τσάι και κουλούρι."),
+                    ("Επιστροφή", null),
+                ]),
+            ["hu"] = new(
+                "Naplementés hajókázás a Boszporuszon",
+                "Kis hajóval Beşiktaştól Rumeli Hisarıig. Tea, simit és naplemente.",
+                "A kis mólónál, a kompkikötőtől jobbra.",
+                "Széldzseki; este hűvös van.",
+                "Alkoholos italok.",
+                [
+                    ("Indulás Beşiktaşból", null),
+                    ("Ortaköy és áthaladás a híd alatt", "Fotós megálló."),
+                    ("Naplemente Rumeli Hisarınál", "Tea és simit."),
+                    ("Visszaút", null),
+                ]),
         });
 
     private static DemoExperience Kemeralti(Guid hostId) => new(
@@ -1199,6 +1283,28 @@ public static class DemoDataSeeder
                     ("Rendez-vous à la tour de l’Horloge", null),
                     ("Boyoz et gevrek", "Debout, à l’entrée du bazar."),
                     ("Caravansérail de Kızlarağası", "Café et discussion."),
+                ]),
+            ["el"] = new(
+                "Πρωινό και βόλτα στο παζάρι του Κεμεραλτί",
+                "Μπογιόζ, κουλούρι και ο πρωινός ρυθμός του παζαριού. Μετά, τούρκικος καφές στο χάνι Kızlarağası.",
+                "Στην πλευρά του Πύργου του Ρολογιού προς τη θάλασσα.",
+                null,
+                null,
+                [
+                    ("Συνάντηση στον Πύργο του Ρολογιού", null),
+                    ("Μπογιόζ και κουλούρι", "Όρθιοι, στην είσοδο του παζαριού."),
+                    ("Χάνι Kızlarağası", "Καφές και κουβέντα."),
+                ]),
+            ["hu"] = new(
+                "Reggeli és séta a Kemeraltı bazárban",
+                "Boyoz, simit és a bazár reggeli ritmusa. Utána török kávé a Kızlarağası karavánszerájban.",
+                "Az Óratorony tenger felőli oldalán.",
+                null,
+                null,
+                [
+                    ("Találkozó az Óratoronynál", null),
+                    ("Boyoz és simit", "Állva, a bazár bejáratánál."),
+                    ("Kızlarağası karavánszeráj", "Kávé és beszélgetés."),
                 ]),
         });
 
@@ -1353,6 +1459,30 @@ public static class DemoDataSeeder
                     ("Vallée Rouge", "Lever du soleil et montgolfières."),
                     ("Vallée des Roses", "Églises rupestres."),
                     ("Çavuşin", "Fin de la randonnée, retour au village."),
+                ]),
+            ["el"] = new(
+                "Πεζοπορία στην ανατολή σε κοιλάδα κοντά στο Γκιόρεμε",
+                "Από την Κόκκινη Κοιλάδα στην Κοιλάδα των Ρόδων, την ώρα που υψώνονται τα αερόστατα. Μέτριας δυσκολίας, περίπου 7 χλμ.",
+                "Μπροστά στον σταθμό λεωφορείων· θα σας πάρω με μίνι λεωφορείο.",
+                "Παπούτσια πεζοπορίας, ρούχα σε στρώσεις, ένα λίτρο νερό.",
+                "Το πρωινό (σας προτείνω ένα μέρος για μετά).",
+                [
+                    ("Συνάντηση στον σταθμό λεωφορείων", "10 λεπτά με μίνι λεωφορείο ως την αρχή του μονοπατιού."),
+                    ("Κόκκινη Κοιλάδα", "Ανατολή και αερόστατα."),
+                    ("Κοιλάδα των Ρόδων", "Λαξευτές εκκλησίες στον βράχο."),
+                    ("Çavuşin", "Τέλος της πεζοπορίας, επιστροφή στο χωριό."),
+                ]),
+            ["hu"] = new(
+                "Napfelkeltés túra egy völgyben Göreme mellett",
+                "A Vörös-völgytől a Rózsa-völgyig, miközben felszállnak a hőlégballonok. Közepesen nehéz, kb. 7 km.",
+                "A buszpályaudvar előtt; kisbusszal veszlek fel.",
+                "Túracipő, réteges öltözet, egy liter víz.",
+                "A reggeli (utána ajánlok egy helyet).",
+                [
+                    ("Találkozó a buszpályaudvaron", "10 perc kisbusszal az ösvény kezdetéig."),
+                    ("Vörös-völgy", "Napfelkelte és hőlégballonok."),
+                    ("Rózsa-völgy", "Sziklába vájt templomok."),
+                    ("Çavuşin", "A túra vége, visszatérés a faluba."),
                 ]),
         });
 
